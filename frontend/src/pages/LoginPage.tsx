@@ -3,10 +3,11 @@ import Textbox from "../components/ui/Textbox"
 import SubmitButton from "../components/ui/SubmitButton"
 import { useLoading } from "../hooks/useLoading"
 import { login } from "../services/auth"
+import { Link } from "react-router"
 
 interface FormInput {
-    username: string,
-    password: string
+    username: string;
+    password: string;
 }
 
 const LoginPage = () => {
@@ -22,13 +23,7 @@ const LoginPage = () => {
 
     const onSubmit: SubmitHandler<FormInput> = async (data) => {
         await loading.run(async () => {
-            // // Simulate an asynchronous login request
-            // await new Promise<void>((resolve) => {
-            //     setTimeout(resolve, 3000);
-            // });
-
-             await login(data);
-
+            await login(data);
             alert(JSON.stringify(data));
         });
     }
@@ -44,7 +39,7 @@ const LoginPage = () => {
                             render={({ field }) => {
                                 return (
                                     <>
-                                        <label className="block text-site-green font-bold">Username:</label>
+                                        <label htmlFor="username" className="block text-site-green font-bold">Username:</label>
                                         <Textbox {...field} className="mt-2" />
                                     </>
                                 )
@@ -57,7 +52,7 @@ const LoginPage = () => {
                             render={({ field }) => {
                                 return (
                                     <>
-                                        <label className="block mt-3 text-site-green font-bold">Password:</label>
+                                        <label htmlFor="password" className="block mt-3 text-site-green font-bold">Password:</label>
                                         <Textbox {...field} type="password" className="mt-2" />
                                     </>
                                 )
@@ -66,7 +61,7 @@ const LoginPage = () => {
                         />
                     </div>
                     <div className="w-full flex justify-end mt-2">
-                        <a href="#" className="text-gray-400">Forgot password?</a>
+                        <a href="#" className="text-content-text">Forgot password?</a>
                     </div>
                     <div className="mt-4 flex justify-center">
                         <SubmitButton 
@@ -78,8 +73,9 @@ const LoginPage = () => {
                     </div>
 
                     <div className="w-full flex justify-center mt-4">
-                        <span>
-                            Don't have an account? <a href="#" className="text-site-green">Register new</a>
+                        <span className="text-content-text">
+                            Don't have an account? 
+                            <Link className="ml-1 text-site-green font-bold" to="/register">Register new</Link>
                         </span>
                     </div>
                 </form>

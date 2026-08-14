@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 interface debounce {
-    value: string,
+    value: string;
     delay?: number;
 }
 

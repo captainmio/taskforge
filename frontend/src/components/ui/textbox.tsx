@@ -1,17 +1,30 @@
-import { type InputHTMLAttributes } from "react";
+import { type InputHTMLAttributes, type ReactNode } from "react";
 
 interface Textbox extends InputHTMLAttributes<HTMLInputElement> {
-    className?: string
+    className?: string;
+    icon?: ReactNode
 }
 
 const Textbox = (props: Textbox) => {
-    const { className = "" } = props;
+    const { className = "", icon, ...inputProps } = props;
+
+    const classNameValue = !icon
+        ? "block h-10 w-full rounded border border-gray-300 px-3 py-3 text-gray-900"
+        : "block h-10 w-full rounded-md border-0 pl-10 pr-3 py-3 text-gray-900 ring-1 ring-inset ring-gray-300";
 
     return (
-        <input 
-            {...props}
-            className={`w-full p-2 border rounded block ${className}`} 
-        />
+        <div className="relative">
+
+            {icon && (
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                {icon}
+                </span>
+            )}
+            <input
+                {...inputProps}
+                className={`${classNameValue} ${className}`} />
+
+        </div>
     )
 }
 
