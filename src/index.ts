@@ -1,7 +1,15 @@
-import express from 'express';
+import dotenv from 'dotenv';
+import express, {type Request, type Response} from 'express';
 
+dotenv.config();
 const app = express();
-const port = process.env.APP_PORT || 3000;
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+
+app.get("/", (req: Request, res: Response) => {
+    res.status(200).send('Hello from Express!');
+});
 
 app.listen(port, () => {
     console.log(`=============================================`)
