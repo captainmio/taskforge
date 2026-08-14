@@ -1,14 +1,10 @@
 import type { ButtonHTMLAttributes } from "react";
 
-interface SubmitButton extends ButtonHTMLAttributes<HTMLButtonElement> {
-    isLoading?: boolean
-}
-
-const SubmitButton = ({isLoading = false, ...props}: SubmitButton) => {
-    const { children, type = "submit" } = props;
+const SubmitButton = ({...props}: ButtonHTMLAttributes<HTMLButtonElement>) => {
+    const { children, className, type = "submit" } = props;
     return (
-        <button {...props} type={type}>
-            {isLoading ? '...Loading' : children}
+        <button {...props} type={type} className={`disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none ${className}`}>
+            {children}
         </button>
     )
 }

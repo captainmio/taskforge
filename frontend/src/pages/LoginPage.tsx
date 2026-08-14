@@ -1,6 +1,8 @@
 import { useForm, Controller, type SubmitHandler } from "react-hook-form"
 import Textbox from "../components/ui/Textbox"
 import SubmitButton from "../components/ui/SubmitButton"
+import { useLoading } from "../hooks/useLoading"
+import { login } from "../services/auth"
 
 interface FormInput {
     username: string,
@@ -16,11 +18,19 @@ const LoginPage = () => {
         },
     })
 
-    const onSubmit: SubmitHandler<FormInput> = (data) => {
-        setTimeout(function() {
-            
-        }, 3000)
-        alert(JSON.stringify(data))
+    const loading = useLoading();
+
+    const onSubmit: SubmitHandler<FormInput> = async (data) => {
+        await loading.run(async () => {
+            // // Simulate an asynchronous login request
+            // await new Promise<void>((resolve) => {
+            //     setTimeout(resolve, 3000);
+            // });
+
+             await login(data);
+
+            alert(JSON.stringify(data));
+        });
     }
 
     return (
@@ -59,7 +69,10 @@ const LoginPage = () => {
                         <a href="#" className="text-gray-400">Forgot password?</a>
                     </div>
                     <div className="mt-4 flex justify-center">
-                        <SubmitButton className="w-full cursor-pointer rounded-lg bg-site-green p-4 text-white">
+                        <SubmitButton 
+                            className="w-full cursor-pointer rounded-lg bg-site-green p-4 text-white"
+                            disabled={loading.isLoading}
+                        >
                             Log in
                         </SubmitButton>
                     </div>
