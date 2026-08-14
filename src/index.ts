@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
-import express, {type Request, type Response} from 'express';
+import express from 'express';
+
+// list of routes
+import productRoutes from "./routes/product.routes.js"
 
 dotenv.config();
 const app = express();
@@ -7,9 +10,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
-    res.status(200).send('Hello from Express!');
-});
+app.use("/products", productRoutes);
 
 app.listen(port, () => {
     console.log(`=============================================`)
