@@ -4,7 +4,7 @@ import { getCurrentUser } from "../../services/auth";
 import {
   getWorkspaceDestination,
   type WorkspaceDestination,
-} from "../../workspaces/utils/workspaceRouting";
+} from "../../pages/workspaces/utils/workspaceRouting";
 
 type GuestDestination = "loading" | "guest" | WorkspaceDestination;
 
