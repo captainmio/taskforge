@@ -21,11 +21,10 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response.status === 401 && !error.config?.url?.endsWith("/auth/login")) {
-      window.location.replace("/");
+    const isAuthCheck = error.config?.url?.endsWith("/auth/me");
+    if (!isAuthCheck) {
+      toast.error(error.response.data?.error ?? "Something went wrong.");
     }
-
-    toast.error(error.response.data?.error ?? "Something went wrong.");
     return Promise.reject(error);
   }
 );
