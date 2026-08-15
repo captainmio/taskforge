@@ -37,14 +37,10 @@ export const Register = () => {
       try {
         await register(data);
         toast.success("Account successfully created");
-        // navigate('/', { replace: true });
+        navigate('/', { replace: true });
 
       } catch (error: unknown) {
-        const errorHandled: boolean = applyApiValidationErrors(error, setError);
-
-        if (errorHandled) {
-          toast.error(FORM_ERROR);
-        }
+        applyApiValidationErrors(error, setError);
       }
     });
   }
