@@ -9,4 +9,11 @@ export const registerSchema = z.object({
     })
 })
 
+export const loginSchema = z.object({
+    body: z.object({
+        email: z.string().min(1, "Please enter your email"),
+        password: z.string().min(1, "Please enter your password")
+    })
+})
+
 // export type RegisterBody = z.infer<typeof registerSchema>["body"];

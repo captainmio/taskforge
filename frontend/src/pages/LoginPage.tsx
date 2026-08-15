@@ -38,7 +38,7 @@ const LoginPage = () => {
                             render={({ field }) => {
                                 return (
                                     <>
-                                        <label htmlFor="email" className="block text-site-green font-bold">Email Address:</label>
+                                        <label htmlFor="email" className="block text-site-green font-bold">Email address:</label>
                                         <Textbox {...field} className="mt-2" />
                                     </>
                                 )
