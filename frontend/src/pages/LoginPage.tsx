@@ -3,7 +3,7 @@ import Textbox from "../components/ui/Textbox"
 import SubmitButton from "../components/ui/SubmitButton"
 import { useLoading } from "../hooks/useLoading"
 import { login } from "../services/auth"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 
 interface FormInput {
     email: string;
@@ -20,10 +20,15 @@ const LoginPage = () => {
     })
 
     const loading = useLoading();
+    const navigate = useNavigate();
 
     const onSubmit: SubmitHandler<FormInput> = async (data) => {
         await loading.run(async () => {
-            await login(data);
+            const response = await login(data);
+
+            if (response.success) {
+                navigate("/dashboard");
+            }
         });
     }
 

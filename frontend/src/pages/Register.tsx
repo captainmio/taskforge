@@ -1,12 +1,12 @@
 import { useForm, Controller, type SubmitHandler } from "react-hook-form"
-import { Link, redirect, useNavigate } from "react-router"
+import { Link, useNavigate } from "react-router"
 import Textbox from "../components/ui/Textbox"
 import { useLoading } from "../hooks/useLoading";
 import SubmitButton from "../components/ui/SubmitButton";
 import { FaUser, FaEnvelope, FaUnlockAlt } from "react-icons/fa";
 import { register } from "../services/auth";
 import { toast } from "react-toastify";
-import { applyApiValidationErrors, FORM_ERROR } from "../utils/apiError";
+import { applyApiValidationErrors } from "../utils/apiError";
 
 interface FormInput {
   firstname: string;

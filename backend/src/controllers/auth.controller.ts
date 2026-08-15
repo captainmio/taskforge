@@ -9,7 +9,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import { BCRYPT_SALT_ROUNDS } from "../config/auth.js";
-import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/auth.js";
+import { JWT_COOKIE_NAME, JWT_EXPIRES_IN, JWT_SECRET } from "../config/auth.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -40,17 +40,21 @@ const login = async (req: Request, res: Response) => {
             { expiresIn: JWT_EXPIRES_IN as StringValue }
         );
 
+        res.cookie(JWT_COOKIE_NAME, token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 24 * 60 * 60 * 1000,
+        });
+
         return res.status(200).json({
             success: true,
             message: "Login successful",
-            data: {
-                token,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    firstname: user.firstname,
-                    lastname: user.lastname,
-                }
+            user: {
+                id: user.id,
+                email: user.email,
+                firstname: user.firstname,
+                lastname: user.lastname,
             },
         });
     } catch (error) {
