@@ -25,8 +25,8 @@ const register = async (req: Request, res: Response) => {
     });
 
 
-    if(searchUserByEmail) {
-        res.status(409).json({ error: 'Email already exists' });
+    if (searchUserByEmail) {
+        return res.status(409).json({ success: false, error: 'Email already exists' });
     }
 
     try {
@@ -42,13 +42,16 @@ const register = async (req: Request, res: Response) => {
             },
         });
 
-        res.status(201).json({
+        return res.status(201).json({
+            success: true,
             message: "Account created",
         });
-        
+
     } catch (error) {
         console.log(error)
-        res.status(500).json({ error: 'Something went wrong on our end' });
+        return res.status(500).json({
+            success: false, error: 'Something went wrong on our end'
+        });
     }
 
 

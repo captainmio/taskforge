@@ -1,9 +1,15 @@
 import { apiClient } from "./api"
 
+interface apiResponse {
+    success: boolean; 
+    data?: Record<string, string>; 
+    error?: string
+}
+
 export const login = async (payload: {
-    username: string,
+    email: string,
     password: string
-}): Promise<void> =>  {
+}): Promise<void> => {
     const response = await apiClient.post('/auth/login', payload);
 
     console.log(response.data)
@@ -14,7 +20,12 @@ export const register = async (payload: {
     lastname: string,
     email: string,
     password: string
-}): Promise <void> => {
+}): Promise<apiResponse> => {
     const response = await apiClient.post('/auth/register', payload);
-    console.log(response.data)
+
+    return {
+        success: response.data.success ?? false,
+        data: response.data ?? {},
+        error: response.data.error ?? '' 
+    }
 }

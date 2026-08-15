@@ -35,9 +35,12 @@ export const Register = () => {
   const onSubmit: SubmitHandler<FormInput> = async (data) => {
     await loading.run(async () => {
       try {
-        await register(data);
-        toast.success("Account successfully created");
-        navigate('/', { replace: true });
+        const response = await register(data);
+
+        if(response.success) { 
+          toast.success("Account successfully created");
+          navigate('/', { replace: true });
+        }
 
       } catch (error: unknown) {
         applyApiValidationErrors(error, setError);

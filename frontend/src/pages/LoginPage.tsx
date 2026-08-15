@@ -6,7 +6,7 @@ import { login } from "../services/auth"
 import { Link } from "react-router"
 
 interface FormInput {
-    username: string;
+    email: string;
     password: string;
 }
 
@@ -14,7 +14,7 @@ const LoginPage = () => {
 
     const { control, handleSubmit } = useForm<FormInput>({
         defaultValues: {
-            username: '',
+            email: '',
             password: ''
         },
     })
@@ -24,7 +24,6 @@ const LoginPage = () => {
     const onSubmit: SubmitHandler<FormInput> = async (data) => {
         await loading.run(async () => {
             await login(data);
-            alert(JSON.stringify(data));
         });
     }
 
@@ -34,12 +33,12 @@ const LoginPage = () => {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div>
                         <Controller
-                            name="username"
+                            name="email"
                             control={control}
                             render={({ field }) => {
                                 return (
                                     <>
-                                        <label htmlFor="username" className="block text-site-green font-bold">Username:</label>
+                                        <label htmlFor="email" className="block text-site-green font-bold">Email Address:</label>
                                         <Textbox {...field} className="mt-2" />
                                     </>
                                 )
