@@ -1,6 +1,12 @@
 import { Navigate, Outlet } from "react-router";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../../services/auth";
+import {
+  getWorkspaceDestination,
+  type WorkspaceDestination,
+} from "../../workspaces/utils/workspaceRouting";
+
+type GuestDestination = "loading" | "guest" | WorkspaceDestination;
 
 export const ProtectedRoute = () => {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -16,14 +22,16 @@ export const ProtectedRoute = () => {
 };
 
 export const GuestRoute = () => {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [destination, setDestination] = useState<GuestDestination>("loading");
 
   useEffect(() => {
     getCurrentUser()
-      .then(() => setAuthenticated(true))
-      .catch(() => setAuthenticated(false));
+      .then(({ workspaceIds }) => {
+        setDestination(getWorkspaceDestination(workspaceIds));
+      })
+      .catch(() => setDestination("guest"));
   }, []);
 
-  if (authenticated === null) return null;
-  return authenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
+  if (destination === "loading") return null;
+  return destination === "guest" ? <Outlet /> : <Navigate to={destination} replace />;
 };

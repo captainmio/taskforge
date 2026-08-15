@@ -2,7 +2,8 @@ import { useForm, Controller, type SubmitHandler } from "react-hook-form"
 import Textbox from "../components/ui/Textbox"
 import SubmitButton from "../components/ui/SubmitButton"
 import { useLoading } from "../hooks/useLoading"
-import { login } from "../services/auth"
+import { getCurrentUser, login } from "../services/auth"
+import { getWorkspaceDestination } from "../workspaces/utils/workspaceRouting"
 import { Link, useNavigate } from "react-router"
 
 interface FormInput {
@@ -27,7 +28,8 @@ const LoginPage = () => {
             const response = await login(data);
 
             if (response.success) {
-                navigate("/dashboard");
+                const currentUser = await getCurrentUser();
+                navigate(getWorkspaceDestination(currentUser.workspaceIds));
             }
         });
     }

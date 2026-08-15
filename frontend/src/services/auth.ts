@@ -1,41 +1,53 @@
 import { apiClient } from "./api"
 
-interface RegisterResponse {
+export interface RegisterResponse {
     success: boolean;
-    data?: Record<string, string>;
+    data?: Record<string, unknown>;
     error?: string;
 }
 
-interface LoginResponse {
-    success: boolean;
-    user: {
-        id: number;
-        email: string;
-        firstname: string;
-        lastname: string;
-    };
+export interface User {
+    id: number;
+    email: string;
+    firstname: string;
+    lastname: string;
 }
 
-export const login = async (payload: {
+export interface LoginResponse {
+    success: boolean;
+    user: User;
+}
+
+export interface MeResponse {
+    success: boolean;
+    workspaceIds: number[];
+    user: User;
+}
+
+export interface LoginPayload {
     email: string;
     password: string;
-}): Promise<LoginResponse> => {
-    const response = await apiClient.post('/auth/login', payload);
-    return response.data as LoginResponse;
 }
 
-export const getCurrentUser = async (): Promise<LoginResponse["user"]> => {
-    const response = await apiClient.get('/auth/me');
-    return response.data.user as LoginResponse["user"];
-};
-
-export const register = async (payload: {
+export interface RegisterPayload {
     firstname: string;
     lastname: string;
     email: string;
     password: string;
-}): Promise<RegisterResponse> => {
-    const response = await apiClient.post('/auth/register', payload);
+}
+
+export const login = async (payload: LoginPayload): Promise<LoginResponse> => {
+    const response = await apiClient.post<LoginResponse>('/auth/login', payload);
+    return response.data;
+}
+
+export const getCurrentUser = async (): Promise<MeResponse> => {
+    const response = await apiClient.get<MeResponse>('/auth/me');
+    return response.data;
+};
+
+export const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
+    const response = await apiClient.post<RegisterResponse>('/auth/register', payload);
     
-    return response.data as RegisterResponse;
+    return response.data;
 }

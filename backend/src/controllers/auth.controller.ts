@@ -69,7 +69,11 @@ const me = async (req: Request, res: Response) => {
         select: { id: true, email: true, firstname: true, lastname: true },
     });
 
-    return res.status(200).json({ success: true, user });
+    return res.status(200).json({
+        success: true,
+        workspaceIds: [],
+        user,
+    });
 };
 
 const register = async (req: Request, res: Response) => {
