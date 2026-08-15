@@ -10,6 +10,7 @@ interface WorkspaceReviewStepProps {
   onEditInvites: () => void;
   onBack: () => void;
   onCreateWorkspace: () => void;
+  isCreating: boolean;
 }
 
 const EditAction = ({ onClick }: { onClick: () => void }) => (
@@ -27,6 +28,7 @@ const WorkspaceReviewStep = ({
   onEditInvites,
   onBack,
   onCreateWorkspace,
+  isCreating,
 }: WorkspaceReviewStepProps) => {
   const { control } = useFormContext<WorkspaceFormValues>();
   const workspaceName = useWatch({ control, name: "workspaceName" });
@@ -75,7 +77,8 @@ const WorkspaceReviewStep = ({
         <StepNavigation
           isFirstStep={false}
           isLastStep={false}
-          nextLabel="Create workspace"
+          nextLabel={isCreating ? "Creating workspace..." : "Create workspace"}
+          isNextDisabled={isCreating}
           onBack={onBack}
           onNext={onCreateWorkspace}
         />

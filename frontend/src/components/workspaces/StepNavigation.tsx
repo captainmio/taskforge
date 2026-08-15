@@ -6,6 +6,7 @@ interface StepNavigationProps {
   isLastStep: boolean;
   submitNext?: boolean;
   nextLabel?: string;
+  isNextDisabled?: boolean;
   onBack?: () => void;
   onNext?: () => void;
 }
@@ -15,6 +16,7 @@ const StepNavigation = ({
   isLastStep,
   submitNext = false,
   nextLabel = "Next",
+  isNextDisabled = false,
   onBack,
   onNext,
 }: StepNavigationProps) => (
@@ -34,6 +36,7 @@ const StepNavigation = ({
       <SubmitButton
         type={submitNext ? "submit" : "button"}
         onClick={submitNext ? undefined : onNext}
+        disabled={isNextDisabled}
         className="flex flex-1 cursor-pointer items-center justify-center gap-3 rounded-lg bg-site-green px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700"
       >
         {nextLabel}

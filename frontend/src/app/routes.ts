@@ -4,6 +4,7 @@ import { Register } from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
+import CreateProject from "../pages/projects/CreateProject";
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
       {
         path: "/create-workspace",
         Component: CreateWorkspace,
+      },
+      {
+        path: "/workspace/:id/create-project",
+        Component: CreateProject,
       },
     ],
   },

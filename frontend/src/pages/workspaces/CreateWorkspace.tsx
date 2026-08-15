@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { FormProvider, useForm, type FieldPath } from "react-hook-form";
-import { FaLock } from "react-icons/fa";
+import { useNavigate } from "react-router";
 import InviteMembersStep from "../../components/workspaces/InviteMembersStep";
-import StepNavigation from "../../components/workspaces/StepNavigation";
+import WorkspaceDoneStep from "../../components/workspaces/WorkspaceDoneStep";
 import WorkspaceDetailsStep from "../../components/workspaces/WorkspaceDetailsStep";
+import WorkspaceLivePreview from "../../components/workspaces/WorkspaceLivePreview";
+import WorkspaceNextActions from "../../components/workspaces/WorkspaceNextActions";
 import WorkspaceReviewStep from "../../components/workspaces/WorkspaceReviewStep";
 import Steps, { type StepItem } from "../../components/ui/Steps";
+import { createWorkspace as createWorkspaceRequest } from "../../services/workspaces";
 import { WorkspaceIcon, type WorkspaceFormValues } from "../../types/workspace";
 
 const workspaceSteps = [
@@ -17,7 +20,12 @@ const workspaceSteps = [
 
 type WorkspaceStepId = (typeof workspaceSteps)[number]["id"];
 
+// TODO: Replace this with the ID returned by the workspace creation API later. To be remove later
+const temporaryWorkspaceId = "new";
+
 const CreateWorkspace = () => {
+  const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
   const [currentStep, setCurrentStep] = useState<WorkspaceStepId>(1);
   const formMethods = useForm<WorkspaceFormValues>({
     defaultValues: {
@@ -31,8 +39,6 @@ const CreateWorkspace = () => {
   });
 
   const currentStepIndex = workspaceSteps.findIndex((step) => step.id === currentStep);
-  const isFirstStep = currentStepIndex === 0;
-  const isLastStep = currentStepIndex === workspaceSteps.length - 1;
 
   // Dynamic invite paths ensure every visible email and role field is validated.
   const getCurrentStepFields = (): FieldPath<WorkspaceFormValues>[] => {
@@ -76,6 +82,21 @@ const CreateWorkspace = () => {
     void goToNextStep();
   };
 
+  const submitWorkspace = (): void => {
+    void formMethods.handleSubmit(async (values) => {
+      try {
+        await createWorkspaceRequest(values);
+        advanceToNextStep();
+      } catch {
+        // The shared API interceptor displays the backend error to the user.
+      }
+    })();
+  };
+
+  const goToCreateProject = (): void => {
+    navigate(`/workspace/${temporaryWorkspaceId}/create-project`);
+  };
+
   return (
     <FormProvider {...formMethods}>
       <main className="min-h-screen bg-slate-50 px-4 py-8 text-gray-900 sm:px-6 lg:py-10">
@@ -105,34 +126,33 @@ const CreateWorkspace = () => {
                 onEditDetails={() => goToStep(1)}
                 onEditInvites={() => goToStep(2)}
                 onBack={goToPreviousStep}
-                onCreateWorkspace={advanceToNextStep}
+                onCreateWorkspace={submitWorkspace}
+                isCreating={formMethods.formState.isSubmitting}
               />
             ) : (
-              <div className="flex h-full flex-col">
-                {/* Future steps can read this same form through useFormContext. */}
-                <h2 className="text-2xl font-bold">{workspaceSteps[currentStepIndex].label}</h2>
-                <p className="mt-2 text-sm text-gray-500">Temporary content for step {currentStep}.</p>
-
-                <div className="mt-auto pt-10">
-                  <StepNavigation
-                    isFirstStep={isFirstStep}
-                    isLastStep={isLastStep}
-                    onBack={goToPreviousStep}
-                    onNext={continueToNextStep}
-                  />
-                </div>
-              </div>
+              <WorkspaceDoneStep
+                onGoToWorkspace={() => navigate("/dashboard")}
+                onCreateProject={goToCreateProject}
+                onInviteMembers={() => goToStep(2)}
+              />
             )}
           </div>
 
-          {/* Reserved for the workspace preview in a later step. */}
-          <aside aria-hidden="true" className="hidden border-l border-gray-200 bg-green-50/30 lg:block" />
+          <aside className="border-t border-gray-200 bg-green-50/30 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+            {currentStep < 4 ? (
+              <WorkspaceLivePreview />
+            ) : (
+              <WorkspaceNextActions
+                onCreateProject={goToCreateProject}
+                onInviteMembers={() => goToStep(2)}
+              />
+            )}
+          </aside>
         </section>
 
-        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500 sm:text-sm">
-          <FaLock className="size-4" aria-hidden="true" />
-          You can always change these settings later.
-        </p>
+        <footer className="mt-6 text-center text-xs text-gray-500 sm:text-sm">
+          &copy; {currentYear} Taskforge. All rights reserved.
+        </footer>
       </main>
     </FormProvider>
   );
