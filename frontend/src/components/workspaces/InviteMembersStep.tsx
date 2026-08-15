@@ -120,11 +120,6 @@ const InviteMembersStep = ({
           );
         })}
 
-        {fields.length === 0 && (
-          <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
-            No members added. Add an invite or skip this step for now.
-          </p>
-        )}
 
         <button
           type="button"
@@ -134,6 +129,12 @@ const InviteMembersStep = ({
           <FaPlus className="size-3" aria-hidden="true" />
           Add another member
         </button>
+
+        {fields.length === 0 && (
+          <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+            No members added. Add an invite or skip this step for now.
+          </p>
+        )}
         </div>
 
         {/* Keep navigation anchored to the bottom when the invite list is short. */}

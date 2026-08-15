@@ -4,6 +4,7 @@ import { FaLock } from "react-icons/fa";
 import InviteMembersStep from "../../components/workspaces/InviteMembersStep";
 import StepNavigation from "../../components/workspaces/StepNavigation";
 import WorkspaceDetailsStep from "../../components/workspaces/WorkspaceDetailsStep";
+import WorkspaceReviewStep from "../../components/workspaces/WorkspaceReviewStep";
 import Steps, { type StepItem } from "../../components/ui/Steps";
 import { WorkspaceIcon, type WorkspaceFormValues } from "../../types/workspace";
 
@@ -67,6 +68,10 @@ const CreateWorkspace = () => {
     if (previousStep) setCurrentStep(previousStep.id);
   };
 
+  const goToStep = (step: WorkspaceStepId): void => {
+    setCurrentStep(step);
+  };
+
   const continueToNextStep = (): void => {
     void goToNextStep();
   };
@@ -94,6 +99,13 @@ const CreateWorkspace = () => {
                 onBack={goToPreviousStep}
                 onSkip={advanceToNextStep}
                 onContinue={continueToNextStep}
+              />
+            ) : currentStep === 3 ? (
+              <WorkspaceReviewStep
+                onEditDetails={() => goToStep(1)}
+                onEditInvites={() => goToStep(2)}
+                onBack={goToPreviousStep}
+                onCreateWorkspace={advanceToNextStep}
               />
             ) : (
               <div className="flex h-full flex-col">

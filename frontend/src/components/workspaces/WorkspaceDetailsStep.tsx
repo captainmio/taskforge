@@ -1,26 +1,14 @@
 import { Controller, useFormContext } from "react-hook-form";
 import {
   FaAlignLeft,
-  FaBriefcase,
   FaBuilding,
-  FaCode,
-  FaFlag,
-  FaRocket,
-  FaUsers,
 } from "react-icons/fa";
-import { WorkspaceIcon, type WorkspaceFormValues } from "../../types/workspace";
+import type { WorkspaceFormValues } from "../../types/workspace";
 import SelectableIconButton from "../ui/SelectableIconButton";
 import Textarea from "../ui/Textarea";
 import Textbox from "../ui/Textbox";
 import StepNavigation from "./StepNavigation";
-
-const iconOptions = [
-  { id: WorkspaceIcon.CODE, label: "Code workspace", icon: <FaCode />, className: "bg-green-50 text-site-green" },
-  { id: WorkspaceIcon.BUSINESS, label: "Business workspace", icon: <FaBriefcase />, className: "bg-blue-50 text-blue-500" },
-  { id: WorkspaceIcon.TEAM, label: "Team workspace", icon: <FaUsers />, className: "bg-purple-50 text-purple-500" },
-  { id: WorkspaceIcon.LAUNCH, label: "Launch workspace", icon: <FaRocket />, className: "bg-orange-50 text-orange-500" },
-  { id: WorkspaceIcon.GOALS, label: "Goals workspace", icon: <FaFlag />, className: "bg-red-50 text-red-500" },
-] as const;
+import { workspaceIconOptions } from "./workspaceIconOptions";
 
 interface WorkspaceDetailsStepProps {
   onContinue: () => void;
@@ -92,7 +80,7 @@ const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
             control={control}
             render={({ field }) => (
               <div className="flex flex-wrap gap-5">
-                {iconOptions.map((option) => (
+                {workspaceIconOptions.map((option) => (
                   <SelectableIconButton
                     key={option.id}
                     icon={option.icon}
