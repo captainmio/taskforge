@@ -1,9 +1,12 @@
 import { useForm, Controller, type SubmitHandler } from "react-hook-form"
-import { Link } from "react-router"
+import { Link, redirect, useNavigate } from "react-router"
 import Textbox from "../components/ui/Textbox"
 import { useLoading } from "../hooks/useLoading";
 import SubmitButton from "../components/ui/SubmitButton";
-import { FaEnvelope } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaUnlockAlt } from "react-icons/fa";
+import { register } from "../services/auth";
+import { toast } from "react-toastify";
+import { applyApiValidationErrors, FORM_ERROR } from "../utils/apiError";
 
 interface FormInput {
   firstname: string;
@@ -14,10 +17,10 @@ interface FormInput {
 }
 
 export const Register = () => {
-
+  const navigate = useNavigate();
   const loading = useLoading();
 
-  const { control, handleSubmit } = useForm<FormInput>({
+  const { control, handleSubmit, watch, setError } = useForm<FormInput>({
     defaultValues: {
       firstname: '',
       lastname: '',
@@ -27,10 +30,22 @@ export const Register = () => {
     }
   })
 
+  const passwordValue = watch('password');
+
   const onSubmit: SubmitHandler<FormInput> = async (data) => {
     await loading.run(async () => {
-      // await login(data);
-      alert(JSON.stringify(data));
+      try {
+        await register(data);
+        toast.success("Account successfully created");
+        // navigate('/', { replace: true });
+
+      } catch (error: unknown) {
+        const errorHandled: boolean = applyApiValidationErrors(error, setError);
+
+        if (errorHandled) {
+          toast.error(FORM_ERROR);
+        }
+      }
     });
   }
 
@@ -48,10 +63,14 @@ export const Register = () => {
               <Controller
                 name="firstname"
                 control={control}
-                render={({ field }) => {
+                rules={{
+                  required: "First Name is required"
+                }}
+                render={({ field, fieldState: { error } }) => {
                   return (
                     <>
-                      <Textbox placeholder="First Name" {...field} />
+                      <Textbox icon={<FaUser />} placeholder="First Name" {...field} />
+                      {error && <p style={{ color: "red" }}>{error.message}</p>}
                     </>
                   )
                 }
@@ -62,10 +81,14 @@ export const Register = () => {
               <Controller
                 name="lastname"
                 control={control}
-                render={({ field }) => {
+                rules={{
+                  required: "Last Name is required"
+                }}
+                render={({ field, fieldState: { error } }) => {
                   return (
                     <>
-                      <Textbox placeholder="Last Name" {...field} />
+                      <Textbox icon={<FaUser />} placeholder="Last Name" {...field} />
+                      {error && <p style={{ color: "red" }}>{error.message}</p>}
                     </>
                   )
                 }
@@ -77,10 +100,18 @@ export const Register = () => {
             <Controller
                 name="email"
                 control={control}
-                render={({ field }) => {
+                rules={{
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                    message: "Invalid email address format"
+                  }
+                }}
+                render={({ field, fieldState: { error } }) => {
                   return (
                     <>
-                      <Textbox type="email" placeholder="Email" {...field} />
+                      <Textbox icon={<FaEnvelope />} placeholder="Email" {...field} />
+                      {error && <p style={{ color: "red" }}>{error.message}</p>}
                     </>
                   )
                 }
@@ -91,10 +122,18 @@ export const Register = () => {
             <Controller
                 name="password"
                 control={control}
-                render={({ field }) => {
+                rules={{
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password should be more than 7 characters"
+                  },
+                }}
+                render={({ field, fieldState: { error } }) => {
                   return (
                     <>
-                      <Textbox type="password" placeholder="Password" {...field} />
+                      <Textbox icon={<FaUnlockAlt />} type="password" placeholder="Password" {...field} />
+                      {error && <p style={{ color: "red" }}>{error.message}</p>}
                     </>
                   )
                 }
@@ -105,10 +144,15 @@ export const Register = () => {
             <Controller
                 name="confirm_password"
                 control={control}
-                render={({ field }) => {
+                rules={{
+                  required: "Confirm Password is required",
+                  validate: (value) => value === passwordValue || "Passwords do not match",
+                }}
+                render={({ field, fieldState: { error } }) => {
                   return (
                     <>
-                      <Textbox icon={<FaEnvelope />} type="password" placeholder="Confirm Password" {...field} />
+                      <Textbox icon={<FaUnlockAlt />} type="password" placeholder="Confirm Password" {...field} />
+                      {error && <p style={{ color: "red" }}>{error.message}</p>}
                     </>
                   )
                 }
