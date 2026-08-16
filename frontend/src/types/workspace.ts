@@ -11,7 +11,7 @@ export const WorkspaceIcon = {
 export type WorkspaceIcon =
   (typeof WorkspaceIcon)[keyof typeof WorkspaceIcon];
 
-export interface WorkspaceInvite {
+export interface WorkspaceInviteFormValues {
   email: string;
   role: WorkspaceRole | "";
 }
@@ -21,5 +21,18 @@ export interface WorkspaceFormValues {
   workspaceName: string;
   description: string;
   icon: WorkspaceIcon;
-  invites: WorkspaceInvite[];
+  invites: WorkspaceInviteFormValues[];
+}
+
+export interface CreateWorkspaceInvite {
+  email: string;
+  role: WorkspaceRole;
+}
+
+// API payloads exclude the temporary empty values used while editing the form.
+export interface CreateWorkspacePayload {
+  workspaceName: string;
+  description: string;
+  icon: WorkspaceIcon;
+  invites: CreateWorkspaceInvite[];
 }

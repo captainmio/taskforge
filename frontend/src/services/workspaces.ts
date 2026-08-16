@@ -1,4 +1,4 @@
-import type { WorkspaceFormValues } from "../types/workspace";
+import type { CreateWorkspacePayload } from "../types/workspace";
 import { apiClient } from "./api";
 
 export interface CreateWorkspaceResponse {
@@ -7,7 +7,7 @@ export interface CreateWorkspaceResponse {
 }
 
 export const createWorkspace = async (
-  payload: WorkspaceFormValues
+  payload: CreateWorkspacePayload
 ): Promise<CreateWorkspaceResponse> => {
   const response = await apiClient.post<CreateWorkspaceResponse>("/workspaces", payload);
   return response.data;

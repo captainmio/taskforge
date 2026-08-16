@@ -76,6 +76,7 @@ const InviteMembersStep = ({
                     icon={<FaEnvelope />}
                     placeholder="name@example.com"
                     aria-invalid={Boolean(emailError)}
+                    aria-describedby={emailError ? `invite-email-${field.id}-error` : undefined}
                     {...register(`invites.${index}.email`, {
                       required: "Email address is required.",
                       pattern: {
@@ -85,7 +86,7 @@ const InviteMembersStep = ({
                     })}
                   />
                   {emailError && (
-                    <p className="mt-2 text-xs text-red-500" role="alert">
+                    <p id={`invite-email-${field.id}-error`} className="mt-2 text-xs text-red-500" role="alert">
                       {emailError.message}
                     </p>
                   )}
@@ -98,6 +99,7 @@ const InviteMembersStep = ({
                   <select
                     id={`invite-role-${field.id}`}
                     aria-invalid={Boolean(roleError)}
+                    aria-describedby={roleError ? `invite-role-${field.id}-error` : undefined}
                     className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-site-green focus:outline-none focus:ring-1 focus:ring-site-green"
                     {...register(`invites.${index}.role`, {
                       required: "Role is required.",
@@ -110,7 +112,7 @@ const InviteMembersStep = ({
                     <option value={WorkspaceRole.MEMBER}>{WorkspaceRole.MEMBER}</option>
                   </select>
                   {roleError && (
-                    <p className="mt-2 text-xs text-red-500" role="alert">
+                    <p id={`invite-role-${field.id}-error`} className="mt-2 text-xs text-red-500" role="alert">
                       {roleError.message}
                     </p>
                   )}

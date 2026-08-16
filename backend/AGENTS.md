@@ -256,5 +256,6 @@ If a new package is needed:
 ## Testing Standards
 
 * Mirror the backend architecture under `tests/unit/{validations,services}` and `tests/integration/routes`, use `*.test.ts` naming, and place shared fixtures, factories, and database utilities under `tests/helpers`.
+* Give each `it` or `test` case a clear behavior-based name that states the action or condition and the expected result (for example, `returns a conflict when the email already exists`); avoid vague names such as `works` or `handles errors` so developers can understand the test without reading its implementation.
 * For each feature, cover its successful path, validation failures, important business rules, expected conflicts, and unexpected failures at the appropriate layer without duplicating Playwright user journeys.
 * Keep tests independent and deterministic, provide simple npm scripts, use only a guarded isolated test database, apply migrations before integration runs, and clean test data between cases.

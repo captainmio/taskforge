@@ -11,18 +11,18 @@ export const FORM_ERROR = 'Form submission failed. Please check the highlighted 
 export const applyApiValidationErrors = <T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>
-): boolean => {
+): FieldPath<T>[] => {
   if (!axios.isAxiosError<ApiErrorResponse>(error)) {
-    return false;
+    return [];
   }
 
   const errors = error.response?.data?.errors;
 
   if (!errors?.length) {
-    return false;
+    return [];
   }
 
-  errors.forEach((serverError) => {
+  return errors.map((serverError) => {
     const fieldName = serverError.field
       .replace("body.", "") as FieldPath<T>;
 
@@ -30,7 +30,7 @@ export const applyApiValidationErrors = <T extends FieldValues>(
       type: "server",
       message: serverError.message
     });
-  });
 
-  return true;
+    return fieldName;
+  });
 };

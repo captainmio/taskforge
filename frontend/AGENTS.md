@@ -141,6 +141,7 @@ Use the existing application colors:
 
 * Use Vitest with Testing Library and jest-dom for frontend component and page tests; the shared jsdom setup belongs under `/src/test`.
 * Name test files `*.test.ts` or `*.test.tsx`, test user-visible behavior, and mock external API boundaries instead of implementation details.
+* Give each `it` or `test` case a clear behavior-based name that states the action or condition and the expected result (for example, `shows an email error when the address is invalid`); avoid vague names such as `works` or `handles errors` so developers can understand the test without reading its implementation.
 * Run `npm test`, `npm run lint`, and `npm run typecheck` after frontend test or feature changes; keep future browser end-to-end tests in a separate setup.
 
 ## Before Starting a Task

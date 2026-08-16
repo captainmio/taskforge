@@ -10,6 +10,8 @@ import WorkspaceReviewStep from "../../components/workspaces/WorkspaceReviewStep
 import Steps, { type StepItem } from "../../components/ui/Steps";
 import { createWorkspace as createWorkspaceRequest } from "../../services/workspaces";
 import { WorkspaceIcon, type WorkspaceFormValues } from "../../types/workspace";
+import { applyApiValidationErrors } from "../../utils/apiError";
+import { createWorkspacePayload } from "./utils/workspaceForm";
 
 const workspaceSteps = [
   { id: 1, label: "Workspace details" },
@@ -19,9 +21,6 @@ const workspaceSteps = [
 ] as const satisfies readonly StepItem[];
 
 type WorkspaceStepId = (typeof workspaceSteps)[number]["id"];
-
-// TODO: Replace this with the ID returned by the workspace creation API later. To be remove later
-const temporaryWorkspaceId = "new";
 
 const CreateWorkspace = () => {
   const navigate = useNavigate();
@@ -42,7 +41,7 @@ const CreateWorkspace = () => {
 
   // Dynamic invite paths ensure every visible email and role field is validated.
   const getCurrentStepFields = (): FieldPath<WorkspaceFormValues>[] => {
-    if (currentStep === 1) return ["workspaceName"];
+    if (currentStep === 1) return ["workspaceName", "description"];
 
     if (currentStep === 2) {
       return formMethods.getValues("invites").flatMap((_, index) => [
@@ -85,16 +84,18 @@ const CreateWorkspace = () => {
   const submitWorkspace = (): void => {
     void formMethods.handleSubmit(async (values) => {
       try {
-        await createWorkspaceRequest(values);
+        await createWorkspaceRequest(createWorkspacePayload(values));
         advanceToNextStep();
-      } catch {
-        // The shared API interceptor displays the backend error to the user.
+      } catch (error: unknown) {
+        const errorFields = applyApiValidationErrors(error, formMethods.setError);
+
+        if (errorFields.some((field) => field.startsWith("invites."))) {
+          goToStep(2);
+        } else if (errorFields.length > 0) {
+          goToStep(1);
+        }
       }
     })();
-  };
-
-  const goToCreateProject = (): void => {
-    navigate(`/workspace/${temporaryWorkspaceId}/create-project`);
   };
 
   return (
@@ -114,7 +115,10 @@ const CreateWorkspace = () => {
         <section className="mx-auto mt-8 grid max-w-6xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg lg:min-h-[620px] lg:grid-cols-2">
           <div className="p-6 sm:p-8 lg:p-10">
             {currentStep === 1 ? (
-              <WorkspaceDetailsStep onContinue={continueToNextStep} />
+              <WorkspaceDetailsStep
+                onContinue={continueToNextStep}
+                onCancel={() => navigate("/dashboard")}
+              />
             ) : currentStep === 2 ? (
               <InviteMembersStep
                 onBack={goToPreviousStep}
@@ -132,8 +136,6 @@ const CreateWorkspace = () => {
             ) : (
               <WorkspaceDoneStep
                 onGoToWorkspace={() => navigate("/dashboard")}
-                onCreateProject={goToCreateProject}
-                onInviteMembers={() => goToStep(2)}
               />
             )}
           </div>
@@ -142,10 +144,7 @@ const CreateWorkspace = () => {
             {currentStep < 4 ? (
               <WorkspaceLivePreview />
             ) : (
-              <WorkspaceNextActions
-                onCreateProject={goToCreateProject}
-                onInviteMembers={() => goToStep(2)}
-              />
+              <WorkspaceNextActions />
             )}
           </aside>
         </section>

@@ -1,4 +1,4 @@
-import  { type WorkspaceRole as WorkspaceRoleType, WorkspaceRole } from "../../types/roles";
+import { type WorkspaceRole as WorkspaceRoleType, WorkspaceRole } from "../../types/roles";
 import Badge, { type BadgeVariant } from "../ui/Badge";
 import InitialsAvatar from "../ui/InitialsAvatar";
 

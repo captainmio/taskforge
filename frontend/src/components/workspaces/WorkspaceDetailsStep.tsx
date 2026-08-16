@@ -12,9 +12,10 @@ import { workspaceIconOptions } from "./workspaceIconOptions";
 
 interface WorkspaceDetailsStepProps {
   onContinue: () => void;
+  onCancel: () => void;
 }
 
-const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
+const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProps) => {
   const {
     register,
     control,
@@ -42,17 +43,22 @@ const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
             icon={<FaBuilding />}
             placeholder="e.g. Acme Development Team"
             aria-invalid={Boolean(errors.workspaceName)}
+            aria-describedby={errors.workspaceName ? "workspace-name-error" : "workspace-name-help"}
             {...register("workspaceName", {
               required: "Workspace name is required.",
               validate: (value) => value.trim().length > 0 || "Workspace name is required.",
+              maxLength: {
+                value: 100,
+                message: "Workspace name must be 100 characters or fewer.",
+              },
             })}
           />
           {errors.workspaceName ? (
-            <p className="mt-2 text-xs text-red-500" role="alert">
+            <p id="workspace-name-error" className="mt-2 text-xs text-red-500" role="alert">
               {errors.workspaceName.message}
             </p>
           ) : (
-            <p className="mt-2 text-xs text-gray-500">This will be the name of your workspace.</p>
+            <p id="workspace-name-help" className="mt-2 text-xs text-gray-500">This will be the name of your workspace.</p>
           )}
         </div>
 
@@ -66,11 +72,24 @@ const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
             placeholder="e.g. We build great products together."
             height={112}
             resizable={false}
-            {...register("description")}
+            aria-invalid={Boolean(errors.description)}
+            aria-describedby={errors.description ? "workspace-description-error" : "workspace-description-help"}
+            {...register("description", {
+              maxLength: {
+                value: 500,
+                message: "Description must be 500 characters or fewer.",
+              },
+            })}
           />
-          <p className="mt-2 text-xs text-gray-500">
-            A short description to help your team understand the purpose of this workspace.
-          </p>
+          {errors.description ? (
+            <p id="workspace-description-error" className="mt-2 text-xs text-red-500" role="alert">
+              {errors.description.message}
+            </p>
+          ) : (
+            <p id="workspace-description-help" className="mt-2 text-xs text-gray-500">
+              A short description to help your team understand the purpose of this workspace.
+            </p>
+          )}
         </div>
 
         <fieldset>
@@ -100,6 +119,7 @@ const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
 
         <button
           type="button"
+          onClick={onCancel}
           className="mx-auto block cursor-pointer text-sm text-gray-500 underline underline-offset-4 hover:text-gray-700"
         >
           Cancel

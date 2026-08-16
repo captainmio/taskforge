@@ -1,5 +1,6 @@
 import { useFormContext, useWatch } from "react-hook-form";
 import type { WorkspaceFormValues } from "../../types/workspace";
+import { getCompleteWorkspaceInvites } from "../../pages/workspaces/utils/workspaceForm";
 import WorkspacePreviewPanel from "./WorkspacePreviewPanel";
 
 const WorkspaceLivePreview = () => {
@@ -9,10 +10,7 @@ const WorkspaceLivePreview = () => {
   const icon = useWatch({ control, name: "icon" });
   const invites = useWatch({ control, name: "invites" });
 
-  // Empty invite rows are form drafts and should not count as invited members.
-  const invitedMemberCount = invites.filter(
-    (invite) => invite.email.trim().length > 0 && invite.role !== ""
-  ).length;
+  const invitedMemberCount = getCompleteWorkspaceInvites(invites).length;
 
   return (
     <WorkspacePreviewPanel

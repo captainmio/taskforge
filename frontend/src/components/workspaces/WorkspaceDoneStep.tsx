@@ -1,6 +1,7 @@
 import { useFormContext, useWatch } from "react-hook-form";
 import { FaArrowRight, FaEnvelope } from "react-icons/fa";
 import type { WorkspaceFormValues } from "../../types/workspace";
+import { getCompleteWorkspaceInvites } from "../../pages/workspaces/utils/workspaceForm";
 import IconDescriptionItem from "../ui/IconDescriptionItem";
 import SubmitButton from "../ui/SubmitButton";
 import SuccessState from "../ui/SuccessState";
@@ -8,7 +9,7 @@ import SuccessState from "../ui/SuccessState";
 interface WorkspaceDoneStepProps {
   onGoToWorkspace: () => void;
   onCreateProject?: () => void;
-  onInviteMembers: () => void;
+  onInviteMembers?: () => void;
 }
 
 const WorkspaceDoneStep = ({
@@ -19,9 +20,7 @@ const WorkspaceDoneStep = ({
   const { control } = useFormContext<WorkspaceFormValues>();
   const workspaceName = useWatch({ control, name: "workspaceName" });
   const invites = useWatch({ control, name: "invites" });
-  const completedInvites = invites.filter(
-    (invite) => invite.email.trim().length > 0 && invite.role !== ""
-  ).length;
+  const completedInvites = getCompleteWorkspaceInvites(invites).length;
 
   const invitationTitle =
     completedInvites === 0
@@ -30,7 +29,7 @@ const WorkspaceDoneStep = ({
   const invitationDescription =
     completedInvites === 0
       ? "You can invite members from your workspace later."
-      : "Invitations will be sent when backend workspace creation is connected.";
+      : "Your invitations were included with the workspace request.";
 
   return (
     <div className="flex h-full flex-col">
@@ -70,7 +69,9 @@ const WorkspaceDoneStep = ({
         <button
           type="button"
           onClick={onInviteMembers}
-          className="mx-auto block cursor-pointer text-sm text-gray-500 underline underline-offset-4 hover:text-gray-700"
+          disabled={!onInviteMembers}
+          title={!onInviteMembers ? "Available after workspace details are returned" : undefined}
+          className="mx-auto block cursor-pointer text-sm text-gray-500 underline underline-offset-4 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Invite more members
         </button>

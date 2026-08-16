@@ -3,7 +3,7 @@ import ActionCard from "../ui/ActionCard";
 
 interface WorkspaceNextActionsProps {
   onCreateProject?: () => void;
-  onInviteMembers: () => void;
+  onInviteMembers?: () => void;
   onOpenSettings?: () => void;
 }
 
@@ -31,6 +31,7 @@ const WorkspaceNextActions = ({
           description="Grow your team and collaborate."
           iconContainerClassName="bg-blue-50 text-blue-600"
           onClick={onInviteMembers}
+          disabled={!onInviteMembers}
         />
         <ActionCard
           icon={<FaCog />}
