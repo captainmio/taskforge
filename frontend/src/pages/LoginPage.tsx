@@ -6,6 +6,7 @@ import { getCurrentUser, login } from "../services/auth"
 import { getWorkspaceDestination } from "./workspaces/utils/workspaceRouting"
 import { Link, useNavigate, useSearchParams } from "react-router"
 import { getSafeReturnTo } from "../utils/authReturn"
+import AppFooter from "../components/ui/AppFooter"
 
 interface FormInput {
     email: string;
@@ -38,7 +39,8 @@ const LoginPage = () => {
     }
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="flex min-h-screen flex-col bg-gray-100">
+          <main className="flex flex-1 items-center justify-center px-4 py-8">
             <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div>
@@ -94,7 +96,9 @@ const LoginPage = () => {
                     </div>
                 </form>
             </section>
-        </main>
+          </main>
+          <AppFooter />
+        </div>
     )
 }
 

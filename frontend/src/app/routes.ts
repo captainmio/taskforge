@@ -6,6 +6,7 @@ import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
 import CreateProject from "../pages/projects/CreateProject";
 import AcceptInvitation from "../pages/invitations/AcceptInvitation";
+import WorkspaceOverview from "../pages/workspaces/WorkspaceOverview";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard",
         Component: Dashboard,
+      },
+      {
+        path: "/workspace/:id",
+        Component: WorkspaceOverview,
       },
       {
         path: "/create-workspace",

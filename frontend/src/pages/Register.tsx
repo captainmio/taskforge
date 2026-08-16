@@ -10,6 +10,7 @@ import {
 } from "../services/auth";
 import { applyApiValidationErrors } from "../utils/apiError";
 import { getSafeReturnTo } from "../utils/authReturn";
+import AppFooter from "../components/ui/AppFooter";
 
 type RegistrationForm = RegisterPayload & {
   confirmPassword: string;
@@ -74,8 +75,9 @@ export const Register = () => {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100">
-      <section className="w-full max-w-xl rounded-2xl bg-white p-8 shadow">
+    <div className="flex min-h-screen flex-col bg-gray-100">
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <section className="w-full max-w-xl rounded-2xl bg-white p-8 shadow">
         <div className="mb-6 flex justify-end">
           <span className="text-sm text-content-text">
             Already have an account?
@@ -222,7 +224,9 @@ export const Register = () => {
             </SubmitButton>
           </div>
         </form>
-      </section>
-    </main>
+        </section>
+      </main>
+      <AppFooter />
+    </div>
   );
 };

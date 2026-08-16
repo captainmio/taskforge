@@ -3,7 +3,15 @@ import { getInitials } from "../../utils/getInitials";
 interface InitialsAvatarProps {
   value: string;
   label?: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
 }
+
+const sizeClasses = {
+  sm: "size-8 text-[11px]",
+  md: "size-9 text-xs",
+  lg: "size-12 text-sm",
+} as const;
 
 const colorClasses = [
   "bg-purple-100 text-purple-600",
@@ -19,14 +27,19 @@ const colorClasses = [
   "bg-lime-100 text-lime-700",
 ] as const;
 
-const InitialsAvatar = ({ value, label = value }: InitialsAvatarProps) => {
+const InitialsAvatar = ({
+  value,
+  label = value,
+  size = "md",
+  className = "",
+}: InitialsAvatarProps) => {
   // A stable character sum keeps the same person on the same color across renders.
   const colorIndex = [...value].reduce((total, character) => total + character.charCodeAt(0), 0);
   const colorClass = colorClasses[colorIndex % colorClasses.length];
 
   return (
     <span
-      className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colorClass}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ring-2 ring-white ${sizeClasses[size]} ${colorClass} ${className}`}
       aria-label={label}
     >
       {getInitials(value)}

@@ -4,6 +4,7 @@ import { FaEnvelopeOpenText } from "react-icons/fa";
 import { Link, useSearchParams } from "react-router";
 import SubmitButton from "../../components/ui/SubmitButton";
 import SuccessState from "../../components/ui/SuccessState";
+import AppFooter from "../../components/ui/AppFooter";
 import { acceptWorkspaceInvitation } from "../../services/invitations";
 
 interface InvitationErrorResponse {
@@ -58,31 +59,35 @@ const AcceptInvitation = () => {
 
   if (pageState === "accepted") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-        <section className="w-full max-w-lg rounded-2xl bg-white p-8 shadow">
-          <SuccessState
-            title="Invitation accepted"
-            description={`You have joined ${acceptedWorkspaceName} and can now continue to your dashboard.`}
-          />
-          <Link
-            to="/dashboard"
-            className="mt-8 block rounded-lg bg-site-green p-4 text-center font-semibold text-white"
-          >
-            Go to dashboard
-          </Link>
-        </section>
-      </main>
+      <div className="flex min-h-screen flex-col bg-gray-100">
+        <main className="flex flex-1 items-center justify-center px-4 py-8">
+          <section className="w-full max-w-lg rounded-2xl bg-white p-8 shadow">
+            <SuccessState
+              title="Invitation accepted"
+              description={`You have joined ${acceptedWorkspaceName} and can now continue to your dashboard.`}
+            />
+            <Link
+              to="/dashboard"
+              className="mt-8 block rounded-lg bg-site-green p-4 text-center font-semibold text-white"
+            >
+              Go to dashboard
+            </Link>
+          </section>
+        </main>
+        <AppFooter />
+      </div>
     );
   }
 
   const hasToken = token.length > 0;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <section
-        aria-labelledby="invitation-title"
-        className="w-full max-w-lg rounded-2xl bg-white p-8 text-center shadow"
-      >
+    <div className="flex min-h-screen flex-col bg-gray-100">
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <section
+          aria-labelledby="invitation-title"
+          className="w-full max-w-lg rounded-2xl bg-white p-8 text-center shadow"
+        >
         <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-green-50 text-site-green">
           <FaEnvelopeOpenText className="size-7" aria-hidden="true" />
         </span>
@@ -154,8 +159,10 @@ const AcceptInvitation = () => {
         >
           Return to login
         </Link>
-      </section>
-    </main>
+        </section>
+      </main>
+      <AppFooter />
+    </div>
   );
 };
 

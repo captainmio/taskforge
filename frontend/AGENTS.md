@@ -22,6 +22,7 @@
 * `/components`
 
   * Reusable UI components.
+  * `/ui` this are low-level ui components
 
 * `/hooks`
 
@@ -75,6 +76,12 @@
 * Check existing components before creating a new one.
 * Reuse or extend an existing component when practical.
 * Create a new component when it has a clear responsibility or can be reused.
+* Design new reusable components around generic UI behavior rather than a specific feature or domain.
+  * Name components after their visual or behavioral responsibility, such as `PageHeader`, `StatCard`, `ListItem`, or `AppSidebar`.
+  * Pass feature-specific labels, icons, data, actions, and navigation targets through props.
+  * Keep feature-specific composition and business rules in the relevant page or feature component.
+  * Do not prefix a shared component with a feature or domain name when the same UI pattern can be used elsewhere.
+  * A domain- or page-specific component is acceptable when there is strong reason to believe its UI and behavior are unique to that domain or page and making it generic would add unnecessary abstraction.
 * Split large components when they:
 
   * Handle multiple responsibilities.
@@ -86,6 +93,20 @@
   * Explain what will change.
   * Explain why the change is needed.
   * Avoid adding unnecessary complexity.
+
+## Component Reuse Review
+
+Before proposing or creating a new component:
+
+* Search all existing components for similar structure, behavior, and visual responsibility.
+* Compare component APIs and rendered markup, not only component names.
+* For each proposed component, identify:
+
+  * Existing components reviewed.
+  * Why direct reuse is or is not appropriate.
+  * Whether extending or composing an existing component would avoid duplication.
+* Do not create the component until this comparison has been reported to the user.
+* Prefer extending or composing an existing component when most of the structure or behavior already exists.
 
 ## Hooks
 

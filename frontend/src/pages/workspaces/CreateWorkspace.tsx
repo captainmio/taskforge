@@ -8,6 +8,7 @@ import WorkspaceLivePreview from "../../components/workspaces/WorkspaceLivePrevi
 import WorkspaceNextActions from "../../components/workspaces/WorkspaceNextActions";
 import WorkspaceReviewStep from "../../components/workspaces/WorkspaceReviewStep";
 import Steps, { type StepItem } from "../../components/ui/Steps";
+import AppFooter from "../../components/ui/AppFooter";
 import { createWorkspace as createWorkspaceRequest } from "../../services/workspaces";
 import { WorkspaceIcon, type WorkspaceFormValues } from "../../types/workspace";
 import { applyApiValidationErrors } from "../../utils/apiError";
@@ -24,7 +25,6 @@ type WorkspaceStepId = (typeof workspaceSteps)[number]["id"];
 
 const CreateWorkspace = () => {
   const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
   const [currentStep, setCurrentStep] = useState<WorkspaceStepId>(1);
   const formMethods = useForm<WorkspaceFormValues>({
     defaultValues: {
@@ -149,9 +149,7 @@ const CreateWorkspace = () => {
           </aside>
         </section>
 
-        <footer className="mt-6 text-center text-xs text-gray-500 sm:text-sm">
-          &copy; {currentYear} Taskforge. All rights reserved.
-        </footer>
+        <AppFooter className="mt-1" />
       </main>
     </FormProvider>
   );
