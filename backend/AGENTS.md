@@ -243,3 +243,9 @@ If a new package is needed:
 * Do not create separate types, helpers, classes, or wrappers for every layer when they represent the same concept and provide no additional behavior.
 * Use descriptive names and straightforward control flow so developers can understand the code without unnecessary indirection.
 * Optimize for maintainability and consistency with the existing codebase rather than applying patterns mechanically.
+
+## Testing Standards
+
+* Mirror the backend architecture under `tests/unit/{validations,services}` and `tests/integration/routes`, use `*.test.ts` naming, and place shared fixtures, factories, and database utilities under `tests/helpers`.
+* For each feature, cover its successful path, validation failures, important business rules, expected conflicts, and unexpected failures at the appropriate layer without duplicating Playwright user journeys.
+* Keep tests independent and deterministic, provide simple npm scripts, use only a guarded isolated test database, apply migrations before integration runs, and clean test data between cases.

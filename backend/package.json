@@ -7,7 +7,12 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:typecheck && vitest run --config vitest.config.ts",
+    "test:typecheck": "tsc --project tsconfig.test.json",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:db:migrate": "prisma migrate deploy --config prisma.test.config.ts",
+    "test:integration": "npm run test:db:migrate && vitest run --config vitest.database.config.ts",
+    "test:all": "npm test && npm run test:integration"
   },
   "keywords": [],
   "author": "",
@@ -33,9 +38,12 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.2.0",
     "@types/pg": "^8.21.0",
+    "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.14",
     "prisma": "^7.9.1",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.12",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.0"
   }
 }
