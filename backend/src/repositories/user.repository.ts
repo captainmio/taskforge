@@ -14,3 +14,15 @@ export const createUser = async (data: CreateUserData) => {
 export const findUserByEmail = async (email: string) => {
   return prisma.user.findUnique({ where: { email } });
 };
+
+export const findUserWithWorkspaceMembershipsById = async (id: number) =>
+  prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      firstname: true,
+      lastname: true,
+      workspaceMemberships: { select: { workspaceId: true } },
+    },
+  });

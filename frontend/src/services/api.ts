@@ -22,7 +22,10 @@ apiClient.interceptors.response.use(
     }
 
     const isAuthCheck = error.config?.url?.endsWith("/auth/me");
-    if (!isAuthCheck) {
+    const isInvitationAcceptance = error.config?.url?.endsWith(
+      "/workspaces/invitations/accept",
+    );
+    if (!isAuthCheck && !isInvitationAcceptance) {
       toast.error(error.response.data?.error ?? "Something went wrong.");
     }
     return Promise.reject(error);

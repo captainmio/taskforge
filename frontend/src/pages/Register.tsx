@@ -1,6 +1,6 @@
 import { FaEnvelope, FaUnlockAlt, FaUser } from "react-icons/fa";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "react-toastify";
 import SubmitButton from "../components/ui/SubmitButton";
 import Textbox from "../components/ui/Textbox";
@@ -9,6 +9,7 @@ import {
   type RegisterPayload,
 } from "../services/auth";
 import { applyApiValidationErrors } from "../utils/apiError";
+import { getSafeReturnTo } from "../utils/authReturn";
 
 type RegistrationForm = RegisterPayload & {
   confirmPassword: string;
@@ -31,6 +32,11 @@ const FieldError = ({ id, message }: FieldErrorProps) => {
 
 export const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
+  const loginDestination: string = returnTo
+    ? `/?returnTo=${encodeURIComponent(returnTo)}`
+    : "/";
   const {
     register,
     handleSubmit,
@@ -60,7 +66,7 @@ export const Register = () => {
 
       if (response.success) {
         toast.success("Account successfully created");
-        navigate("/", { replace: true });
+        navigate(loginDestination, { replace: true });
       }
     } catch (error: unknown) {
       applyApiValidationErrors(error, setError);
@@ -73,7 +79,7 @@ export const Register = () => {
         <div className="mb-6 flex justify-end">
           <span className="text-sm text-content-text">
             Already have an account?
-            <Link className="ml-1 font-bold text-site-green" to="/">
+            <Link className="ml-1 font-bold text-site-green" to={loginDestination}>
               Login
             </Link>
           </span>

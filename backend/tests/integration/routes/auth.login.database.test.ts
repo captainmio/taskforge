@@ -6,6 +6,7 @@ import app from "../../../src/app.js";
 import { BCRYPT_SALT_ROUNDS, JWT_SECRET } from "../../../src/config/auth.js";
 import { prisma } from "../../../src/config/database.js";
 import { authTokenPayloadSchema } from "../../../src/validations/auth.validation.js";
+import { clearTestDatabase } from "../../helpers/database.js";
 import { validLogin } from "../../helpers/login.fixture.js";
 
 const seedUser = async () => {
@@ -26,7 +27,7 @@ const seedUser = async () => {
 
 describe("POST /api/auth/login with PostgreSQL", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await clearTestDatabase();
   });
 
   afterAll(async () => {

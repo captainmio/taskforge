@@ -5,6 +5,7 @@ import { validRegistration } from "../../helpers/registration.fixture.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/services/auth.service.js", () => ({
+  getCurrentUser: vi.fn(),
   registerUser: vi.fn(),
 }));
 

@@ -4,7 +4,8 @@ import SubmitButton from "../components/ui/SubmitButton"
 import { useLoading } from "../hooks/useLoading"
 import { getCurrentUser, login } from "../services/auth"
 import { getWorkspaceDestination } from "./workspaces/utils/workspaceRouting"
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useSearchParams } from "react-router"
+import { getSafeReturnTo } from "../utils/authReturn"
 
 interface FormInput {
     email: string;
@@ -22,6 +23,8 @@ const LoginPage = () => {
 
     const loading = useLoading();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
 
     const onSubmit: SubmitHandler<FormInput> = async (data) => {
         await loading.run(async () => {
@@ -29,7 +32,7 @@ const LoginPage = () => {
 
             if (response.success) {
                 const currentUser = await getCurrentUser();
-                navigate(getWorkspaceDestination(currentUser.workspaceIds));
+                navigate(returnTo ?? getWorkspaceDestination(currentUser.workspaceIds));
             }
         });
     }
@@ -81,7 +84,12 @@ const LoginPage = () => {
                     <div className="w-full flex justify-center mt-4">
                         <span className="text-content-text">
                             Don't have an account? 
-                            <Link className="ml-1 text-site-green font-bold" to="/register">Register new</Link>
+                            <Link
+                                className="ml-1 text-site-green font-bold"
+                                to={returnTo ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register"}
+                            >
+                                Register new
+                            </Link>
                         </span>
                     </div>
                 </form>

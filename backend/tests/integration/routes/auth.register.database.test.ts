@@ -4,10 +4,11 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import app from "../../../src/app.js";
 import { prisma } from "../../../src/config/database.js";
 import { validRegistration } from "../../helpers/registration.fixture.js";
+import { clearTestDatabase } from "../../helpers/database.js";
 
 describe("POST /api/auth/register with PostgreSQL", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await clearTestDatabase();
   });
 
   afterAll(async () => {

@@ -4,8 +4,10 @@ import { z } from "zod";
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-  FRONTEND_API: z.url().optional(),
+  FRONTEND_API: z.url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  REDIS_URL: z.url({ protocol: /^rediss?$/ }).default("redis://127.0.0.1:6379"),
+  INVITATION_LOG_PATH: z.string().min(1).default("logs/invitations.log"),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(31).default(12),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
 });

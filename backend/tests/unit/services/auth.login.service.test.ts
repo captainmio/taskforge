@@ -21,6 +21,7 @@ vi.mock("jsonwebtoken", () => ({
 
 vi.mock("../../../src/repositories/user.repository.js", () => ({
   findUserByEmail: vi.fn(),
+  findUserWithWorkspaceMembershipsById: vi.fn(),
 }));
 
 const storedUser = {

@@ -7,7 +7,7 @@ A full-stack web application with a React frontend and an Express API. The backe
 | Area | Main technologies |
 | --- | --- |
 | Frontend | TypeScript, React 19, Vite, Tailwind CSS, React Router, Axios, React Hook Form |
-| Backend | TypeScript, Node.js, Express 5, PostgreSQL, Prisma ORM, Zod, JWT, bcrypt |
+| Backend | TypeScript, Node.js, Express 5, PostgreSQL, Prisma ORM, Redis, BullMQ, Zod, JWT, bcrypt |
 | Backend testing | Vitest and Supertest |
 
 ## Prerequisites
@@ -15,6 +15,7 @@ A full-stack web application with a React frontend and an Express API. The backe
 - Node.js 22.12 or newer
 - npm
 - A PostgreSQL database, such as Neon
+- Docker for the local Redis service
 
 ## Setup
 
@@ -36,6 +37,9 @@ FRONTEND_API="http://localhost:5173"
 DATABASE_URL="YOUR_POSTGRESQL_CONNECTION_STRING"
 BCRYPT_SALT_ROUNDS=12
 JWT_SECRET="REPLACE_WITH_A_SECURE_SECRET"
+REDIS_PORT=6379
+REDIS_URL="redis://127.0.0.1:6379"
+INVITATION_LOG_PATH="logs/invitations.log"
 ```
 
 Create `frontend/.env`:
@@ -57,12 +61,21 @@ npx prisma migrate deploy
 
 ## Running the Application
 
-Start the backend from one terminal:
+Start Redis:
+
+```bash
+cd backend
+docker compose up -d redis
+```
+
+Start the backend API and invitation worker together from one terminal:
 
 ```bash
 cd backend
 npm run dev
 ```
+
+For troubleshooting, run them separately with `npm run dev:api` and `npm run dev:worker`.
 
 Start the frontend from another terminal:
 
@@ -70,6 +83,8 @@ Start the frontend from another terminal:
 cd frontend
 npm run dev
 ```
+
+The invitation worker processes BullMQ jobs and currently writes invitation emails to `backend/logs/invitations.log`. After running `npm run build`, production should run the API with `npm start` and the compiled worker as a separate process with `npm run worker:invitations:start`.
 
 The frontend runs at `http://localhost:5173` and the API runs at `http://localhost:3000/api` by default.
 

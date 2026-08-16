@@ -146,6 +146,10 @@ Use the existing application colors:
 
 ## Before Starting a Task
 
+* When the user provides `FTASK`, first respond with a brief flow of the frontend work you plan to perform.
+* Do not create or modify files during this planning step, even when `FTASK` is already provided.
+* Wait for the user to confirm the proposed flow before implementing the frontend changes.
+
 * Review and understand the requested change.
 * Review the existing related frontend code.
 * Check for reusable:

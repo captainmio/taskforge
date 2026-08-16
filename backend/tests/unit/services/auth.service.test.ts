@@ -15,6 +15,7 @@ vi.mock("bcrypt", () => ({
 
 vi.mock("../../../src/repositories/user.repository.js", () => ({
   createUser: vi.fn(),
+  findUserWithWorkspaceMembershipsById: vi.fn(),
 }));
 
 const createdUser = {

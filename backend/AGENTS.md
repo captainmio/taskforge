@@ -15,6 +15,7 @@
 * Cookie Parser
 * dotenv
 * `tsx` and Nodemon for development
+* Redis and BullMQ for background jobs
 
 ## Folder Structure
 
@@ -51,6 +52,16 @@
 
   * Holds database-related queries and operations.
   * Repository logic should interact with Prisma.
+
+* `/queues`
+
+  * Holds BullMQ queue definitions, job payloads, and producer functions.
+  * Keep business logic in services and job processing in workers.
+
+* `/workers`
+
+  * Holds background BullMQ consumers that run separately from the API process.
+  * Workers should call services or repositories instead of handling HTTP concerns.
 
 * `/validations`
 
@@ -210,6 +221,10 @@ If a new package is needed:
 * Avoid comments that simply repeat what the code already says.
 
 ## Before Starting a Task
+
+* When the user provides `BTASK`, first respond with a brief flow of the backend work you plan to perform.
+* Do not create or modify files during this planning step, even when `BTASK` is already provided.
+* Wait for the user to confirm the proposed flow before implementing the backend changes.
 
 * Review and understand the requested change.
 * Review the existing backend implementation related to the task.

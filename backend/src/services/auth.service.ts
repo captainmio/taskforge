@@ -13,6 +13,7 @@ import { Prisma } from "../generated/prisma/client.js";
 import {
   createUser,
   findUserByEmail,
+  findUserWithWorkspaceMembershipsById,
 } from "../repositories/user.repository.js";
 import type {
   LoginBody,
@@ -66,4 +67,15 @@ export const registerUser = async (registration: RegisterBody) => {
 
     throw error;
   }
+};
+
+export const getCurrentUser = async (userId: number) => {
+  const user = await findUserWithWorkspaceMembershipsById(userId);
+  if (!user) return null;
+
+  const { workspaceMemberships, ...userDetails } = user;
+  return {
+    user: userDetails,
+    workspaceIds: workspaceMemberships.map(({ workspaceId }) => workspaceId),
+  };
 };

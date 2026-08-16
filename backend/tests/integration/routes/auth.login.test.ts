@@ -5,6 +5,7 @@ import { validLogin } from "../../helpers/login.fixture.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/services/auth.service.js", () => ({
+  getCurrentUser: vi.fn(),
   loginUser: vi.fn(),
 }));
 

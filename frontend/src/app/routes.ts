@@ -5,8 +5,13 @@ import Dashboard from "../pages/Dashboard";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
 import CreateProject from "../pages/projects/CreateProject";
+import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 
 export const router = createBrowserRouter([
+  {
+    path: "/invitations/accept",
+    Component: AcceptInvitation,
+  },
   {
     Component: GuestRoute,
     children: [

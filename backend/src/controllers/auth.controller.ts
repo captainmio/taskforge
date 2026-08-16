@@ -6,12 +6,16 @@ import {
     JWT_COOKIE_NAME,
     JWT_COOKIE_OPTIONS,
 } from "../config/auth.js";
-import { prisma } from "../config/database.js";
 import {
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
 } from "../errors/auth.errors.js";
-import { loginUser, registerUser } from "../services/auth.service.js";
+import {
+    getCurrentUser,
+    loginUser,
+    registerUser,
+} from "../services/auth.service.js";
+import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
     LoginBody,
     RegisterBody,
@@ -46,23 +50,20 @@ const login = async (
     }
 };
 
-const me = async (req: Request, res: Response) => {
-    if (!req.user) {
+const me = async (req: AuthenticatedRequest, res: Response) => {
+    const result = await getCurrentUser(req.user.id);
+
+    if (!result) {
         return res.status(401).json({
             success: false,
             error: "Authentication required",
         });
     }
 
-    const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { id: true, email: true, firstname: true, lastname: true },
-    });
-
     return res.status(200).json({
         success: true,
-        workspaceIds: [],
-        user,
+        workspaceIds: result.workspaceIds,
+        user: result.user,
     });
 };
 
