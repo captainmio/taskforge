@@ -2,8 +2,7 @@ import { apiClient } from "./api"
 
 export interface RegisterResponse {
     success: boolean;
-    data?: Record<string, unknown>;
-    error?: string;
+    message: string;
 }
 
 export interface User {
