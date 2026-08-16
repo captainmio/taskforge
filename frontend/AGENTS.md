@@ -46,6 +46,11 @@
   * Generic helper functions.
   * Avoid placing component-specific logic here.
 
+* `/test`
+
+  * Shared Vitest setup and reusable testing utilities.
+  * Keep page, component, hook, and utility `*.test.ts` or `*.test.tsx` files beside the source file they test.
+
 * `index.css`
 
   * Custom CSS.
@@ -132,6 +137,12 @@ Use the existing application colors:
   * Code that may not be immediately obvious.
 * Avoid comments that simply repeat what the code already says.
 
+## Testing
+
+* Use Vitest with Testing Library and jest-dom for frontend component and page tests; the shared jsdom setup belongs under `/src/test`.
+* Name test files `*.test.ts` or `*.test.tsx`, test user-visible behavior, and mock external API boundaries instead of implementation details.
+* Run `npm test`, `npm run lint`, and `npm run typecheck` after frontend test or feature changes; keep future browser end-to-end tests in a separate setup.
+
 ## Before Starting a Task
 
 * Review and understand the requested change.
@@ -158,6 +169,7 @@ Use the existing application colors:
 * Run:
 
 ```bash
+npm test
 npm run lint
 npm run typecheck
 ```

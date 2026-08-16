@@ -57,6 +57,12 @@
   * Holds reusable Zod schemas.
   * Use these schemas to validate request data before it reaches the controller.
 
+* `/tests`
+
+  * `/unit` mirrors backend layers such as validations and services.
+  * `/integration/routes` holds API and database integration tests.
+  * `/helpers` holds shared fixtures, environment safeguards, and database utilities.
+
 ## Architecture
 
 ```text

@@ -41,8 +41,11 @@ JWT_SECRET="REPLACE_WITH_A_SECURE_SECRET"
 Create `frontend/.env`:
 
 ```env
+VITE_APP_URL="http://localhost:5173/"
 VITE_API_URL="http://localhost:3000/api"
 ```
+
+`VITE_APP_URL` sets the browser origin used by frontend tests. Update it to match the frontend URL when running on a different host or port.
 
 Generate Prisma Client and apply the existing database migrations:
 
@@ -70,9 +73,20 @@ npm run dev
 
 The frontend runs at `http://localhost:5173` and the API runs at `http://localhost:3000/api` by default.
 
+## Frontend Tests
+
+Frontend tests use Vitest and Testing Library with a simulated browser environment. They run independently from the backend and do not require a database.
+
+Run these commands from the `frontend` directory:
+
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Runs the frontend test suite once. |
+| `npm run test:watch` | Re-runs relevant frontend tests as files change. |
+
 ## Backend Tests
 
-These tests apply only to the backend. They check that validation, business logic, API responses, and database operations continue working as features are added. Frontend tests will use a separate setup and separate commands.
+These tests apply only to the backend. They check that validation, business logic, API responses, and database operations continue working as features are added.
 
 Run all commands in this section from the `backend` directory:
 
