@@ -1,7 +1,13 @@
 import { type Request, type Response, type NextFunction } from "express";
-import { type ZodSchema } from "zod";
+import { type ZodType } from "zod";
 
-export const validate = (schema: ZodSchema) => {
+type RequestValidationData = {
+  body?: unknown;
+  params?: unknown;
+  query?: unknown;
+};
+
+export const validate = <T extends RequestValidationData>(schema: ZodType<T>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = schema.safeParse({
       body: req.body,
@@ -19,14 +25,8 @@ export const validate = (schema: ZodSchema) => {
       });
     }
 
-    const validatedData = result.data;
-
-    if (
-      typeof validatedData === "object" &&
-      validatedData !== null &&
-      "body" in validatedData
-    ) {
-      req.body = validatedData.body;
+    if (result.data.body !== undefined) {
+      req.body = result.data.body;
     }
 
     next();

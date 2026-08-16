@@ -1,14 +1,14 @@
-import "dotenv/config";
-export const BCRYPT_SALT_ROUNDS = Number(
-  process.env.BCRYPT_SALT_ROUNDS ?? 12
-);
+import type { CookieOptions } from "express";
+import { env } from "./env.js";
 
-const jwtSecret = process.env.JWT_SECRET;
-export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "1d";
+export const BCRYPT_SALT_ROUNDS = env.BCRYPT_SALT_ROUNDS;
+
+export const AUTH_SESSION_DURATION_SECONDS = 24 * 60 * 60;
 export const JWT_COOKIE_NAME = "accessToken";
+export const JWT_COOKIE_OPTIONS: CookieOptions = {
+  httpOnly: true,
+  secure: env.NODE_ENV === "production",
+  sameSite: "lax",
+};
 
-if (!jwtSecret) {
-  throw new Error("JWT_SECRET is not configured");
-}
-
-export const JWT_SECRET: string = jwtSecret;
+export const JWT_SECRET = env.JWT_SECRET;

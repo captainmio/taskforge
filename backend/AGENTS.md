@@ -152,6 +152,7 @@ Database
 ## Validation
 
 * Validate incoming request data using Zod.
+* Validate untrusted boundary data, including requests, authentication payloads, and environment variables, with Zod instead of unsafe casts or repeated manual type checks.
 * Create reusable Zod schemas under `/validations`.
 * Apply validation through middleware before the request reaches the controller.
 * Validate where appropriate:
@@ -160,6 +161,7 @@ Database
   * Route parameters.
   * Query parameters.
 * Avoid repeating validation logic across controllers.
+* Prefer typed middleware and request contracts, and avoid non-null assertions when middleware guarantees can be represented through TypeScript.
 
 ## Reusable Helpers
 
@@ -243,6 +245,7 @@ If a new package is needed:
 * Do not create separate types, helpers, classes, or wrappers for every layer when they represent the same concept and provide no additional behavior.
 * Use descriptive names and straightforward control flow so developers can understand the code without unnecessary indirection.
 * Optimize for maintainability and consistency with the existing codebase rather than applying patterns mechanically.
+* Keep simple, readable conditions inline and create reusable guards or helpers only when they improve clarity or are used in multiple places.
 
 ## Testing Standards
 

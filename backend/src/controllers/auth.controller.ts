@@ -1,61 +1,61 @@
 
 import type { Request, Response } from "express";
 
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import type { StringValue } from "ms";
-import { JWT_COOKIE_NAME, JWT_EXPIRES_IN, JWT_SECRET } from "../config/auth.js";
+import {
+    AUTH_SESSION_DURATION_SECONDS,
+    JWT_COOKIE_NAME,
+    JWT_COOKIE_OPTIONS,
+} from "../config/auth.js";
 import { prisma } from "../config/database.js";
-import { EmailAlreadyRegisteredError } from "../errors/auth.errors.js";
-import { registerUser } from "../services/auth.service.js";
-import type { RegisterBody } from "../validations/auth.validation.js";
+import {
+    EmailAlreadyRegisteredError,
+    InvalidCredentialsError,
+} from "../errors/auth.errors.js";
+import { loginUser, registerUser } from "../services/auth.service.js";
+import type {
+    LoginBody,
+    RegisterBody,
+} from "../validations/auth.validation.js";
 
-const login = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-
+const login = async (
+    req: Request<Record<string, never>, unknown, LoginBody>,
+    res: Response,
+) => {
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const result = await loginUser(req.body);
 
-        // Use the same response for a missing user and a wrong password.
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        res.cookie(JWT_COOKIE_NAME, result.token, {
+            ...JWT_COOKIE_OPTIONS,
+            maxAge: AUTH_SESSION_DURATION_SECONDS * 1000,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: result.user,
+        });
+    } catch (error) {
+        if (error instanceof InvalidCredentialsError) {
             return res.status(401).json({
                 success: false,
                 error: "Invalid email or password",
             });
         }
 
-        const token = jwt.sign(
-            { sub: user.id, email: user.email },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN as StringValue }
-        );
-
-        res.cookie(JWT_COOKIE_NAME, token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 24 * 60 * 60 * 1000,
-        });
-
-        return res.status(200).json({
-            success: true,
-            message: "Login successful",
-            user: {
-                id: user.id,
-                email: user.email,
-                firstname: user.firstname,
-                lastname: user.lastname,
-            },
-        });
-    } catch (error) {
-        console.error(error);
         return res.status(500).json({ success: false, error: "Something went wrong on our end" });
     }
-}
+};
 
 const me = async (req: Request, res: Response) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: "Authentication required",
+        });
+    }
+
     const user = await prisma.user.findUnique({
-        where: { id: req.user!.id },
+        where: { id: req.user.id },
         select: { id: true, email: true, firstname: true, lastname: true },
     });
 

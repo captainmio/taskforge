@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import jwt, { type JwtPayload } from "jsonwebtoken";
-import { JWT_SECRET } from "../config/auth.js";
-import { JWT_COOKIE_NAME } from "../config/auth.js";
+import jwt from "jsonwebtoken";
+import { JWT_COOKIE_NAME, JWT_SECRET } from "../config/auth.js";
+import { authTokenPayloadSchema } from "../validations/auth.validation.js";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.[JWT_COOKIE_NAME];
@@ -11,13 +11,15 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const result = authTokenPayloadSchema.safeParse(
+      jwt.verify(token, JWT_SECRET),
+    );
 
-    if (typeof payload.sub !== "number") {
+    if (!result.success) {
       return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
-    req.user = { id: payload.sub, email: String(payload.email) };
+    req.user = { id: result.data.sub, email: result.data.email };
     next();
   } catch {
     return res.status(401).json({ success: false, error: "Invalid or expired token" });

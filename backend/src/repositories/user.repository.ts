@@ -10,3 +10,7 @@ export type CreateUserData = {
 export const createUser = async (data: CreateUserData) => {
   return prisma.user.create({ data });
 };
+
+export const findUserByEmail = async (email: string) => {
+  return prisma.user.findUnique({ where: { email } });
+};

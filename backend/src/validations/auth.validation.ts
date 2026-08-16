@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const authTokenPayloadSchema = z.object({
+    sub: z.number().int().positive(),
+    email: z.email(),
+});
+
 export const registerSchema = z.object({
     body: z.object({
         firstname: z.string()
@@ -30,3 +35,4 @@ export const loginSchema = z.object({
 })
 
 export type RegisterBody = z.infer<typeof registerSchema>["body"];
+export type LoginBody = z.infer<typeof loginSchema>["body"];
