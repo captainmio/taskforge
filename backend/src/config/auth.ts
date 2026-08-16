@@ -1,3 +1,4 @@
+import "dotenv/config";
 export const BCRYPT_SALT_ROUNDS = Number(
   process.env.BCRYPT_SALT_ROUNDS ?? 12
 );

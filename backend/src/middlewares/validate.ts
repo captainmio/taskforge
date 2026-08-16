@@ -19,6 +19,16 @@ export const validate = (schema: ZodSchema) => {
       });
     }
 
+    const validatedData = result.data;
+
+    if (
+      typeof validatedData === "object" &&
+      validatedData !== null &&
+      "body" in validatedData
+    ) {
+      req.body = validatedData.body;
+    }
+
     next();
   };
 };
