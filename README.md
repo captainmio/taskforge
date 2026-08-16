@@ -72,7 +72,13 @@ The frontend runs at `http://localhost:5173` and the API runs at `http://localho
 
 ## Backend Tests
 
-The backend test suite checks that validation, business logic, API responses, and database operations continue working as features are added. Run all test commands from the `backend` directory.
+These tests apply only to the backend. They check that validation, business logic, API responses, and database operations continue working as features are added. Frontend tests will use a separate setup and separate commands.
+
+Run all commands in this section from the `backend` directory:
+
+```bash
+cd backend
+```
 
 ### Test database setup
 
