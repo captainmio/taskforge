@@ -31,7 +31,7 @@ const AccountMenu = ({ name, email, onLogout }: AccountMenuProps) => (
       onClick={onLogout}
       disabled={!onLogout}
       title={!onLogout ? "Logout will be available when the server endpoint is added" : undefined}
-      className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+      className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 cursor-pointer"
     >
       <FaSignOutAlt className="size-4" aria-hidden="true" />
       Log out

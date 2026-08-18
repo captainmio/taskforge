@@ -30,7 +30,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import ProfileListItem from "../../components/ui/ProfileListItem";
 import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
-import { getCurrentUser, type User } from "../../services/auth";
+import { getCurrentUser, logout, type User } from "../../services/auth";
 import { getInitials } from "../../utils/getInitials";
 
 const projects = [
@@ -93,7 +93,7 @@ const WorkspaceOverview = () => {
               <Button leadingIcon={<FaUserPlus />} className="flex-1 sm:flex-none">
                 Invite Member
               </Button>
-              <AccountMenu name={userName} email={userEmail} />
+              <AccountMenu name={userName} email={userEmail} onLogout={logout} />
             </>
           )}
         />

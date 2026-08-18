@@ -45,6 +45,11 @@ export const getCurrentUser = async (): Promise<MeResponse> => {
     return response.data;
 };
 
+export const logout = async (): Promise<void> => {
+    const response = await apiClient.post('/auth/logout');
+    return response.data;
+};
+
 export const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
     const response = await apiClient.post<RegisterResponse>('/auth/register', payload);
     

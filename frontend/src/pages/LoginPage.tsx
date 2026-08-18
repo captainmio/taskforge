@@ -7,6 +7,7 @@ import { getWorkspaceDestination } from "./workspaces/utils/workspaceRouting"
 import { Link, useNavigate, useSearchParams } from "react-router"
 import { getSafeReturnTo } from "../utils/authReturn"
 import AppFooter from "../components/ui/AppFooter"
+import { FaBolt } from "react-icons/fa"
 
 interface FormInput {
     email: string;
@@ -41,7 +42,15 @@ const LoginPage = () => {
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
           <main className="flex flex-1 items-center justify-center px-4 py-8">
-            <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
+            <div className="w-full max-w-md">
+              <header className="mb-6 flex items-center justify-center gap-2">
+                <span className="flex size-9 items-center justify-center rounded-full bg-site-green text-white shadow-sm">
+                  <FaBolt className="size-4" aria-hidden="true" />
+                </span>
+                <span className="text-2xl font-bold tracking-tight text-gray-950">TaskForge</span>
+              </header>
+
+              <section className="rounded-2xl bg-white p-8 shadow">
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div>
                         <Controller
@@ -95,7 +104,8 @@ const LoginPage = () => {
                         </span>
                     </div>
                 </form>
-            </section>
+              </section>
+            </div>
           </main>
           <AppFooter />
         </div>

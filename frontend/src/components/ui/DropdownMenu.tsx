@@ -35,7 +35,7 @@ const DropdownMenu = ({ trigger, children, align = "right" }: DropdownMenuProps)
         aria-haspopup="menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((open) => !open)}
-        className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-green"
+        className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer focus-visible:outline-site-green"
       >
         {trigger(isOpen)}
       </button>

@@ -50,6 +50,15 @@ const login = async (
     }
 };
 
+const logout = (_req: Request, res: Response) => {
+    res.clearCookie(JWT_COOKIE_NAME, JWT_COOKIE_OPTIONS);
+
+    return res.status(200).json({
+        success: true,
+        message: "Logout successful",
+    });
+};
+
 const me = async (req: AuthenticatedRequest, res: Response) => {
     const result = await getCurrentUser(req.user.id);
 
@@ -93,4 +102,4 @@ const register = async (
     }
 };
 
-export { login, me, register };
+export { login, logout, me, register };
