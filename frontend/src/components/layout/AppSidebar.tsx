@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { FaBolt } from "react-icons/fa";
 
 interface AppSidebarProps {
   contextLabel?: string;
@@ -16,9 +15,7 @@ const AppSidebar = ({
 }: AppSidebarProps) => (
   <div className="flex h-full flex-col bg-gradient-to-b from-white via-white to-emerald-50/70">
     <div className="flex h-18 items-center gap-2 border-b border-gray-100 px-6">
-      <span className="flex size-7 items-center justify-center rounded-full bg-site-green text-white">
-        <FaBolt className="size-3.5" aria-hidden="true" />
-      </span>
+      <img className="size-9 shrink-0" src="/project-icon-tasks.svg" alt="TaskForge" />
       <span className="text-lg font-bold tracking-tight text-gray-950">TaskForge</span>
     </div>
 

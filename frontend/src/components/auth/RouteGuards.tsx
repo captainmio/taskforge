@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../../services/auth";
+import type { MeResponse } from "../../services/auth";
 import {
   getWorkspaceDestination,
   type WorkspaceDestination,
@@ -9,16 +10,17 @@ import {
 type GuestDestination = "loading" | "guest" | WorkspaceDestination;
 
 export const ProtectedRoute = () => {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [session, setSession] = useState<MeResponse | null>(null);
+  const [authenticationFailed, setAuthenticationFailed] = useState<boolean>(false);
 
   useEffect(() => {
     getCurrentUser()
-      .then(() => setAuthenticated(true))
-      .catch(() => setAuthenticated(false));
+      .then(setSession)
+      .catch(() => setAuthenticationFailed(true));
   }, []);
 
-  if (authenticated === null) return null;
-  return authenticated ? <Outlet /> : <Navigate to="/" replace />;
+  if (!session && !authenticationFailed) return null;
+  return session ? <Outlet context={session} /> : <Navigate to="/" replace />;
 };
 
 export const GuestRoute = () => {

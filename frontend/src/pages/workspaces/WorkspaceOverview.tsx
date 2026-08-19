@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   FaCalendarAlt,
   FaChevronRight,
@@ -17,20 +16,19 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { useParams } from "react-router";
+import AppHeader from "../../components/layout/AppHeader";
 import AppLayout from "../../components/layout/AppLayout";
 import AppSidebar from "../../components/layout/AppSidebar";
 import ContextSwitcher from "../../components/layout/ContextSwitcher";
 import NavItem from "../../components/layout/NavItem";
-import AccountMenu from "../../components/ui/AccountMenu";
 import ActionCard from "../../components/ui/ActionCard";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import IconDescriptionItem from "../../components/ui/IconDescriptionItem";
-import PageHeader from "../../components/ui/PageHeader";
 import ProfileListItem from "../../components/ui/ProfileListItem";
 import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
-import { getCurrentUser, logout, type User } from "../../services/auth";
+import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { getInitials } from "../../utils/getInitials";
 
 const projects = [
@@ -48,20 +46,11 @@ const members = [
 
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user: currentUser } = useAuthenticatedSession();
   const workspaceName = "TaskForge Dev";
   const basePath = `/workspace/${id}`;
-
-  useEffect(() => {
-    getCurrentUser()
-      .then(({ user }) => setCurrentUser(user))
-      .catch(() => undefined);
-  }, []);
-
-  const userName:string = currentUser
-    ? `${currentUser.firstname} ${currentUser.lastname}`
-    : "TaskForge User";
-  const userEmail:string = currentUser?.email ?? "Loading account...";
+  const userName = `${currentUser.firstname} ${currentUser.lastname}`;
+  const userEmail = currentUser.email;
 
   const sidebar = (
     <AppSidebar
@@ -85,16 +74,13 @@ const WorkspaceOverview = () => {
   return (
     <AppLayout sidebar={sidebar}>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <PageHeader
+        <AppHeader
           title="Workspace Overview"
           description="Here’s what’s happening in your workspace."
-          actions={(
-            <>
-              <Button leadingIcon={<FaUserPlus />} className="flex-1 sm:flex-none">
-                Invite Member
-              </Button>
-              <AccountMenu name={userName} email={userEmail} onLogout={logout} />
-            </>
+          primaryAction={(
+            <Button leadingIcon={<FaUserPlus />}>
+              Invite Member
+            </Button>
           )}
         />
 
@@ -193,7 +179,7 @@ const WorkspaceOverview = () => {
 
         <SectionCard
           title="Settings & Actions"
-          className="mt-5 border-amber-100 bg-gradient-to-br from-white to-amber-50/60 shadow-sm"
+          className="mt-5 border-amber-100 from-white to-amber-50/60 shadow-sm"
         >
           <p className="mb-4 text-xs text-gray-500">Manage your workspace settings and preferences.</p>
           <div className="grid gap-3 lg:grid-cols-3">

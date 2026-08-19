@@ -25,7 +25,11 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
         >
           <FaBars aria-hidden="true" />
         </button>
-        <span className="ml-3 font-bold text-gray-950">TaskForge</span>
+        <div className="ml-3 w-full flex items-center">
+
+          <img className="size-9 shrink-0" src="/project-icon-tasks.svg" alt="TaskForge" />
+          <span className="ml-2 font-bold text-gray-950">TaskForge</span>
+        </div>
       </div>
 
       {isSidebarOpen ? (
