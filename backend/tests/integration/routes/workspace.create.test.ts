@@ -54,8 +54,6 @@ describe("POST /api/workspaces", () => {
     expect(response.body).toEqual({
       success: true,
       message: "Workspace created",
-      workspace: createdWorkspace,
-      invitationCount: 2,
     });
     expect(createWorkspace).toHaveBeenCalledWith(
       {

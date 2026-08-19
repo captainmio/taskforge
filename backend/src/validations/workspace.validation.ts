@@ -54,7 +54,22 @@ export const acceptWorkspaceInvitationSchema = z.object({
   }),
 });
 
+export const workspaceOverviewSchema = z.object({
+  params: z.object({
+    workspaceId: z
+      .string()
+      .regex(/^[1-9]\d*$/, "Workspace ID must be a positive integer")
+      .refine(
+        (workspaceId) => Number.isSafeInteger(Number(workspaceId)),
+        "Workspace ID is too large",
+      ),
+  }),
+});
+
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
 export type AcceptWorkspaceInvitationBody = z.infer<
   typeof acceptWorkspaceInvitationSchema
 >["body"];
+export type WorkspaceOverviewParams = z.infer<
+  typeof workspaceOverviewSchema
+>["params"];

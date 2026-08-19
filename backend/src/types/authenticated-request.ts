@@ -5,8 +5,11 @@ export interface AuthenticatedUser {
   email: string;
 }
 
-export type AuthenticatedRequest<TBody = unknown> = Request<
-  Record<string, never>,
+export type AuthenticatedRequest<
+  TBody = unknown,
+  TParams = Record<string, never>,
+> = Request<
+  TParams,
   unknown,
   TBody
 > & {

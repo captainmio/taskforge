@@ -63,6 +63,8 @@
 * Prefer arrow functions when creating components.
 * Use TypeScript for all frontend code.
 * Avoid using `any`.
+* Prefer `async`/`await` with `try`/`catch` over `.then()`/`.catch()` promise chains for asynchronous control flow when it improves readability.
+* Continue using Promise utilities such as `Promise.all` when independent asynchronous operations should run concurrently.
 * Reuse existing components when possible.
 * Keep API calls inside `/src/services`.
 * Keep components small, focused, and easy to understand.

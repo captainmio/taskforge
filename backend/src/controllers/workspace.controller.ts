@@ -12,6 +12,7 @@ import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
   AcceptWorkspaceInvitationBody,
   CreateWorkspaceBody,
+  WorkspaceOverviewParams,
 } from "../validations/workspace.validation.js";
 
 const invitationFailureResponses: Record<
@@ -37,8 +38,6 @@ export const createWorkspace = async (
     return res.status(201).json({
       success: true,
       message: "Workspace created",
-      workspace: result.workspace,
-      invitationCount: result.invitationCount,
     });
   } catch (error) {
     if (error instanceof WorkspaceNameAlreadyExistsError) {
@@ -85,3 +84,17 @@ export const acceptWorkspaceInvitation = async (
     });
   }
 };
+
+export const getWorkspaceOverview = async (
+  req: AuthenticatedRequest<unknown, WorkspaceOverviewParams>,
+  res: Response,
+) => {
+  const { workspaceId } = req.params
+
+  console.log(workspaceId)
+
+  res.status(200).json({
+    success: true,
+    data: []
+  })
+}

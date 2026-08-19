@@ -15,7 +15,7 @@ import {
   FaUserPlus,
   FaUsers,
 } from "react-icons/fa";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
 import AppLayout from "../../components/layout/AppLayout";
 import AppSidebar from "../../components/layout/AppSidebar";
@@ -30,6 +30,8 @@ import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { getInitials } from "../../utils/getInitials";
+import { useEffect, useState } from "react";
+import { getWorkspaceOverview } from "../../services/workspaces";
 
 const projects = [
   { name: "Website Redesign", tasks: 12, icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
@@ -46,11 +48,47 @@ const members = [
 
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<string | null>(null);
   const { user: currentUser } = useAuthenticatedSession();
   const workspaceName = "TaskForge Dev";
   const basePath = `/workspace/${id}`;
   const userName = `${currentUser.firstname} ${currentUser.lastname}`;
   const userEmail = currentUser.email;
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!id) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const loadWorkspaceOverview = async () => {
+      try {
+        const response = await getWorkspaceOverview(id);
+
+        if (!isActive) return;
+
+        if (!response.success) {
+          navigate("/", { replace: true });
+          return;
+        }
+
+        setAuthorizedWorkspaceId(id);
+      } catch {
+        if (isActive) navigate("/", { replace: true });
+      }
+    };
+
+    void loadWorkspaceOverview();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id, navigate]);
+
+  if (authorizedWorkspaceId !== id) return null;
 
   const sidebar = (
     <AppSidebar

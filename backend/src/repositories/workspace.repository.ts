@@ -173,6 +173,17 @@ export const findInvitationByTokenHash = async (tokenHash: string) =>
     },
   });
 
+export const findWorkspaceMembership = async (
+  workspaceId: number,
+  userId: number,
+) =>
+  prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: { workspaceId, userId },
+    },
+    select: { role: true },
+  });
+
 export const markInvitationExpired = async (
   invitationId: number,
 ): Promise<void> => {

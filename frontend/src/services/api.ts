@@ -5,6 +5,12 @@ interface ApiErrorResponse {
   error?: string;
 }
 
+export interface ApiResponse {
+  success: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
+  error?: string;
+}
 const api: string = import.meta.env.VITE_API_URL;
 
 export const apiClient = axios.create({
