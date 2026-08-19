@@ -64,3 +64,19 @@ export const setCachedWorkspaceOverview = async (
     console.error("Unable to write workspace overview cache", error);
   }
 };
+
+export const deleteCachedWorkspaceOverview = async (
+  workspaceId: number,
+): Promise<void> => {
+  try {
+    await getCacheRedisConnection().del(
+      getWorkspaceOverviewCacheKey(workspaceId),
+    );
+  } catch (error) {
+    // The new membership has already been saved in PostgreSQL by the time this
+    // runs. A Redis outage should not turn that successful database change into
+    // an API error. If deletion fails, Redis will remove the old overview by
+    // itself when the configured cache lifetime ends.
+    console.error("Unable to delete workspace overview cache", error);
+  }
+};

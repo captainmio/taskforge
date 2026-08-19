@@ -24,6 +24,12 @@ export interface CreateWorkspaceData {
   invitations: CreateWorkspaceInvitationData[];
 }
 
+export interface CreateWorkspaceInvitationsData {
+  workspaceId: number;
+  invitedById: number;
+  invitations: CreateWorkspaceInvitationData[];
+}
+
 interface AcceptInvitationData {
   invitationId: number;
   workspaceId: number;
@@ -75,6 +81,58 @@ export const createWorkspaceRecord = async (data: CreateWorkspaceData) =>
           });
 
     return { workspace, invitations };
+  });
+
+export const createWorkspaceInvitationsRecord = async (
+  data: CreateWorkspaceInvitationsData,
+) =>
+  prisma.$transaction(async (transaction) => {
+    const normalizedEmails = data.invitations.map(
+      ({ normalizedEmail }) => normalizedEmail,
+    );
+    // Check every submitted email before saving any invitations. This check and
+    // the insert below use the same database transaction. When even one email
+    // belongs to a current member, the function returns those matches and does
+    // not save any email from the submitted list.
+    const existingMembers = await transaction.workspaceMember.findMany({
+      where: {
+        workspaceId: data.workspaceId,
+        user: { email: { in: normalizedEmails } },
+      },
+      select: { user: { select: { email: true } } },
+    });
+
+    if (existingMembers.length > 0) {
+      return {
+        workspace: null,
+        invitations: [],
+        existingMemberEmails: existingMembers.map(({ user }) => user.email),
+      };
+    }
+
+    const workspace = await transaction.workspace.findUniqueOrThrow({
+      where: { id: data.workspaceId },
+      select: { displayName: true },
+    });
+    // Send the complete invitation list to PostgreSQL as one operation. The
+    // database permits only one invitation per email in a workspace. If an
+    // email was invited before, PostgreSQL rejects this operation, so the other
+    // emails are not accidentally saved as a partial result.
+    const invitations = await transaction.workspaceInvitation.createManyAndReturn({
+      data: data.invitations.map((invitation) => ({
+        ...invitation,
+        workspaceId: data.workspaceId,
+        invitedById: data.invitedById,
+      })),
+      select: {
+        id: true,
+        email: true,
+        normalizedEmail: true,
+        role: true,
+      },
+    });
+
+    return { workspace, invitations, existingMemberEmails: [] };
   });
 
 export const markInvitationsQueued = async (

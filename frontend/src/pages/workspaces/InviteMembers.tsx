@@ -9,10 +9,16 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "react-toastify";
 import AppHeader from "../../components/layout/AppHeader";
 import Button from "../../components/ui/Button";
 import InitialsAvatar from "../../components/ui/InitialsAvatar";
 import Textbox from "../../components/ui/Textbox";
+import { useLoading } from "../../hooks/useLoading";
+import {
+  inviteWorkspaceMembers,
+  type InviteWorkspaceMembersResponse,
+} from "../../services/invitations";
 import { getWorkspaceOverview } from "../../services/workspaces";
 import {
   WorkspaceRole,
@@ -37,6 +43,7 @@ const roleLabel = (role: WorkspaceRoleValue): string =>
 const InviteMembers = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const invitationRequest = useLoading<InviteWorkspaceMembersResponse>();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
@@ -101,6 +108,21 @@ const InviteMembers = () => {
     resetField("role", { defaultValue: WorkspaceRole.MEMBER });
   };
 
+  const sendInvitations = async (): Promise<void> => {
+    const response = await invitationRequest.run(() =>
+      inviteWorkspaceMembers(id, {
+        invitations: getValues("invitations"),
+      }),
+    );
+
+    // Keep the prepared list on screen after an error so the user can remove a
+    // conflicting email and try again. Only leave the page after API success.
+    if (!response) return;
+
+    toast.success(response.message);
+    navigate(basePath);
+  };
+
   if (authorizedWorkspaceId !== id) return null;
 
   return (
@@ -142,6 +164,7 @@ const InviteMembers = () => {
                   type="email"
                   icon={<FaEnvelope />}
                   placeholder="Enter email address"
+                  disabled={invitationRequest.isLoading}
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={errors.email ? "invite-email-error" : undefined}
                   className={
@@ -177,6 +200,7 @@ const InviteMembers = () => {
               </label>
               <select
                 id="invite-role"
+                disabled={invitationRequest.isLoading}
                 className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-site-green focus:outline-none focus:ring-1 focus:ring-site-green"
                 {...register("role", {
                   setValueAs: (value: string) =>
@@ -191,6 +215,7 @@ const InviteMembers = () => {
               <Button
                 type="submit"
                 leadingIcon={<FaPlus />}
+                disabled={invitationRequest.isLoading}
                 className="lg:self-start"
               >
                 Add
@@ -236,7 +261,8 @@ const InviteMembers = () => {
                           type="button"
                           onClick={() => remove(index)}
                           aria-label={`Remove ${invitation.email}`}
-                          className="flex size-10 items-center justify-center justify-self-end rounded-lg bg-red-50 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700"
+                          disabled={invitationRequest.isLoading}
+                          className="flex size-10 items-center justify-center justify-self-end rounded-lg bg-red-50 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700 disabled:pointer-events-none disabled:opacity-50"
                         >
                           <FaTrash className="size-3.5" aria-hidden="true" />
                         </button>
@@ -264,11 +290,13 @@ const InviteMembers = () => {
           <footer className="flex justify-end border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-7">
             <Button
               leadingIcon={<FaPaperPlane />}
-              disabled
-              title="The send-invitations API is not available yet"
+              onClick={() => void sendInvitations()}
+              disabled={fields.length === 0 || invitationRequest.isLoading}
               className="sm:min-w-56"
             >
-              Send Invitations
+              {invitationRequest.isLoading
+                ? "Sending Invitations..."
+                : "Send Invitations"}
             </Button>
           </footer>
         </section>

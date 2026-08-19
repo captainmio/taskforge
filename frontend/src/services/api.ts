@@ -5,11 +5,13 @@ interface ApiErrorResponse {
   error?: string;
 }
 
-export interface ApiResponse<TData = Record<string, unknown>> {
-  success: boolean;
-  message?: string;
-  data?: TData;
-  error?: string;
+// Mirrors the response created by the backend's createSuccessResponse helper.
+// The generic type describes the endpoint-specific value inside `data` while
+// the surrounding success and message fields stay consistent for every call.
+export interface ApiSuccessResponse<TData> {
+  success: true;
+  message: string;
+  data: TData;
 }
 const api: string = import.meta.env.VITE_API_URL;
 

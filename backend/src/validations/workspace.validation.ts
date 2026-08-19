@@ -54,22 +54,44 @@ export const acceptWorkspaceInvitationSchema = z.object({
   }),
 });
 
-export const workspaceOverviewSchema = z.object({
-  params: z.object({
-    workspaceId: z
-      .string()
-      .regex(/^[1-9]\d*$/, "Workspace ID must be a positive integer")
-      .refine(
-        (workspaceId) => Number.isSafeInteger(Number(workspaceId)),
-        "Workspace ID is too large",
-      ),
+const workspaceParamsSchema = z.object({
+  workspaceId: z
+    .string()
+    .regex(/^[1-9]\d*$/, "Workspace ID must be a positive integer")
+    .refine(
+      (workspaceId) => Number.isSafeInteger(Number(workspaceId)),
+      "Workspace ID is too large",
+    ),
+});
+
+export const inviteWorkspaceMembersSchema = z.object({
+  params: workspaceParamsSchema,
+  body: z.object({
+    // Do not accept an empty invitation list because there would be nothing to
+    // save or queue. The shared schema above also trims each email, changes it
+    // to lowercase, checks its format, and rejects the same email appearing
+    // more than once in this request.
+    invitations: workspaceInvitesSchema.refine(
+      (invitations) => invitations.length > 0,
+      "At least one invitation is required",
+    ),
   }),
+});
+
+export const workspaceOverviewSchema = z.object({
+  params: workspaceParamsSchema,
 });
 
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
 export type AcceptWorkspaceInvitationBody = z.infer<
   typeof acceptWorkspaceInvitationSchema
 >["body"];
+export type InviteWorkspaceMembersBody = z.infer<
+  typeof inviteWorkspaceMembersSchema
+>["body"];
+export type WorkspaceParams = z.infer<
+  typeof workspaceParamsSchema
+>;
 export type WorkspaceOverviewParams = z.infer<
   typeof workspaceOverviewSchema
 >["params"];

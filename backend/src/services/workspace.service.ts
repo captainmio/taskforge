@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import {
+  deleteCachedWorkspaceOverview,
   getCachedWorkspaceOverview,
   setCachedWorkspaceOverview,
   type WorkspaceOverviewData,
@@ -7,6 +8,8 @@ import {
 import { env } from "../config/env.js";
 import {
   InvitationAcceptanceError,
+  WorkspaceInvitationAlreadyExistsError,
+  WorkspaceMemberAlreadyExistsError,
   WorkspaceNameAlreadyExistsError,
 } from "../errors/workspace.errors.js";
 import { Prisma } from "../generated/prisma/client.js";
@@ -21,6 +24,7 @@ import {
 } from "../queues/invitation.queue.js";
 import {
   acceptInvitationRecord,
+  createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
@@ -30,7 +34,10 @@ import {
   replaceInvitationToken,
   type CreateWorkspaceInvitationData,
 } from "../repositories/workspace.repository.js";
-import type { CreateWorkspaceBody } from "../validations/workspace.validation.js";
+import type {
+  CreateWorkspaceBody,
+  InviteWorkspaceMembersBody,
+} from "../validations/workspace.validation.js";
 
 const INVITATION_EXPIRY_DAYS = 7;
 const RECOVERY_BATCH_SIZE = 100;
@@ -124,6 +131,88 @@ export const createWorkspace = async (
   }
 };
 
+export const inviteWorkspaceMembers = async (
+  workspaceId: number,
+  invitedById: number,
+  input: InviteWorkspaceMembersBody,
+) => {
+  const expiresAt = new Date(
+    Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1_000,
+  );
+  const preparedInvitations = input.invitations.map((invitation) => {
+    const token = createInvitationToken();
+
+    return {
+      // The email link needs the original secret token, but storing that secret
+      // in PostgreSQL would allow anyone with database access to use the link.
+      // Store only a one-way hash in PostgreSQL and keep the original token in
+      // memory just long enough to place the verification URL in the BullMQ job.
+      token,
+      data: {
+        email: invitation.email,
+        normalizedEmail: invitation.email,
+        role: invitation.role,
+        tokenHash: hashInvitationToken(token),
+        expiresAt,
+      } satisfies CreateWorkspaceInvitationData,
+    };
+  });
+
+  try {
+    const result = await createWorkspaceInvitationsRecord({
+      workspaceId,
+      invitedById,
+      invitations: preparedInvitations.map(({ data }) => data),
+    });
+
+    if (result.existingMemberEmails.length > 0 || !result.workspace) {
+      throw new WorkspaceMemberAlreadyExistsError();
+    }
+
+    const tokenByEmail = new Map(
+      preparedInvitations.map(({ data, token }) => [data.normalizedEmail, token]),
+    );
+    const jobs = result.invitations.flatMap((invitation) => {
+      const token = tokenByEmail.get(invitation.normalizedEmail);
+      if (!token) return [];
+
+      return [{
+        invitationId: invitation.id,
+        email: invitation.email,
+        workspaceDisplayName: result.workspace.displayName,
+        role: invitation.role,
+        verificationUrl: createVerificationUrl(token),
+      }];
+    });
+
+    try {
+      await enqueueInvitationEmails(jobs);
+      await markInvitationsQueued(result.invitations.map(({ id }) => id));
+    } catch (error) {
+      // Invitation records are saved before BullMQ is contacted. If Redis or
+      // BullMQ is temporarily unavailable, leave their delivery state as
+      // PENDING. The invitation worker regularly searches for pending records
+      // and will add them to the queue when the connection is available again.
+      console.error("Unable to queue workspace invitations", error);
+    }
+
+    return { invitationCount: result.invitations.length };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      // Prisma uses error code P2002 when PostgreSQL rejects a duplicate value.
+      // In this flow it means at least one email already has an invitation for
+      // this workspace. Convert the database-specific error into a clear error
+      // that the controller can return to the frontend as a conflict.
+      throw new WorkspaceInvitationAlreadyExistsError();
+    }
+
+    throw error;
+  }
+};
+
 export const recoverPendingInvitationDeliveries = async (): Promise<number> => {
   const invitations = await findInvitationsAwaitingQueue(RECOVERY_BATCH_SIZE);
   const jobs: InvitationEmailJobData[] = [];
@@ -186,6 +275,11 @@ export const acceptWorkspaceInvitation = async (
   if (!accepted) {
     throw new InvitationAcceptanceError("ALREADY_USED");
   }
+
+  // Wait until the invitation acceptance and new membership are safely saved
+  // in PostgreSQL before removing the cached overview. The next overview request
+  // will miss the cache, read the updated member list, and cache that fresh list.
+  await deleteCachedWorkspaceOverview(invitation.workspaceId);
 
   return invitation.workspace;
 };

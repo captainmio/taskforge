@@ -7,14 +7,18 @@ import {
 } from "../../../src/generated/prisma/enums.js";
 import {
   InvitationAcceptanceError,
+  WorkspaceInvitationAlreadyExistsError,
+  WorkspaceMemberAlreadyExistsError,
   WorkspaceNameAlreadyExistsError,
 } from "../../../src/errors/workspace.errors.js";
+import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import {
   enqueueInvitationEmails,
   findQueuedInvitationEmail,
 } from "../../../src/queues/invitation.queue.js";
 import {
   acceptInvitationRecord,
+  createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
@@ -25,6 +29,7 @@ import {
 import {
   acceptWorkspaceInvitation,
   createWorkspace,
+  inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
 } from "../../../src/services/workspace.service.js";
 import { validWorkspace } from "../../helpers/workspace.fixture.js";
@@ -32,12 +37,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   acceptInvitationRecord: vi.fn(),
+  createWorkspaceInvitationsRecord: vi.fn(),
   createWorkspaceRecord: vi.fn(),
   findInvitationByTokenHash: vi.fn(),
   findInvitationsAwaitingQueue: vi.fn(),
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
+  deleteCachedWorkspaceOverview: vi.fn(),
+  getCachedWorkspaceOverview: vi.fn(),
+  setCachedWorkspaceOverview: vi.fn(),
 }));
 
 vi.mock("../../../src/queues/invitation.queue.js", () => ({
@@ -173,6 +185,131 @@ describe("recoverPendingInvitationDeliveries", () => {
   });
 });
 
+describe("inviteWorkspaceMembers", () => {
+  const persistedInvitations = {
+    workspace: { displayName: "Engineering Team" },
+    invitations: [
+      {
+        id: 40,
+        email: "admin@example.com",
+        normalizedEmail: "admin@example.com",
+        role: "ADMIN" as const,
+      },
+      {
+        id: 41,
+        email: "member@example.com",
+        normalizedEmail: "member@example.com",
+        role: "MEMBER" as const,
+      },
+    ],
+    existingMemberEmails: [],
+  };
+
+  beforeEach(() => {
+    vi.mocked(createWorkspaceInvitationsRecord).mockResolvedValue(
+      persistedInvitations,
+    );
+    vi.mocked(enqueueInvitationEmails).mockResolvedValue(undefined);
+    vi.mocked(markInvitationsQueued).mockResolvedValue(undefined);
+  });
+
+  it("stores hashed tokens and queues every submitted invitation", async () => {
+    await expect(
+      inviteWorkspaceMembers(10, 7, {
+        invitations: [
+          { email: "admin@example.com", role: "ADMIN" },
+          { email: "member@example.com", role: "MEMBER" },
+        ],
+      }),
+    ).resolves.toEqual({ invitationCount: 2 });
+
+    expect(createWorkspaceInvitationsRecord).toHaveBeenCalledWith({
+      workspaceId: 10,
+      invitedById: 7,
+      invitations: [
+        expect.objectContaining({
+          email: "admin@example.com",
+          normalizedEmail: "admin@example.com",
+          role: "ADMIN",
+          tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+        expect.objectContaining({
+          email: "member@example.com",
+          normalizedEmail: "member@example.com",
+          role: "MEMBER",
+          tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+      ],
+    });
+    expect(enqueueInvitationEmails).toHaveBeenCalledWith([
+      expect.objectContaining({
+        invitationId: 40,
+        email: "admin@example.com",
+        workspaceDisplayName: "Engineering Team",
+        verificationUrl: expect.stringContaining("/invitations/accept?token="),
+      }),
+      expect.objectContaining({ invitationId: 41 }),
+    ]);
+    expect(markInvitationsQueued).toHaveBeenCalledWith([40, 41]);
+  });
+
+  it("rejects the complete batch without queueing when an email is already a member", async () => {
+    vi.mocked(createWorkspaceInvitationsRecord).mockResolvedValue({
+      workspace: null,
+      invitations: [],
+      existingMemberEmails: ["member@example.com"],
+    });
+
+    await expect(
+      inviteWorkspaceMembers(10, 7, {
+        invitations: [
+          { email: "new@example.com", role: "MEMBER" },
+          { email: "member@example.com", role: "ADMIN" },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(WorkspaceMemberAlreadyExistsError);
+    expect(enqueueInvitationEmails).not.toHaveBeenCalled();
+    expect(markInvitationsQueued).not.toHaveBeenCalled();
+  });
+
+  it("translates a previously invited email database conflict", async () => {
+    vi.mocked(createWorkspaceInvitationsRecord).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "7.9.1",
+        meta: { target: ["workspace_id", "normalized_email"] },
+      }),
+    );
+
+    await expect(
+      inviteWorkspaceMembers(10, 7, {
+        invitations: [{ email: "invited@example.com", role: "MEMBER" }],
+      }),
+    ).rejects.toBeInstanceOf(WorkspaceInvitationAlreadyExistsError);
+    expect(enqueueInvitationEmails).not.toHaveBeenCalled();
+  });
+
+  it("keeps saved invitations pending when Redis is temporarily unavailable", async () => {
+    const queueError = new Error("Redis unavailable");
+    vi.mocked(enqueueInvitationEmails).mockRejectedValue(queueError);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(
+      inviteWorkspaceMembers(10, 7, {
+        invitations: [
+          { email: "admin@example.com", role: "ADMIN" },
+          { email: "member@example.com", role: "MEMBER" },
+        ],
+      }),
+    ).resolves.toEqual({ invitationCount: 2 });
+    expect(markInvitationsQueued).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "Unable to queue workspace invitations",
+      queueError,
+    );
+  });
+});
+
 describe("acceptWorkspaceInvitation", () => {
   const token = "workspace-invitation-token";
   const user = { id: 8, email: "member@example.com" };
@@ -190,6 +327,7 @@ describe("acceptWorkspaceInvitation", () => {
     vi.mocked(findInvitationByTokenHash).mockResolvedValue(pendingInvitation);
     vi.mocked(acceptInvitationRecord).mockResolvedValue(true);
     vi.mocked(markInvitationExpired).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
   });
 
   it("adds the matching user with the invitation role and returns the workspace", async () => {
@@ -205,6 +343,7 @@ describe("acceptWorkspaceInvitation", () => {
       userId: 8,
       role: WorkspaceRole.MEMBER,
     });
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
   });
 
   it("rejects a token that has no matching invitation", async () => {
@@ -214,6 +353,7 @@ describe("acceptWorkspaceInvitation", () => {
       reason: "INVALID",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(acceptInvitationRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
   it("rejects an invitation belonging to a different email address", async () => {
@@ -223,6 +363,7 @@ describe("acceptWorkspaceInvitation", () => {
       reason: "EMAIL_MISMATCH",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(acceptInvitationRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
   it("marks an expired invitation before rejecting it", async () => {
@@ -236,6 +377,7 @@ describe("acceptWorkspaceInvitation", () => {
     } satisfies Partial<InvitationAcceptanceError>);
     expect(markInvitationExpired).toHaveBeenCalledWith(20);
     expect(acceptInvitationRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
   it("rejects an invitation that has already been accepted", async () => {
@@ -248,6 +390,7 @@ describe("acceptWorkspaceInvitation", () => {
       reason: "ALREADY_USED",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(acceptInvitationRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
   it("rejects when another request claims the invitation first", async () => {
@@ -256,5 +399,6 @@ describe("acceptWorkspaceInvitation", () => {
     await expect(acceptWorkspaceInvitation(token, user)).rejects.toMatchObject({
       reason: "ALREADY_USED",
     } satisfies Partial<InvitationAcceptanceError>);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 });
