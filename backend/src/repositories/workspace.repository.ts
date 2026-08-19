@@ -184,6 +184,24 @@ export const findWorkspaceMembership = async (
     select: { role: true },
   });
 
+export const findWorkspaceMembers = async (workspaceId: number) =>
+  prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      role: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          firstname: true,
+          lastname: true,
+          email: true,
+        },
+      },
+    },
+  });
+
 export const markInvitationExpired = async (
   invitationId: number,
 ): Promise<void> => {

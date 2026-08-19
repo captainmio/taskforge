@@ -7,6 +7,7 @@ import {
 import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
   createWorkspace as createWorkspaceService,
+  getWorkspaceOverview as getWorkspaceOverviewService,
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
@@ -14,6 +15,7 @@ import type {
   CreateWorkspaceBody,
   WorkspaceOverviewParams,
 } from "../validations/workspace.validation.js";
+import { createSuccessResponse } from "../utils/api-response.js";
 
 const invitationFailureResponses: Record<
   InvitationAcceptanceFailure,
@@ -89,12 +91,18 @@ export const getWorkspaceOverview = async (
   req: AuthenticatedRequest<unknown, WorkspaceOverviewParams>,
   res: Response,
 ) => {
-  const { workspaceId } = req.params
+  try {
+    const members = await getWorkspaceOverviewService(
+      Number(req.params.workspaceId),
+    );
 
-  console.log(workspaceId)
-
-  res.status(200).json({
-    success: true,
-    data: []
-  })
-}
+    return res
+      .status(200)
+      .json(createSuccessResponse("Workspace members retrieved", members));
+  } catch {
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};

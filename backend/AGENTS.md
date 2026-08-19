@@ -187,6 +187,13 @@ Database
 * Avoid creating helpers that are tightly coupled to only one use case unless doing so clearly improves readability.
 * Do not move simple logic into a helper just to reduce the number of lines in a service.
 
+## API Responses
+
+* Use `createSuccessResponse` from `/src/utils/api-response.ts` for successful JSON API responses.
+* Successful responses should consistently contain `success`, `message`, and `data`.
+* Return collection records as an array in `data` and single-resource records as an object in `data`.
+* Do not add feature-specific records as new top-level response properties.
+
 ## Packages
 
 * Before creating custom functionality, check whether an existing installed package already provides a suitable solution.
@@ -218,6 +225,8 @@ If a new package is needed:
   * Important implementation decisions.
   * Workarounds.
   * Non-obvious behavior.
+  * Feature boundaries such as authorization order, cache fallbacks, and data-shape transformations.
+* Keep explanatory comments close to the behavior they document so future changes update both together.
 * Avoid comments that simply repeat what the code already says.
 
 ## Before Starting a Task

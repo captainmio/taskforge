@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
+import { getWorkspaceOverview } from "../../../src/services/workspace.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock(
@@ -10,6 +11,16 @@ vi.mock(
       typeof import("../../../src/repositories/workspace.repository.js")
     >()),
     findWorkspaceMembership: vi.fn(),
+  }),
+);
+
+vi.mock(
+  "../../../src/services/workspace.service.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/services/workspace.service.js")
+    >()),
+    getWorkspaceOverview: vi.fn(),
   }),
 );
 
@@ -24,13 +35,25 @@ const authCookie = `accessToken=${jwt.sign(
   "test-only-jwt-secret",
 )}`;
 
-describe("POST /api/workspaces/:workspaceId/overview", () => {
+const workspaceMembers = [
+  {
+    id: 7,
+    firstname: "Workspace",
+    lastname: "Member",
+    email: authenticatedUser.email,
+    role: "MEMBER" as const,
+    joinedAt: "2026-08-19T00:00:00.000Z",
+  },
+];
+
+describe("GET /api/workspaces/:workspaceId/overview", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
+    vi.mocked(getWorkspaceOverview).mockResolvedValue(workspaceMembers);
   });
 
   it("returns 401 without checking membership when authentication is missing", async () => {
-    const response = await request(app).post("/api/workspaces/42/overview");
+    const response = await request(app).get("/api/workspaces/42/overview");
 
     expect(response.status).toBe(401);
     expect(findWorkspaceMembership).not.toHaveBeenCalled();
@@ -40,7 +63,7 @@ describe("POST /api/workspaces/:workspaceId/overview", () => {
     "returns 400 without checking membership when workspace ID %s is invalid",
     async (workspaceId) => {
       const response = await request(app)
-        .post(`/api/workspaces/${workspaceId}/overview`)
+        .get(`/api/workspaces/${workspaceId}/overview`)
         .set("Cookie", authCookie);
 
       expect(response.status).toBe(400);
@@ -53,7 +76,7 @@ describe("POST /api/workspaces/:workspaceId/overview", () => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue(null);
 
     const response = await request(app)
-      .post("/api/workspaces/42/overview")
+      .get("/api/workspaces/42/overview")
       .set("Cookie", authCookie);
 
     expect(response.status).toBe(403);
@@ -74,15 +97,20 @@ describe("POST /api/workspaces/:workspaceId/overview", () => {
       vi.mocked(findWorkspaceMembership).mockResolvedValue({ role });
 
       const response = await request(app)
-        .post("/api/workspaces/42/overview")
+        .get("/api/workspaces/42/overview")
         .set("Cookie", authCookie);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ success: true, data: [] });
+      expect(response.body).toEqual({
+        success: true,
+        message: "Workspace members retrieved",
+        data: workspaceMembers,
+      });
       expect(findWorkspaceMembership).toHaveBeenCalledWith(
         42,
         authenticatedUser.id,
       );
+      expect(getWorkspaceOverview).toHaveBeenCalledWith(42);
     },
   );
 });

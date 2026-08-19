@@ -158,6 +158,8 @@ Use the existing application colors:
   * Important implementation decisions.
   * Workarounds.
   * Code that may not be immediately obvious.
+  * Feature boundaries such as authorization-dependent UI, cache behavior, and data-shape transformations.
+* Keep explanatory comments close to the behavior they document so future changes update both together.
 * Avoid comments that simply repeat what the code already says.
 
 ## Testing

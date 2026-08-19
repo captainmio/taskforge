@@ -1,4 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+import {
+  getCachedWorkspaceOverview,
+  setCachedWorkspaceOverview,
+  type WorkspaceOverviewData,
+} from "../cache/workspace-overview.cache.js";
 import { env } from "../config/env.js";
 import {
   InvitationAcceptanceError,
@@ -19,6 +24,7 @@ import {
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
+  findWorkspaceMembers,
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
@@ -182,4 +188,26 @@ export const acceptWorkspaceInvitation = async (
   }
 
   return invitation.workspace;
+};
+
+export const getWorkspaceOverview = async (
+  workspaceId: number,
+): Promise<WorkspaceOverviewData> => {
+  // Cache-aside keeps repeated overview reads out of the database. A cache miss
+  // continues through the repository and repopulates Redis before returning.
+  const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
+  if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
+
+  const members = await findWorkspaceMembers(workspaceId);
+
+  // Normalize Prisma dates before caching so cache hits and database reads expose
+  // the same JSON-safe response shape.
+  const overview = members.map(({ user, role, createdAt }) => ({
+    ...user,
+    role,
+    joinedAt: createdAt.toISOString(),
+  }));
+
+  await setCachedWorkspaceOverview(workspaceId, overview);
+  return overview;
 };

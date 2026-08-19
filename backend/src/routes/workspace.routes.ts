@@ -22,7 +22,7 @@ router.post(
   validate(createWorkspaceSchema),
   authenticatedHandler(createWorkspace),
 );
-router.post(
+router.get(
   "/:workspaceId/overview",
   requireAuth,
   validate(workspaceOverviewSchema),

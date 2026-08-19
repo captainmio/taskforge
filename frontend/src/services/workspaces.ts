@@ -20,6 +20,6 @@ export const createWorkspace = async (
 };
 
 export const getWorkspaceOverview = async (workspaceId: string): Promise<ApiResponse> => {
-  const response = await apiClient.post<ApiResponse>(`/workspaces/${workspaceId}/overview`);
+  const response = await apiClient.get<ApiResponse>(`/workspaces/${workspaceId}/overview`);
   return response?.data;
 }
