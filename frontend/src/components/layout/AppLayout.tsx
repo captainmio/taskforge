@@ -19,8 +19,8 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
   const pageContent = children ?? <Outlet context={session} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-emerald-50/70 text-gray-900">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-gray-200 lg:block">
+    <div className="min-h-screen overflow-x-clip bg-gradient-to-br from-slate-50 via-slate-50 to-emerald-50/70 text-gray-900">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-70 border-r border-gray-200 lg:block">
         {sidebarContent}
       </aside>
 
@@ -29,6 +29,7 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
           type="button"
           onClick={() => setIsSidebarOpen(true)}
           aria-label="Open navigation"
+          aria-expanded={isSidebarOpen}
           className="flex size-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
         >
           <FaBars aria-hidden="true" />
@@ -48,7 +49,7 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
             aria-label="Close navigation"
             onClick={() => setIsSidebarOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85vw] border-r border-gray-200 bg-white shadow-xl">
+          <aside className="relative h-full w-70 max-w-[calc(100vw-3rem)] overflow-y-auto border-r border-gray-200 bg-white shadow-xl">
             <button
               type="button"
               aria-label="Close navigation"
@@ -62,8 +63,8 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
         </div>
       ) : null}
 
-      <div className="flex min-h-screen flex-col lg:ml-60">
-        <main className="flex-1">{pageContent}</main>
+      <div className="flex min-h-screen min-w-0 flex-col lg:ml-70">
+        <main className="min-w-0 flex-1">{pageContent}</main>
         <AppFooter className="border-t border-emerald-100 bg-white/60" />
       </div>
     </div>

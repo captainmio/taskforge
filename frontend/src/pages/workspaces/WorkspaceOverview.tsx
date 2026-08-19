@@ -95,7 +95,7 @@ const WorkspaceOverview = () => {
   if (authorizedWorkspaceId !== id) return null;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <AppHeader
           title="Workspace Overview"
           description="Here’s what’s happening in your workspace."
