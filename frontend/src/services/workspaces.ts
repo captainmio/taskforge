@@ -1,16 +1,8 @@
-import type { CreateWorkspacePayload } from "../types/workspace";
+import type {
+  CreateWorkspacePayload,
+  WorkspaceMember,
+} from "../types/workspace";
 import { apiClient, type ApiResponse } from "./api";
-
-// export interface CreateWorkspaceResponse {
-//   success: boolean;
-//   message: string;
-// }
-
-// export interface GetWorkspaceOverviewResponse {
-//   success: boolean;
-//   message?: string;
-//   data?: Record<string, unknown>
-// }
 
 export const createWorkspace = async (
   payload: CreateWorkspacePayload
@@ -19,7 +11,11 @@ export const createWorkspace = async (
   return response?.data;
 };
 
-export const getWorkspaceOverview = async (workspaceId: string): Promise<ApiResponse> => {
-  const response = await apiClient.get<ApiResponse>(`/workspaces/${workspaceId}/overview`);
+export const getWorkspaceOverview = async (
+  workspaceId: string,
+): Promise<ApiResponse<WorkspaceMember[]>> => {
+  const response = await apiClient.get<ApiResponse<WorkspaceMember[]>>(
+    `/workspaces/${workspaceId}/overview`,
+  );
   return response?.data;
-}
+};

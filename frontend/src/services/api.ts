@@ -5,10 +5,10 @@ interface ApiErrorResponse {
   error?: string;
 }
 
-export interface ApiResponse {
+export interface ApiResponse<TData = Record<string, unknown>> {
   success: boolean;
   message?: string;
-  data?: Record<string, unknown>;
+  data?: TData;
   error?: string;
 }
 const api: string = import.meta.env.VITE_API_URL;

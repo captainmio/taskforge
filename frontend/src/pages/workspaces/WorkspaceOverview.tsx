@@ -2,11 +2,9 @@ import {
   FaCalendarAlt,
   FaChevronRight,
   FaCode,
-  FaCog,
   FaDesktop,
   FaEdit,
   FaFolder,
-  FaHome,
   FaMobileAlt,
   FaPlus,
   FaSignOutAlt,
@@ -17,12 +15,8 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
-import AppLayout from "../../components/layout/AppLayout";
-import AppSidebar from "../../components/layout/AppSidebar";
-import ContextSwitcher from "../../components/layout/ContextSwitcher";
-import NavItem from "../../components/layout/NavItem";
 import ActionCard from "../../components/ui/ActionCard";
-import Badge from "../../components/ui/Badge";
+import Badge, { type BadgeVariant } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import IconDescriptionItem from "../../components/ui/IconDescriptionItem";
 import ProfileListItem from "../../components/ui/ProfileListItem";
@@ -32,6 +26,7 @@ import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { getInitials } from "../../utils/getInitials";
 import { useEffect, useState } from "react";
 import { getWorkspaceOverview } from "../../services/workspaces";
+import type { WorkspaceMember } from "../../types/workspace";
 
 const projects = [
   { name: "Website Redesign", tasks: 12, icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
@@ -39,22 +34,30 @@ const projects = [
   { name: "Backend API", tasks: 9, icon: <FaCode />, iconClassName: "bg-purple-50 text-purple-600" },
 ];
 
-const members = [
-  { name: "Jane Cooper", email: "jane@example.com" },
-  { name: "Devon Lane", email: "devon@example.com" },
-  { name: "Cody Fisher", email: "cody@example.com" },
-  { name: "Esther Howard", email: "esther@example.com" },
-];
+const memberRoleLabels: Record<WorkspaceMember["role"], string> = {
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  MEMBER: "Member",
+};
+
+const memberRoleBadgeVariants: Record<
+  WorkspaceMember["role"],
+  BadgeVariant
+> = {
+  OWNER: "green",
+  ADMIN: "purple",
+  MEMBER: "gray",
+};
 
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<string | null>(null);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const { user: currentUser } = useAuthenticatedSession();
   const workspaceName = "TaskForge Dev";
   const basePath = `/workspace/${id}`;
-  const userName = `${currentUser.firstname} ${currentUser.lastname}`;
-  const userEmail = currentUser.email;
+  const inviteMembersPath:string = `${basePath}/members/invite`;
 
   useEffect(() => {
     let isActive = true;
@@ -75,6 +78,7 @@ const WorkspaceOverview = () => {
           return;
         }
 
+        setWorkspaceMembers(response.data ?? []);
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });
@@ -90,33 +94,16 @@ const WorkspaceOverview = () => {
 
   if (authorizedWorkspaceId !== id) return null;
 
-  const sidebar = (
-    <AppSidebar
-      contextSwitcher={(
-        <ContextSwitcher name={workspaceName} initials={getInitials(workspaceName)} />
-      )}
-      navigation={(
-        <>
-          <NavItem to={basePath} icon={<FaHome />} label="Overview" end />
-          <NavItem icon={<FaFolder />} label="Projects" disabled />
-          <NavItem icon={<FaUsers />} label="Members" disabled />
-          <NavItem icon={<FaCog />} label="Settings" disabled />
-        </>
-      )}
-      secondaryAction={(
-        <NavItem icon={<FaSignOutAlt />} label="Leave workspace" disabled />
-      )}
-    />
-  );
-
   return (
-    <AppLayout sidebar={sidebar}>
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <AppHeader
           title="Workspace Overview"
           description="Here’s what’s happening in your workspace."
           primaryAction={(
-            <Button leadingIcon={<FaUserPlus />}>
+            <Button
+              leadingIcon={<FaUserPlus />}
+              onClick={() => navigate(inviteMembersPath)}
+            >
               Invite Member
             </Button>
           )}
@@ -149,7 +136,7 @@ const WorkspaceOverview = () => {
               <StatCard
                 icon={<FaUsers />}
                 label="Members"
-                value={5}
+                value={workspaceMembers.length}
                 iconClassName="bg-blue-50 text-blue-600 ring-blue-100"
               />
               <StatCard
@@ -192,26 +179,35 @@ const WorkspaceOverview = () => {
           <SectionCard
             title="Members"
             className="border-blue-100 bg-gradient-to-br from-white to-blue-50/60 shadow-sm"
-            action={<Button variant="outline" size="sm">Invite Member</Button>}
           >
-            <ul>
-              <ProfileListItem
-                name={`${userName} (You)`}
-                description={userEmail}
-                trailing={<Badge variant="green">Admin</Badge>}
-              />
-              {members.map((member) => (
-                <ProfileListItem
-                  key={member.email}
-                  name={member.name}
-                  description={member.email}
-                  trailing={<Badge>Member</Badge>}
-                />
-              ))}
-            </ul>
-            <button type="button" className="mx-auto mt-5 block text-sm font-semibold text-green-700 hover:text-green-800">
-              View all members
-            </button>
+            {workspaceMembers.length > 0 ? (
+              <ul>
+                {workspaceMembers.map((member) => {
+                  const memberName = `${member.firstname} ${member.lastname}`;
+                  const displayName =
+                    member.id === currentUser.id
+                      ? `${memberName} (You)`
+                      : memberName;
+
+                  return (
+                    <ProfileListItem
+                      key={member.id}
+                      name={displayName}
+                      description={member.email}
+                      trailing={(
+                        <Badge variant={memberRoleBadgeVariants[member.role]}>
+                          {memberRoleLabels[member.role]}
+                        </Badge>
+                      )}
+                    />
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-500">
+                No members.
+              </p>
+            )}
           </SectionCard>
         </div>
 
@@ -236,8 +232,7 @@ const WorkspaceOverview = () => {
             />
           </div>
         </SectionCard>
-      </div>
-    </AppLayout>
+    </div>
   );
 };
 

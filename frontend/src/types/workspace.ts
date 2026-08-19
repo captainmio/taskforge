@@ -36,3 +36,12 @@ export interface CreateWorkspacePayload {
   icon: WorkspaceIcon;
   invites: CreateWorkspaceInvite[];
 }
+
+export interface WorkspaceMember {
+  id: number;
+  firstname: string;
+  lastname: string;
+  email: string;
+  role: "OWNER" | WorkspaceRole;
+  joinedAt: string;
+}

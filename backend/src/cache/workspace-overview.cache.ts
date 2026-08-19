@@ -42,7 +42,7 @@ export const getCachedWorkspaceOverview = async (
   } catch (error) {
     // Cache availability must not prevent an authorized request from falling
     // back to the database through the service's cache-aside flow.
-    console.error("Unable to read workspace overview cache", error);
+    // console.error("Unable to read workspace overview cache", error);
     return null;
   }
 };
