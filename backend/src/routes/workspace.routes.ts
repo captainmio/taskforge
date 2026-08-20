@@ -3,6 +3,7 @@ import {
   acceptWorkspaceInvitation,
   createWorkspace,
   getWorkspaceOverview,
+  getWorkspaceMembers,
   inviteWorkspaceMembers,
 } from "../controllers/workspace.controller.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
@@ -14,6 +15,7 @@ import {
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   workspaceOverviewSchema,
+  workspaceMembersSchema,
 } from "../validations/workspace.validation.js";
 
 const router = Router();
@@ -30,6 +32,13 @@ router.get(
   validate(workspaceOverviewSchema),
   requireWorkspaceMembership,
   authenticatedHandler(getWorkspaceOverview),
+);
+router.get(
+  "/:workspaceId/members",
+  requireAuth,
+  validate(workspaceMembersSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(getWorkspaceMembers),
 );
 router.post(
   "/:workspaceId/invitations",

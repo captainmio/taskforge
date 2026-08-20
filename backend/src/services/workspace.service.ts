@@ -5,6 +5,12 @@ import {
   setCachedWorkspaceOverview,
   type WorkspaceOverviewData,
 } from "../cache/workspace-overview.cache.js";
+import {
+  deleteCachedWorkspaceMemberLists,
+  getCachedWorkspaceMembers,
+  setCachedWorkspaceMembers,
+  type WorkspaceMemberListData,
+} from "../cache/workspace-members.cache.js";
 import { env } from "../config/env.js";
 import {
   InvitationAcceptanceError,
@@ -29,6 +35,7 @@ import {
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceMembers,
+  findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
@@ -169,6 +176,10 @@ export const inviteWorkspaceMembers = async (
       throw new WorkspaceMemberAlreadyExistsError();
     }
 
+    // Invitation creation does not add a member yet, but clearing the list now
+    // ensures every invitation-related workflow starts from a fresh cache state.
+    await deleteCachedWorkspaceMemberLists(workspaceId);
+
     const tokenByEmail = new Map(
       preparedInvitations.map(({ data, token }) => [data.normalizedEmail, token]),
     );
@@ -280,6 +291,7 @@ export const acceptWorkspaceInvitation = async (
   // in PostgreSQL before removing the cached overview. The next overview request
   // will miss the cache, read the updated member list, and cache that fresh list.
   await deleteCachedWorkspaceOverview(invitation.workspaceId);
+  await deleteCachedWorkspaceMemberLists(invitation.workspaceId);
 
   return invitation.workspace;
 };
@@ -304,4 +316,39 @@ export const getWorkspaceOverview = async (
 
   await setCachedWorkspaceOverview(workspaceId, overview);
   return overview;
+};
+
+export const getWorkspaceMembers = async (
+  workspaceId: number,
+  page: number,
+  pageSize: number,
+): Promise<WorkspaceMemberListData> => {
+  const cachedMembers = await getCachedWorkspaceMembers(
+    workspaceId,
+    page,
+    pageSize,
+  );
+  if (cachedMembers) return cachedMembers;
+
+  const { members, total } = await findWorkspaceMembersPage(
+    workspaceId,
+    (page - 1) * pageSize,
+    pageSize,
+  );
+  const result: WorkspaceMemberListData = {
+    members: members.map(({ user, role, createdAt }) => ({
+      ...user,
+      role,
+      joinedAt: createdAt.toISOString(),
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    },
+  };
+
+  await setCachedWorkspaceMembers(workspaceId, result);
+  return result;
 };

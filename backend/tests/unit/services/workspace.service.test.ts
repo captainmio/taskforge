@@ -13,6 +13,11 @@ import {
 } from "../../../src/errors/workspace.errors.js";
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import {
+  deleteCachedWorkspaceMemberLists,
+  getCachedWorkspaceMembers,
+  setCachedWorkspaceMembers,
+} from "../../../src/cache/workspace-members.cache.js";
+import {
   enqueueInvitationEmails,
   findQueuedInvitationEmail,
 } from "../../../src/queues/invitation.queue.js";
@@ -22,6 +27,7 @@ import {
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
+  findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
@@ -29,6 +35,7 @@ import {
 import {
   acceptWorkspaceInvitation,
   createWorkspace,
+  getWorkspaceMembers,
   inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
 } from "../../../src/services/workspace.service.js";
@@ -44,6 +51,13 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
+  findWorkspaceMembersPage: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-members.cache.js", () => ({
+  deleteCachedWorkspaceMemberLists: vi.fn(),
+  getCachedWorkspaceMembers: vi.fn(),
+  setCachedWorkspaceMembers: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
@@ -85,6 +99,7 @@ describe("createWorkspace", () => {
     vi.mocked(createWorkspaceRecord).mockResolvedValue(persistedWorkspace);
     vi.mocked(enqueueInvitationEmails).mockResolvedValue(undefined);
     vi.mocked(markInvitationsQueued).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
     vi.mocked(findInvitationsAwaitingQueue).mockResolvedValue([]);
     vi.mocked(findQueuedInvitationEmail).mockResolvedValue(undefined);
     vi.mocked(replaceInvitationToken).mockResolvedValue(undefined);
@@ -251,6 +266,7 @@ describe("inviteWorkspaceMembers", () => {
       expect.objectContaining({ invitationId: 41 }),
     ]);
     expect(markInvitationsQueued).toHaveBeenCalledWith([40, 41]);
+    expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
   });
 
   it("rejects the complete batch without queueing when an email is already a member", async () => {
@@ -270,6 +286,7 @@ describe("inviteWorkspaceMembers", () => {
     ).rejects.toBeInstanceOf(WorkspaceMemberAlreadyExistsError);
     expect(enqueueInvitationEmails).not.toHaveBeenCalled();
     expect(markInvitationsQueued).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
   });
 
   it("translates a previously invited email database conflict", async () => {
@@ -287,6 +304,7 @@ describe("inviteWorkspaceMembers", () => {
       }),
     ).rejects.toBeInstanceOf(WorkspaceInvitationAlreadyExistsError);
     expect(enqueueInvitationEmails).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
   });
 
   it("keeps saved invitations pending when Redis is temporarily unavailable", async () => {
@@ -328,6 +346,7 @@ describe("acceptWorkspaceInvitation", () => {
     vi.mocked(acceptInvitationRecord).mockResolvedValue(true);
     vi.mocked(markInvitationExpired).mockResolvedValue(undefined);
     vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
   });
 
   it("adds the matching user with the invitation role and returns the workspace", async () => {
@@ -344,6 +363,7 @@ describe("acceptWorkspaceInvitation", () => {
       role: WorkspaceRole.MEMBER,
     });
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
   });
 
   it("rejects a token that has no matching invitation", async () => {
@@ -400,5 +420,82 @@ describe("acceptWorkspaceInvitation", () => {
       reason: "ALREADY_USED",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+  });
+});
+
+describe("getWorkspaceMembers", () => {
+  const repositoryPage = {
+    members: [
+      {
+        user: {
+          id: 8,
+          firstname: "Workspace",
+          lastname: "Member",
+          email: "member@example.com",
+        },
+        role: WorkspaceRole.MEMBER,
+        createdAt: new Date("2026-08-20T00:00:00.000Z"),
+      },
+    ],
+    total: 41,
+  };
+  const memberPage = {
+    members: [
+      {
+        id: 8,
+        firstname: "Workspace",
+        lastname: "Member",
+        email: "member@example.com",
+        role: WorkspaceRole.MEMBER,
+        joinedAt: "2026-08-20T00:00:00.000Z",
+      },
+    ],
+    pagination: {
+      page: 2,
+      pageSize: 20,
+      total: 41,
+      totalPages: 3,
+    },
+  };
+
+  beforeEach(() => {
+    vi.mocked(getCachedWorkspaceMembers).mockResolvedValue(null);
+    vi.mocked(findWorkspaceMembersPage).mockResolvedValue(repositoryPage);
+    vi.mocked(setCachedWorkspaceMembers).mockResolvedValue(undefined);
+  });
+
+  it("returns the requested cached page without querying PostgreSQL", async () => {
+    vi.mocked(getCachedWorkspaceMembers).mockResolvedValue(memberPage);
+
+    await expect(getWorkspaceMembers(10, 2, 20)).resolves.toEqual(memberPage);
+    expect(getCachedWorkspaceMembers).toHaveBeenCalledWith(10, 2, 20);
+    expect(findWorkspaceMembersPage).not.toHaveBeenCalled();
+    expect(setCachedWorkspaceMembers).not.toHaveBeenCalled();
+  });
+
+  it("fetches the correct page, normalizes dates, and caches the response", async () => {
+    await expect(getWorkspaceMembers(10, 2, 20)).resolves.toEqual(memberPage);
+    expect(findWorkspaceMembersPage).toHaveBeenCalledWith(10, 20, 20);
+    expect(setCachedWorkspaceMembers).toHaveBeenCalledWith(10, memberPage);
+  });
+
+  it("returns and caches an empty page with zero total pages", async () => {
+    vi.mocked(findWorkspaceMembersPage).mockResolvedValue({
+      members: [],
+      total: 0,
+    });
+    const emptyPage = {
+      members: [],
+      pagination: {
+        page: 3,
+        pageSize: 20,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+
+    await expect(getWorkspaceMembers(10, 3, 20)).resolves.toEqual(emptyPage);
+    expect(findWorkspaceMembersPage).toHaveBeenCalledWith(10, 40, 20);
+    expect(setCachedWorkspaceMembers).toHaveBeenCalledWith(10, emptyPage);
   });
 });

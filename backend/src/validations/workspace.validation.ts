@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_PAGE_SIZE } from "../config/pagination.js";
 
 const workspaceIconSchema = z.enum([
   "code",
@@ -82,6 +83,28 @@ export const workspaceOverviewSchema = z.object({
   params: workspaceParamsSchema,
 });
 
+const positiveIntegerQueryValue = (label: string) =>
+  z
+    .string()
+    .regex(/^[1-9]\d*$/, `${label} must be a positive integer`)
+    .refine(
+      (value) => Number.isSafeInteger(Number(value)),
+      `${label} is too large`,
+    );
+
+export const workspaceMembersSchema = z.object({
+  params: workspaceParamsSchema,
+  query: z.object({
+    page: positiveIntegerQueryValue("Page").optional(),
+    pageSize: positiveIntegerQueryValue("Page size")
+      .refine(
+        (value) => Number(value) <= MAX_PAGE_SIZE,
+        `Page size cannot exceed ${MAX_PAGE_SIZE}`,
+      )
+      .optional(),
+  }),
+});
+
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
 export type AcceptWorkspaceInvitationBody = z.infer<
   typeof acceptWorkspaceInvitationSchema
@@ -95,3 +118,6 @@ export type WorkspaceParams = z.infer<
 export type WorkspaceOverviewParams = z.infer<
   typeof workspaceOverviewSchema
 >["params"];
+export type WorkspaceMembersQuery = z.infer<
+  typeof workspaceMembersSchema
+>["query"];

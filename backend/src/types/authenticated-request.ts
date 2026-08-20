@@ -8,10 +8,12 @@ export interface AuthenticatedUser {
 export type AuthenticatedRequest<
   TBody = unknown,
   TParams = Record<string, never>,
+  TQuery = Record<string, never>,
 > = Request<
   TParams,
   unknown,
-  TBody
+  TBody,
+  TQuery
 > & {
   user: AuthenticatedUser;
 };

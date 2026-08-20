@@ -260,6 +260,38 @@ export const findWorkspaceMembers = async (workspaceId: number) =>
     },
   });
 
+export const findWorkspaceMembersPage = async (
+  workspaceId: number,
+  skip: number,
+  take: number,
+) => {
+  const [total, members] = await prisma.$transaction([
+    prisma.workspaceMember.count({ where: { workspaceId } }),
+    prisma.workspaceMember.findMany({
+      where: { workspaceId },
+      // Pagination requires a stable database order. These fields only keep page
+      // boundaries consistent; user-selected sorting remains in the frontend.
+      orderBy: [{ createdAt: "asc" }, { userId: "asc" }],
+      skip,
+      take,
+      select: {
+        role: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return { members, total };
+};
+
 export const markInvitationExpired = async (
   invitationId: number,
 ): Promise<void> => {

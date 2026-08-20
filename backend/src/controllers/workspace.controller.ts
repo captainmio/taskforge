@@ -1,5 +1,9 @@
 import type { Response } from "express";
 import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+} from "../config/pagination.js";
+import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceMemberAlreadyExistsError,
@@ -10,6 +14,7 @@ import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
   createWorkspace as createWorkspaceService,
   getWorkspaceOverview as getWorkspaceOverviewService,
+  getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
@@ -19,6 +24,7 @@ import type {
   InviteWorkspaceMembersBody,
   WorkspaceParams,
   WorkspaceOverviewParams,
+  WorkspaceMembersQuery,
 } from "../validations/workspace.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 
@@ -138,6 +144,34 @@ export const getWorkspaceOverview = async (
     return res
       .status(200)
       .json(createSuccessResponse("Workspace members retrieved", members));
+  } catch {
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const getWorkspaceMembers = async (
+  req: AuthenticatedRequest<unknown, WorkspaceParams, WorkspaceMembersQuery>,
+  res: Response,
+) => {
+  try {
+    // Query validation guarantees positive integer strings before this handler.
+    // Defaults live in the shared pagination config for reuse by future lists.
+    const page = req.query.page ? Number(req.query.page) : DEFAULT_PAGE;
+    const pageSize = req.query.pageSize
+      ? Number(req.query.pageSize)
+      : DEFAULT_PAGE_SIZE;
+    const result = await getWorkspaceMembersService(
+      Number(req.params.workspaceId),
+      page,
+      pageSize,
+    );
+
+    return res
+      .status(200)
+      .json(createSuccessResponse("Workspace members retrieved", result));
   } catch {
     return res.status(500).json({
       success: false,

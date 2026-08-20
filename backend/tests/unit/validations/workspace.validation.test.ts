@@ -4,6 +4,7 @@ import {
   acceptWorkspaceInvitationSchema,
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
+  workspaceMembersSchema,
 } from "../../../src/validations/workspace.validation.js";
 
 describe("createWorkspaceSchema", () => {
@@ -147,6 +148,43 @@ describe("inviteWorkspaceMembersSchema", () => {
     const result = inviteWorkspaceMembersSchema.safeParse({
       params: { workspaceId: "42" },
       body: { invitations },
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("workspaceMembersSchema", () => {
+  it("accepts omitted pagination values so the controller can use global defaults", () => {
+    const result = workspaceMembersSchema.safeParse({
+      params: { workspaceId: "42" },
+      query: {},
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts positive pagination values up to the global maximum page size", () => {
+    const result = workspaceMembersSchema.safeParse({
+      params: { workspaceId: "42" },
+      query: { page: "2", pageSize: "20" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    ["page zero", { page: "0" }],
+    ["a negative page", { page: "-1" }],
+    ["a decimal page", { page: "1.5" }],
+    ["a non-numeric page", { page: "next" }],
+    ["an unsafe page", { page: "9007199254740992" }],
+    ["page size zero", { pageSize: "0" }],
+    ["a page size above 20", { pageSize: "21" }],
+  ])("rejects %s", (_, query) => {
+    const result = workspaceMembersSchema.safeParse({
+      params: { workspaceId: "42" },
+      query,
     });
 
     expect(result.success).toBe(false);
