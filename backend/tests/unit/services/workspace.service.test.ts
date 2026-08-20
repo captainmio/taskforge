@@ -9,7 +9,10 @@ import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceMemberAlreadyExistsError,
+  WorkspaceMemberNotFoundError,
+  WorkspaceMemberRemovalForbiddenError,
   WorkspaceNameAlreadyExistsError,
+  WorkspaceOwnerRemovalError,
 } from "../../../src/errors/workspace.errors.js";
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import {
@@ -31,6 +34,7 @@ import {
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
+  removeWorkspaceMemberRecord,
 } from "../../../src/repositories/workspace.repository.js";
 import {
   acceptWorkspaceInvitation,
@@ -38,6 +42,7 @@ import {
   getWorkspaceMembers,
   inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
+  removeWorkspaceMember,
 } from "../../../src/services/workspace.service.js";
 import { validWorkspace } from "../../helpers/workspace.fixture.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,6 +57,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
   findWorkspaceMembersPage: vi.fn(),
+  removeWorkspaceMemberRecord: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-members.cache.js", () => ({
@@ -497,5 +503,62 @@ describe("getWorkspaceMembers", () => {
     await expect(getWorkspaceMembers(10, 3, 20)).resolves.toEqual(emptyPage);
     expect(findWorkspaceMembersPage).toHaveBeenCalledWith(10, 40, 20);
     expect(setCachedWorkspaceMembers).toHaveBeenCalledWith(10, emptyPage);
+  });
+});
+
+describe("removeWorkspaceMember", () => {
+  beforeEach(() => {
+    vi.mocked(removeWorkspaceMemberRecord).mockResolvedValue({
+      status: "REMOVED",
+      previousRole: WorkspaceRole.MEMBER,
+    });
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+  });
+
+  it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
+    "allows a workspace %s to remove a non-owner member and clears both caches",
+    async (actorRole) => {
+      await expect(removeWorkspaceMember(10, 8, actorRole)).resolves.toEqual({
+        memberId: 8,
+        previousRole: WorkspaceRole.MEMBER,
+      });
+      expect(removeWorkspaceMemberRecord).toHaveBeenCalledWith(10, 8);
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
+    },
+  );
+
+  it("rejects a regular member before accessing the repository or caches", async () => {
+    await expect(
+      removeWorkspaceMember(10, 8, WorkspaceRole.MEMBER),
+    ).rejects.toBeInstanceOf(WorkspaceMemberRemovalForbiddenError);
+    expect(removeWorkspaceMemberRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without clearing caches when the target is absent", async () => {
+    vi.mocked(removeWorkspaceMemberRecord).mockResolvedValue({
+      status: "NOT_FOUND",
+    });
+
+    await expect(
+      removeWorkspaceMember(10, 99, WorkspaceRole.ADMIN),
+    ).rejects.toBeInstanceOf(WorkspaceMemberNotFoundError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("protects the workspace owner without clearing caches", async () => {
+    vi.mocked(removeWorkspaceMemberRecord).mockResolvedValue({
+      status: "OWNER_PROTECTED",
+    });
+
+    await expect(
+      removeWorkspaceMember(10, 7, WorkspaceRole.OWNER),
+    ).rejects.toBeInstanceOf(WorkspaceOwnerRemovalError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
   });
 });

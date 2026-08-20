@@ -4,6 +4,7 @@ import {
   acceptWorkspaceInvitationSchema,
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
+  removeWorkspaceMemberSchema,
   workspaceMembersSchema,
 } from "../../../src/validations/workspace.validation.js";
 
@@ -189,4 +190,36 @@ describe("workspaceMembersSchema", () => {
 
     expect(result.success).toBe(false);
   });
+});
+
+describe("removeWorkspaceMemberSchema", () => {
+  it("accepts positive workspace and member IDs", () => {
+    const result = removeWorkspaceMemberSchema.safeParse({
+      params: { workspaceId: "42", memberId: "7" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["0", "-1", "1.5", "invalid", "9007199254740992"])(
+    "rejects invalid workspace ID %s",
+    (workspaceId) => {
+      const result = removeWorkspaceMemberSchema.safeParse({
+        params: { workspaceId, memberId: "7" },
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
+
+  it.each(["0", "-1", "1.5", "invalid", "9007199254740992"])(
+    "rejects invalid member ID %s",
+    (memberId) => {
+      const result = removeWorkspaceMemberSchema.safeParse({
+        params: { workspaceId: "42", memberId },
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
 });

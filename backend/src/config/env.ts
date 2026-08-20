@@ -3,6 +3,24 @@ import { z } from "zod";
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+    .default("info"),
+  LOG_FILE_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  LOG_FILE_PATH: z.string().trim().min(1).default("logs/application.log"),
+  LOG_FILE_MAX_SIZE: z
+    .string()
+    .regex(/^\d+(?:\.\d+)?[kmg]$/i, "Log file size must use k, m, or g units")
+    .default("10m"),
+  LOG_FILE_RETENTION_COUNT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .default(30),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   FRONTEND_API: z.url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),

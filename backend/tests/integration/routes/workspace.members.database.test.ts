@@ -2,9 +2,11 @@ import jwt from "jsonwebtoken";
 import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  deleteCachedWorkspaceMemberLists,
   getCachedWorkspaceMembers,
   setCachedWorkspaceMembers,
 } from "../../../src/cache/workspace-members.cache.js";
+import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import { JWT_SECRET } from "../../../src/config/auth.js";
 import { prisma } from "../../../src/config/database.js";
 import {
@@ -17,6 +19,12 @@ vi.mock("../../../src/cache/workspace-members.cache.js", () => ({
   deleteCachedWorkspaceMemberLists: vi.fn(),
   getCachedWorkspaceMembers: vi.fn(),
   setCachedWorkspaceMembers: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
+  deleteCachedWorkspaceOverview: vi.fn(),
+  getCachedWorkspaceOverview: vi.fn(),
+  setCachedWorkspaceOverview: vi.fn(),
 }));
 
 const { default: app } = await import("../../../src/app.js");
@@ -82,6 +90,8 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
   beforeEach(async () => {
     vi.mocked(getCachedWorkspaceMembers).mockResolvedValue(null);
     vi.mocked(setCachedWorkspaceMembers).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
     await clearTestDatabase();
   });
 
@@ -167,5 +177,105 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
     expect(response.status).toBe(400);
     expect(response.body.message).toBe("Validation failed");
     expect(getCachedWorkspaceMembers).not.toHaveBeenCalled();
+  });
+
+  it("lets an admin delete a member and immediately removes that member's access", async () => {
+    const { workspace, members } = await createWorkspaceWithMembers(2);
+    const admin = members[0];
+    const member = members[1];
+    if (!admin || !member) {
+      throw new Error("Expected the admin and member fixtures to exist");
+    }
+    const adminCookie = `accessToken=${jwt.sign(
+      { sub: admin.id, email: admin.email },
+      JWT_SECRET,
+    )}`;
+    const memberCookie = `accessToken=${jwt.sign(
+      { sub: member.id, email: member.email },
+      JWT_SECRET,
+    )}`;
+
+    const removalResponse = await request(app)
+      .delete(`/api/workspaces/${workspace.id}/members/${member.id}`)
+      .set("Cookie", adminCookie);
+
+    expect(removalResponse.status).toBe(200);
+    expect(removalResponse.body.data).toEqual({ memberId: member.id });
+    await expect(
+      prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: workspace.id,
+            userId: member.id,
+          },
+        },
+      }),
+    ).resolves.toBeNull();
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(workspace.id);
+    expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(workspace.id);
+
+    const subsequentResponse = await request(app)
+      .get(`/api/workspaces/${workspace.id}/members`)
+      .set("Cookie", memberCookie);
+    expect(subsequentResponse.status).toBe(403);
+  });
+
+  it("keeps the owner membership when an admin attempts to remove it", async () => {
+    const { owner, workspace, members } = await createWorkspaceWithMembers(1);
+    const admin = members[0];
+    if (!admin) throw new Error("Expected the admin fixture to exist");
+    const adminCookie = `accessToken=${jwt.sign(
+      { sub: admin.id, email: admin.email },
+      JWT_SECRET,
+    )}`;
+
+    const response = await request(app)
+      .delete(`/api/workspaces/${workspace.id}/members/${owner.id}`)
+      .set("Cookie", adminCookie);
+
+    expect(response.status).toBe(409);
+    await expect(
+      prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: workspace.id,
+            userId: owner.id,
+          },
+        },
+      }),
+    ).resolves.toMatchObject({ role: WorkspaceRole.OWNER });
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("prevents a regular member from deleting another workspace member", async () => {
+    const { workspace, members } = await createWorkspaceWithMembers(2);
+    const admin = members[0];
+    const member = members[1];
+    if (!admin || !member) {
+      throw new Error("Expected the admin and member fixtures to exist");
+    }
+    const memberCookie = `accessToken=${jwt.sign(
+      { sub: member.id, email: member.email },
+      JWT_SECRET,
+    )}`;
+
+    const response = await request(app)
+      .delete(`/api/workspaces/${workspace.id}/members/${admin.id}`)
+      .set("Cookie", memberCookie);
+
+    expect(response.status).toBe(403);
+    await expect(
+      prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: workspace.id,
+            userId: admin.id,
+          },
+        },
+      }),
+    ).resolves.toMatchObject({ role: WorkspaceRole.ADMIN });
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
   });
 });

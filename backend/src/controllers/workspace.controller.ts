@@ -7,8 +7,11 @@ import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceMemberAlreadyExistsError,
+  WorkspaceMemberNotFoundError,
+  WorkspaceMemberRemovalForbiddenError,
   type InvitationAcceptanceFailure,
   WorkspaceNameAlreadyExistsError,
+  WorkspaceOwnerRemovalError,
 } from "../errors/workspace.errors.js";
 import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
@@ -16,6 +19,7 @@ import {
   getWorkspaceOverview as getWorkspaceOverviewService,
   getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
+  removeWorkspaceMember as removeWorkspaceMemberService,
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
@@ -25,6 +29,7 @@ import type {
   WorkspaceParams,
   WorkspaceOverviewParams,
   WorkspaceMembersQuery,
+  RemoveWorkspaceMemberParams,
 } from "../validations/workspace.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 
@@ -192,6 +197,100 @@ export const getWorkspaceMembers = async (
       }),
     );
   } catch {
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const removeWorkspaceMember = async (
+  req: AuthenticatedRequest<unknown, RemoveWorkspaceMemberParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const memberUserId = Number(req.params.memberId);
+  const actorRole = req.workspaceMembership?.role;
+  const logContext = {
+    workspaceId,
+    actorUserId: req.user.id,
+    targetUserId: memberUserId,
+  };
+
+  if (!actorRole) {
+    // Routes using this controller must first verify workspace membership. Keep
+    // a defensive response here so a future routing mistake cannot bypass that
+    // authorization boundary or expose member-management behavior.
+    req.log.warn(
+      {
+        event: "workspace.member_removal_rejected",
+        reason: "MEMBERSHIP_CONTEXT_MISSING",
+        ...logContext,
+      },
+      "Workspace member removal rejected",
+    );
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const result = await removeWorkspaceMemberService(
+      workspaceId,
+      memberUserId,
+      actorRole,
+    );
+
+    // Log only stable database identifiers and the previous role. Email and
+    // profile fields are unnecessary for diagnosis and would add personal data.
+    req.log.info(
+      {
+        event: "workspace.member_removed",
+        previousRole: result.previousRole,
+        ...logContext,
+      },
+      "Workspace member removed",
+    );
+
+    return res.status(200).json(
+      createSuccessResponse("Workspace member removed", {
+        memberId: result.memberId,
+      }),
+    );
+  } catch (error) {
+    if (
+      error instanceof WorkspaceMemberRemovalForbiddenError ||
+      error instanceof WorkspaceMemberNotFoundError ||
+      error instanceof WorkspaceOwnerRemovalError
+    ) {
+      const status = error instanceof WorkspaceMemberNotFoundError ? 404 :
+        error instanceof WorkspaceOwnerRemovalError ? 409 : 403;
+
+      req.log.warn(
+        {
+          event: "workspace.member_removal_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "Workspace member removal rejected",
+      );
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    // Include the Error object only for unexpected failures so Pino preserves
+    // its stack trace. The global redaction rules still remove known secrets.
+    req.log.error(
+      {
+        event: "workspace.member_removal_failed",
+        err: error,
+        ...logContext,
+      },
+      "Unable to remove workspace member",
+    );
     return res.status(500).json({
       success: false,
       error: "Something went wrong on our end",

@@ -19,6 +19,27 @@ export class WorkspaceInvitationAlreadyExistsError extends Error {
   }
 }
 
+export class WorkspaceMemberRemovalForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can remove members");
+    this.name = "WorkspaceMemberRemovalForbiddenError";
+  }
+}
+
+export class WorkspaceMemberNotFoundError extends Error {
+  constructor() {
+    super("Workspace member not found");
+    this.name = "WorkspaceMemberNotFoundError";
+  }
+}
+
+export class WorkspaceOwnerRemovalError extends Error {
+  constructor() {
+    super("The workspace owner cannot be removed");
+    this.name = "WorkspaceOwnerRemovalError";
+  }
+}
+
 export type InvitationAcceptanceFailure =
   | "INVALID"
   | "EXPIRED"

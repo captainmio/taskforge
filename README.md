@@ -7,7 +7,7 @@ A full-stack web application with a React frontend and an Express API. The backe
 | Area | Main technologies |
 | --- | --- |
 | Frontend | TypeScript, React 19, Vite, Tailwind CSS, React Router, Axios, React Hook Form |
-| Backend | TypeScript, Node.js, Express 5, PostgreSQL, Prisma ORM, Redis, BullMQ, Zod, JWT, bcrypt |
+| Backend | TypeScript, Node.js, Express 5, PostgreSQL, Prisma ORM, Redis, BullMQ, Pino, Zod, JWT, bcrypt |
 | Backend testing | Vitest and Supertest |
 
 ## Prerequisites
@@ -40,6 +40,11 @@ JWT_SECRET="REPLACE_WITH_A_SECURE_SECRET"
 REDIS_PORT=6379
 REDIS_URL="redis://127.0.0.1:6379"
 INVITATION_LOG_PATH="logs/invitations.log"
+LOG_LEVEL="info"
+LOG_FILE_ENABLED="true"
+LOG_FILE_PATH="logs/application.log"
+LOG_FILE_MAX_SIZE="10m"
+LOG_FILE_RETENTION_COUNT="30"
 ```
 
 Create `frontend/.env`:
@@ -87,6 +92,12 @@ npm run dev
 The invitation worker processes BullMQ jobs and currently writes invitation emails to `backend/logs/invitations.log`. After running `npm run build`, production should run the API with `npm start` and the compiled worker as a separate process with `npm run worker:invitations:start`.
 
 The frontend runs at `http://localhost:5173` and the API runs at `http://localhost:3000/api` by default.
+
+## Backend Logs
+
+Pino writes structured application and HTTP logs to the backend terminal and, by default, to rotated JSON files under `backend/logs`. Files rotate daily or at 10 MB, and the newest 30 rotated files are retained in addition to the active file. These settings can be changed through the `LOG_*` environment variables shown above.
+
+`backend/logs/invitations.log` is separate: it temporarily represents invitation emails until a real email provider is connected.
 
 ## Frontend Tests
 

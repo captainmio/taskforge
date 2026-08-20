@@ -292,6 +292,63 @@ export const findWorkspaceMembersPage = async (
   return { members, total };
 };
 
+export const removeWorkspaceMemberRecord = async (
+  workspaceId: number,
+  memberUserId: number,
+) =>
+  prisma.$transaction(async (transaction) => {
+    const membership = await transaction.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId: memberUserId,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (!membership) return { status: "NOT_FOUND" as const };
+    if (membership.role === WorkspaceRole.OWNER) {
+      return { status: "OWNER_PROTECTED" as const };
+    }
+
+    // Keep the OWNER condition in the delete itself, even though the role was
+    // checked above. This prevents a future concurrent role update from
+    // removing the owner between the read and delete statements.
+    const deletion = await transaction.workspaceMember.deleteMany({
+      where: {
+        workspaceId,
+        userId: memberUserId,
+        role: { not: WorkspaceRole.OWNER },
+      },
+    });
+
+    if (deletion.count === 0) {
+      // A simultaneous request may have deleted the membership after the first
+      // read, while a future role-management flow could have promoted it to the
+      // protected owner role. Read once more so callers receive the correct
+      // not-found or owner-protected result for either race.
+      const currentMembership = await transaction.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId,
+            userId: memberUserId,
+          },
+        },
+        select: { role: true },
+      });
+
+      return currentMembership?.role === WorkspaceRole.OWNER
+        ? { status: "OWNER_PROTECTED" as const }
+        : { status: "NOT_FOUND" as const };
+    }
+
+    return {
+      status: "REMOVED" as const,
+      previousRole: membership.role,
+    };
+  });
+
 export const markInvitationExpired = async (
   invitationId: number,
 ): Promise<void> => {

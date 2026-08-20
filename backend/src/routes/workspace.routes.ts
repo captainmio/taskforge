@@ -5,6 +5,7 @@ import {
   getWorkspaceOverview,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
+  removeWorkspaceMember,
 } from "../controllers/workspace.controller.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
@@ -16,6 +17,7 @@ import {
   inviteWorkspaceMembersSchema,
   workspaceOverviewSchema,
   workspaceMembersSchema,
+  removeWorkspaceMemberSchema,
 } from "../validations/workspace.validation.js";
 
 const router = Router();
@@ -39,6 +41,13 @@ router.get(
   validate(workspaceMembersSchema),
   requireWorkspaceMembership,
   authenticatedHandler(getWorkspaceMembers),
+);
+router.delete(
+  "/:workspaceId/members/:memberId",
+  requireAuth,
+  validate(removeWorkspaceMemberSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(removeWorkspaceMember),
 );
 router.post(
   "/:workspaceId/invitations",

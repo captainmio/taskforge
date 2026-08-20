@@ -16,6 +16,7 @@
 * dotenv
 * `tsx` and Nodemon for development
 * Redis and BullMQ for background jobs
+* Pino and pino-http for structured application and request logging
 
 ## Folder Structure
 
@@ -228,6 +229,14 @@ If a new package is needed:
   * Feature boundaries such as authorization order, cache fallbacks, and data-shape transformations.
 * Keep explanatory comments close to the behavior they document so future changes update both together.
 * Avoid comments that simply repeat what the code already says.
+
+## Logging
+
+* Use the shared Pino logger instead of adding new `console.log`, `console.warn`, or `console.error` calls.
+* Use `req.log` inside request handlers so business events include the HTTP request ID. Use the shared logger from `/src/config/logger.ts` for code that does not have a request, such as workers and startup logic.
+* Log structured fields with stable event names, database identifiers, and outcomes. Do not log passwords, cookies, authorization headers, invitation tokens, or unnecessary personal data.
+* Pass unexpected errors through the `err` field so Pino records their message and stack trace.
+* Application logs are written to stdout and, when enabled, rotated files under `backend/logs`. The invitation delivery file is a separate temporary substitute for email and must not be treated as an application log.
 
 ## Before Starting a Task
 

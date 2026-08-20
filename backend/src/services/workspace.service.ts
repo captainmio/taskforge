@@ -16,7 +16,10 @@ import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceMemberAlreadyExistsError,
+  WorkspaceMemberNotFoundError,
+  WorkspaceMemberRemovalForbiddenError,
   WorkspaceNameAlreadyExistsError,
+  WorkspaceOwnerRemovalError,
 } from "../errors/workspace.errors.js";
 import { Prisma } from "../generated/prisma/client.js";
 import {
@@ -39,6 +42,7 @@ import {
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
+  removeWorkspaceMemberRecord,
   type CreateWorkspaceInvitationData,
 } from "../repositories/workspace.repository.js";
 import type {
@@ -351,4 +355,44 @@ export const getWorkspaceMembers = async (
 
   await setCachedWorkspaceMembers(workspaceId, result);
   return result;
+};
+
+export const removeWorkspaceMember = async (
+  workspaceId: number,
+  memberUserId: number,
+  actorRole: WorkspaceRole,
+) => {
+  if (
+    actorRole !== WorkspaceRole.OWNER &&
+    actorRole !== WorkspaceRole.ADMIN
+  ) {
+    throw new WorkspaceMemberRemovalForbiddenError();
+  }
+
+  const removal = await removeWorkspaceMemberRecord(
+    workspaceId,
+    memberUserId,
+  );
+
+  if (removal.status === "NOT_FOUND") {
+    throw new WorkspaceMemberNotFoundError();
+  }
+
+  if (removal.status === "OWNER_PROTECTED") {
+    throw new WorkspaceOwnerRemovalError();
+  }
+
+  // Membership authorization reads PostgreSQL on every protected request, so
+  // the removed user loses workspace access immediately after this commit.
+  // Clear both cached representations before returning so no workspace page
+  // continues displaying a member who no longer has access.
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceMemberLists(workspaceId),
+  ]);
+
+  return {
+    memberId: memberUserId,
+    previousRole: removal.previousRole,
+  };
 };

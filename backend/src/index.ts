@@ -1,13 +1,12 @@
 import app from "./app.js";
 import { closeCacheRedisConnection } from "./config/cache.js";
 import { env } from "./config/env.js";
+import { logger } from "./config/logger.js";
 
 const port = env.PORT;
 
 const server = app.listen(port, () => {
-  console.log("=============================================");
-  console.log(`==== SERVER IS NOW RUNNING AT PORT: ${port} ====`);
-  console.log("=============================================");
+  logger.info({ event: "server.started", port }, "====HTTP server started====");
 });
 
 let isShuttingDown = false;
@@ -22,9 +21,15 @@ const shutdown = (): void => {
     closeCacheRedisConnection();
 
     if (error) {
-      console.error("Unable to close HTTP server cleanly", error);
+      logger.error(
+        { event: "server.shutdown_failed", err: error },
+        "Unable to close HTTP server cleanly",
+      );
       process.exitCode = 1;
+      return;
     }
+
+    logger.info({ event: "server.stopped" }, "HTTP server stopped");
   });
 };
 
