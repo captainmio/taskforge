@@ -16,10 +16,11 @@ import DataTable, {
 } from "../../components/ui/DataTable";
 import InitialsAvatar from "../../components/ui/InitialsAvatar";
 import Modal from "../../components/ui/Modal";
+import PaginationControls from "../../components/ui/PaginationControls";
 import SectionCard from "../../components/ui/SectionCard";
 import Textbox from "../../components/ui/Textbox";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
-import { getWorkspaceOverview } from "../../services/workspaces";
+import { getWorkspaceMembers } from "../../services/workspaces";
 import {
   WorkspaceMemberRole,
   WorkspaceRole,
@@ -57,6 +58,8 @@ const memberSortColumns = {
   ROLE: "role",
 } as const;
 
+const MEMBERS_PER_PAGE = 20;
+
 const WorkspaceMembers = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -65,6 +68,16 @@ const WorkspaceMembers = () => {
     string | null
   >(null);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [currentUserRole, setCurrentUserRole] =
+    useState<WorkspaceMemberRoleValue>();
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: MEMBERS_PER_PAGE,
+    total: 0,
+    totalPages: 0,
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<MemberRoleFilter>("ALL");
   const [sort, setSort] = useState<DataTableSort | null>(null);
@@ -86,17 +99,26 @@ const WorkspaceMembers = () => {
     }
 
     const loadMembers = async () => {
+      setIsLoading(true);
+
       try {
-        // Temporary source until GET /workspaces/:workspaceId/members is added.
-        // The prepared service contract will replace this overview request and
-        // receive search, filter, sorting, and pagination values from this page.
-        const response = await getWorkspaceOverview(id);
+        const response = await getWorkspaceMembers(id, {
+          page,
+          pageSize: MEMBERS_PER_PAGE,
+        });
         if (!isActive) return;
 
-        setMembers(response.data);
+        setMembers(response.data.members);
+        setPagination(response.data.pagination);
+        // The backend supplies the requester's role independently from the
+        // current page, so admin controls remain correct even when that user's
+        // own member record appears on a different page.
+        setCurrentUserRole(response.data.currentUserRole);
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });
+      } finally {
+        if (isActive) setIsLoading(false);
       }
     };
 
@@ -105,12 +127,9 @@ const WorkspaceMembers = () => {
     return () => {
       isActive = false;
     };
-  }, [id, navigate]);
+  }, [id, navigate, page]);
 
-  const currentMembership = members.find(
-    (member) => member.id === currentUser.id,
-  );
-  const canManageMembers = canManageWorkspaceMembers(currentMembership?.role);
+  const canManageMembers = canManageWorkspaceMembers(currentUserRole);
 
   const filteredMembers = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -332,7 +351,7 @@ const WorkspaceMembers = () => {
       />
 
       <SectionCard
-        title={`Workspace Members (${members.length})`}
+        title={`Workspace Members (${pagination.total})`}
         className="mt-7 border-blue-100 shadow-sm"
       >
         <div className="mb-5 grid gap-3 border-b border-gray-100 pb-5 md:grid-cols-[minmax(0,1fr)_13rem]">
@@ -368,26 +387,53 @@ const WorkspaceMembers = () => {
           </div>
         </div>
 
-        <DataTable
-          ariaLabel="Workspace members"
-          rows={filteredMembers}
-          columns={columns}
-          getRowKey={(member) => member.id}
-          sort={sort}
-          onSortChange={handleSortChange}
-          emptyState={(
-            <div className="py-12 text-center">
-            <FaUsers className="mx-auto size-7 text-gray-300" aria-hidden="true" />
+        {isLoading ? (
+          <div className="py-12 text-center" role="status">
+            <FaUsers
+              className="mx-auto size-7 animate-pulse text-site-green"
+              aria-hidden="true"
+            />
             <p className="mt-3 text-sm font-semibold text-gray-700">
-              {members.length === 0 ? "No workspace members" : "No members found"}
+              Loading workspace members…
             </p>
-            <p className="mt-1 text-xs text-gray-500">
-              {members.length === 0
-                ? "Members will appear here after they join the workspace."
-                : "Try changing the search text or selected role."}
-            </p>
-            </div>
-          )}
+          </div>
+        ) : (
+          <DataTable
+            ariaLabel="Workspace members"
+            rows={filteredMembers}
+            columns={columns}
+            getRowKey={(member) => member.id}
+            sort={sort}
+            onSortChange={handleSortChange}
+            emptyState={(
+              <div className="py-12 text-center">
+                <FaUsers
+                  className="mx-auto size-7 text-gray-300"
+                  aria-hidden="true"
+                />
+                <p className="mt-3 text-sm font-semibold text-gray-700">
+                  {members.length === 0
+                    ? "No workspace members"
+                    : "No members found"}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {members.length === 0
+                    ? "Members will appear here after they join the workspace."
+                    : "Try changing the search text or selected role."}
+                </p>
+              </div>
+            )}
+          />
+        )}
+
+        <PaginationControls
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          totalItems={pagination.total}
+          totalPages={pagination.totalPages}
+          itemLabel="members"
+          disabled={isLoading}
+          onPageChange={setPage}
         />
       </SectionCard>
 

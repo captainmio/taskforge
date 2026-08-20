@@ -25,6 +25,10 @@ export const requireWorkspaceMembership: RequestHandler<
       });
     }
 
+    // Preserve the membership that was already loaded for authorization. Later
+    // handlers can use this trusted role without repeating the same database
+    // query or trying to infer the requester role from a paginated member page.
+    req.workspaceMembership = membership;
     next();
   } catch (error) {
     next(error);

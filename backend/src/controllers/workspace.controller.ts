@@ -157,6 +157,19 @@ export const getWorkspaceMembers = async (
   res: Response,
 ) => {
   try {
+    const currentUserRole = req.workspaceMembership?.role;
+    if (!currentUserRole) {
+      // This route always runs the workspace-membership middleware first. Keep
+      // this guard at the boundary so a future route cannot accidentally expose
+      // member data without a verified membership context. Return the same
+      // authorization response as the middleware instead of throwing a generic
+      // error that would incorrectly describe the problem as a server failure.
+      return res.status(403).json({
+        success: false,
+        error: "You do not have access to this workspace",
+      });
+    }
+
     // Query validation guarantees positive integer strings before this handler.
     // Defaults live in the shared pagination config for reuse by future lists.
     const page = req.query.page ? Number(req.query.page) : DEFAULT_PAGE;
@@ -169,9 +182,15 @@ export const getWorkspaceMembers = async (
       pageSize,
     );
 
-    return res
-      .status(200)
-      .json(createSuccessResponse("Workspace members retrieved", result));
+    return res.status(200).json(
+      createSuccessResponse("Workspace members retrieved", {
+        ...result,
+        // Member pages are shared safely through Redis because the cached value
+        // contains only list data. Add the requester-specific role after the
+        // cache lookup so one user's permissions are never served to another.
+        currentUserRole,
+      }),
+    );
   } catch {
     return res.status(500).json({
       success: false,

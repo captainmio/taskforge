@@ -36,16 +36,13 @@ export interface UpdateWorkspaceMemberRolePayload {
 }
 
 export interface WorkspaceMemberListQuery {
-  search?: string;
-  role?: WorkspaceMemberRole;
-  sortBy?: "name" | "joinedAt" | "role";
-  sortDirection?: "ascending" | "descending";
   page?: number;
   pageSize?: number;
 }
 
 export interface WorkspaceMemberListData {
   members: WorkspaceMember[];
+  currentUserRole: WorkspaceMemberRole;
   pagination: {
     page: number;
     pageSize: number;
@@ -54,21 +51,20 @@ export interface WorkspaceMemberListData {
   };
 }
 
+export const getWorkspaceMembers = async (
+  workspaceId: string,
+  query: WorkspaceMemberListQuery,
+): Promise<ApiSuccessResponse<WorkspaceMemberListData>> => {
+  const response = await apiClient.get<
+    ApiSuccessResponse<WorkspaceMemberListData>
+  >(`/workspaces/${workspaceId}/members`, { params: query });
+  return response.data;
+};
+
 /*
- * These service calls document the frontend contract planned for member
- * management. Keep them commented until the backend routes are implemented;
- * the member page logs the same workspace ID, member ID, and payload values so
- * the UI flow can be verified without sending a request that would return 404.
- *
- * export const getWorkspaceMembers = async (
- *   workspaceId: string,
- *   query: WorkspaceMemberListQuery,
- * ): Promise<ApiSuccessResponse<WorkspaceMemberListData>> => {
- *   const response = await apiClient.get<
- *     ApiSuccessResponse<WorkspaceMemberListData>
- *   >(`/workspaces/${workspaceId}/members`, { params: query });
- *   return response.data;
- * };
+ * These mutation calls remain documented until the backend member-management
+ * routes are implemented. The page logs the same IDs and payloads so its modal
+ * flows can still be verified without sending requests that return 404.
  *
  * export const updateWorkspaceMemberRole = async (
  *   workspaceId: string,

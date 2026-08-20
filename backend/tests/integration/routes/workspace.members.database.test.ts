@@ -75,7 +75,7 @@ const createWorkspaceWithMembers = async (additionalMemberCount: number) => {
     JWT_SECRET,
   )}`;
 
-  return { owner, workspace, authCookie };
+  return { owner, workspace, members, authCookie };
 };
 
 describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
@@ -101,6 +101,7 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
       .set("Cookie", authCookie);
 
     expect(firstPage.status).toBe(200);
+    expect(firstPage.body.data.currentUserRole).toBe(WorkspaceRole.OWNER);
     expect(firstPage.body.data.pagination).toEqual({
       page: 1,
       pageSize: 20,
@@ -115,6 +116,7 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
     });
 
     expect(secondPage.status).toBe(200);
+    expect(secondPage.body.data.currentUserRole).toBe(WorkspaceRole.OWNER);
     expect(secondPage.body.data.pagination).toEqual({
       page: 2,
       pageSize: 20,
@@ -131,6 +133,28 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
         (member: { id: number }) => !firstPageIds.has(member.id),
       ),
     ).toBe(true);
+  });
+
+  it("returns an admin role when that admin is not included in the requested page", async () => {
+    const { workspace, members } = await createWorkspaceWithMembers(25);
+    const admin = members[0];
+    if (!admin) throw new Error("Expected the workspace admin fixture to exist");
+    const adminCookie = `accessToken=${jwt.sign(
+      { sub: admin.id, email: admin.email },
+      JWT_SECRET,
+    )}`;
+
+    const response = await request(app)
+      .get(`/api/workspaces/${workspace.id}/members?page=2`)
+      .set("Cookie", adminCookie);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.currentUserRole).toBe(WorkspaceRole.ADMIN);
+    expect(
+      response.body.data.members.some(
+        (member: { id: number }) => member.id === admin.id,
+      ),
+    ).toBe(false);
   });
 
   it("rejects a requested page size above the global maximum", async () => {

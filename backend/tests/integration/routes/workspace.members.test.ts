@@ -130,7 +130,10 @@ describe("GET /api/workspaces/:workspaceId/members", () => {
       expect(response.body).toEqual({
         success: true,
         message: "Workspace members retrieved",
-        data: memberPage,
+        data: {
+          ...memberPage,
+          currentUserRole: role,
+        },
       });
       expect(findWorkspaceMembership).toHaveBeenCalledWith(
         42,
