@@ -13,7 +13,7 @@ import {
   FaUserPlus,
   FaUsers,
 } from "react-icons/fa";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
 import ActionCard from "../../components/ui/ActionCard";
 import Badge, { type BadgeVariant } from "../../components/ui/Badge";
@@ -179,6 +179,19 @@ const WorkspaceOverview = () => {
           <SectionCard
             title="Members"
             className="border-blue-100 bg-gradient-to-br from-white to-blue-50/60 shadow-sm"
+            action={(
+              <Link
+                to={`${basePath}/members`}
+                onClick={() =>
+                  console.log("Workspace member list opened", {
+                    workspaceId: id,
+                  })
+                }
+                className="text-xs font-semibold text-green-700 hover:text-green-800"
+              >
+                View members
+              </Link>
+            )}
           >
             {workspaceMembers.length > 0 ? (
               <ul>

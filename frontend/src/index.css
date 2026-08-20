@@ -4,6 +4,12 @@ main {
     background-color: #f5f5f5;
 }
 
+/* Enabled dropdowns are interactive controls, so show the same pointer cue
+   everywhere instead of repeating a cursor class on each select element. */
+select:not(:disabled) {
+    cursor: pointer;
+}
+
 @theme {
     --color-site-green: #14ae5d;
     --color-content-text: #959cab;

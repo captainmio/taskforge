@@ -8,6 +8,7 @@ import CreateProject from "../pages/projects/CreateProject";
 import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 import InviteMembers from "../pages/workspaces/InviteMembers";
 import WorkspaceOverview from "../pages/workspaces/WorkspaceOverview";
+import WorkspaceMembers from "../pages/workspaces/WorkspaceMembers";
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
           {
             path: "members/invite",
             Component: InviteMembers,
+          },
+          {
+            path: "members",
+            Component: WorkspaceMembers,
           },
           {
             path: "create-project",

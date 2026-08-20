@@ -1,4 +1,4 @@
-import type { WorkspaceRole } from "./roles";
+import type { WorkspaceMemberRole, WorkspaceRole } from "./roles";
 
 export const WorkspaceIcon = {
   CODE: "code",
@@ -42,6 +42,6 @@ export interface WorkspaceMember {
   firstname: string;
   lastname: string;
   email: string;
-  role: "OWNER" | WorkspaceRole;
+  role: WorkspaceMemberRole;
   joinedAt: string;
 }
