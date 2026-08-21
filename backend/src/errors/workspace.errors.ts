@@ -40,6 +40,27 @@ export class WorkspaceOwnerRemovalError extends Error {
   }
 }
 
+export class WorkspaceMemberRoleUpdateForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can update member roles");
+    this.name = "WorkspaceMemberRoleUpdateForbiddenError";
+  }
+}
+
+export class WorkspaceMemberSelfRoleUpdateError extends Error {
+  constructor() {
+    super("You cannot update your own workspace role");
+    this.name = "WorkspaceMemberSelfRoleUpdateError";
+  }
+}
+
+export class WorkspaceOwnerRoleUpdateError extends Error {
+  constructor() {
+    super("The workspace owner's role cannot be changed");
+    this.name = "WorkspaceOwnerRoleUpdateError";
+  }
+}
+
 export type InvitationAcceptanceFailure =
   | "INVALID"
   | "EXPIRED"

@@ -5,6 +5,7 @@ import {
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   removeWorkspaceMemberSchema,
+  updateWorkspaceMemberRoleSchema,
   workspaceMembersSchema,
 } from "../../../src/validations/workspace.validation.js";
 
@@ -217,6 +218,50 @@ describe("removeWorkspaceMemberSchema", () => {
     (memberId) => {
       const result = removeWorkspaceMemberSchema.safeParse({
         params: { workspaceId: "42", memberId },
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
+});
+
+describe("updateWorkspaceMemberRoleSchema", () => {
+  it.each(["ADMIN", "MEMBER"])("accepts the supported %s role", (role) => {
+    const result = updateWorkspaceMemberRoleSchema.safeParse({
+      params: { workspaceId: "42", memberId: "7" },
+      body: { role },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["OWNER", "VIEWER", "", undefined])(
+    "rejects the unsupported role %s",
+    (role) => {
+      const result = updateWorkspaceMemberRoleSchema.safeParse({
+        params: { workspaceId: "42", memberId: "7" },
+        body: { role },
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
+
+  it("rejects unexpected body fields", () => {
+    const result = updateWorkspaceMemberRoleSchema.safeParse({
+      params: { workspaceId: "42", memberId: "7" },
+      body: { role: "ADMIN", owner: true },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it.each(["0", "-1", "1.5", "invalid", "9007199254740992"])(
+    "rejects invalid member ID %s",
+    (memberId) => {
+      const result = updateWorkspaceMemberRoleSchema.safeParse({
+        params: { workspaceId: "42", memberId },
+        body: { role: "MEMBER" },
       });
 
       expect(result.success).toBe(false);

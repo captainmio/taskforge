@@ -18,8 +18,11 @@ import {
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
+  WorkspaceMemberRoleUpdateForbiddenError,
+  WorkspaceMemberSelfRoleUpdateError,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerRoleUpdateError,
 } from "../errors/workspace.errors.js";
 import { Prisma } from "../generated/prisma/client.js";
 import {
@@ -43,6 +46,7 @@ import {
   markInvitationsQueued,
   replaceInvitationToken,
   removeWorkspaceMemberRecord,
+  updateWorkspaceMemberRoleRecord,
   type CreateWorkspaceInvitationData,
 } from "../repositories/workspace.repository.js";
 import type {
@@ -394,5 +398,52 @@ export const removeWorkspaceMember = async (
   return {
     memberId: memberUserId,
     previousRole: removal.previousRole,
+  };
+};
+
+export const updateWorkspaceMemberRole = async (
+  workspaceId: number,
+  memberUserId: number,
+  actorUserId: number,
+  actorRole: WorkspaceRole,
+  role: Exclude<WorkspaceRole, "OWNER">,
+) => {
+  if (
+    actorRole !== WorkspaceRole.OWNER &&
+    actorRole !== WorkspaceRole.ADMIN
+  ) {
+    throw new WorkspaceMemberRoleUpdateForbiddenError();
+  }
+
+  if (actorUserId === memberUserId) {
+    throw new WorkspaceMemberSelfRoleUpdateError();
+  }
+
+  const update = await updateWorkspaceMemberRoleRecord(
+    workspaceId,
+    memberUserId,
+    role,
+  );
+
+  if (update.status === "NOT_FOUND") {
+    throw new WorkspaceMemberNotFoundError();
+  }
+
+  if (update.status === "OWNER_PROTECTED") {
+    throw new WorkspaceOwnerRoleUpdateError();
+  }
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceMemberLists(workspaceId),
+  ]);
+
+  return {
+    member: {
+      ...update.membership.user,
+      role: update.membership.role,
+      joinedAt: update.membership.createdAt.toISOString(),
+    },
+    previousRole: update.previousRole,
   };
 };

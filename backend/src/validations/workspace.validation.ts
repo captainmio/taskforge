@@ -105,16 +105,23 @@ export const workspaceMembersSchema = z.object({
   }),
 });
 
+const workspaceMemberParamsSchema = workspaceParamsSchema.extend({
+  memberId: z
+    .string()
+    .regex(/^[1-9]\d*$/, "Member ID must be a positive integer")
+    .refine(
+      (memberId) => Number.isSafeInteger(Number(memberId)),
+      "Member ID is too large",
+    ),
+});
+
 export const removeWorkspaceMemberSchema = z.object({
-  params: workspaceParamsSchema.extend({
-    memberId: z
-      .string()
-      .regex(/^[1-9]\d*$/, "Member ID must be a positive integer")
-      .refine(
-        (memberId) => Number.isSafeInteger(Number(memberId)),
-        "Member ID is too large",
-      ),
-  }),
+  params: workspaceMemberParamsSchema,
+});
+
+export const updateWorkspaceMemberRoleSchema = z.object({
+  params: workspaceMemberParamsSchema,
+  body: z.object({ role: workspaceRoleSchema }).strict(),
 });
 
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
@@ -136,3 +143,9 @@ export type WorkspaceMembersQuery = z.infer<
 export type RemoveWorkspaceMemberParams = z.infer<
   typeof removeWorkspaceMemberSchema
 >["params"];
+export type UpdateWorkspaceMemberRoleParams = z.infer<
+  typeof updateWorkspaceMemberRoleSchema
+>["params"];
+export type UpdateWorkspaceMemberRoleBody = z.infer<
+  typeof updateWorkspaceMemberRoleSchema
+>["body"];

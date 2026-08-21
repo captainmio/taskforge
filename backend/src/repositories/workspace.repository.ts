@@ -362,6 +362,84 @@ export const removeWorkspaceMemberRecord = async (
     };
   });
 
+export const updateWorkspaceMemberRoleRecord = async (
+  workspaceId: number,
+  memberUserId: number,
+  role: Exclude<WorkspaceRoleValue, "OWNER">,
+) =>
+  prisma.$transaction(async (transaction) => {
+    const membership = await transaction.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId: memberUserId,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (!membership) return { status: "NOT_FOUND" as const };
+    if (membership.role === WorkspaceRole.OWNER) {
+      return { status: "OWNER_PROTECTED" as const };
+    }
+
+    // Keep owner protection in the write predicate so a concurrent membership
+    // change cannot overwrite the protected role after the initial read.
+    const update = await transaction.workspaceMember.updateMany({
+      where: {
+        workspaceId,
+        userId: memberUserId,
+        role: { not: WorkspaceRole.OWNER },
+      },
+      data: { role },
+    });
+
+    if (update.count === 0) {
+      const currentMembership = await transaction.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId,
+            userId: memberUserId,
+          },
+        },
+        select: { role: true },
+      });
+
+      return currentMembership?.role === WorkspaceRole.OWNER
+        ? { status: "OWNER_PROTECTED" as const }
+        : { status: "NOT_FOUND" as const };
+    }
+
+    const updatedMembership = await transaction.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId: memberUserId,
+        },
+      },
+      select: {
+        role: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!updatedMembership) return { status: "NOT_FOUND" as const };
+
+    return {
+      status: "UPDATED" as const,
+      previousRole: membership.role,
+      membership: updatedMembership,
+    };
+  });
+
 export const markInvitationExpired = async (
   invitationId: number,
 ): Promise<void> => {

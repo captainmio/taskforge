@@ -25,7 +25,9 @@ import { useLoading } from "../../hooks/useLoading";
 import {
   getWorkspaceMembers,
   removeWorkspaceMember,
+  updateWorkspaceMemberRole,
   type RemoveWorkspaceMemberResponse,
+  type UpdateWorkspaceMemberRoleResponse,
 } from "../../services/workspaces";
 import {
   WorkspaceMemberRole,
@@ -71,6 +73,7 @@ const WorkspaceMembers = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuthenticatedSession();
   const removalRequest = useLoading<RemoveWorkspaceMemberResponse>();
+  const roleUpdateRequest = useLoading<UpdateWorkspaceMemberRoleResponse>();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
@@ -205,7 +208,7 @@ const WorkspaceMembers = () => {
   };
 
   const openRoleModal = (member: WorkspaceMember): void => {
-    if (isWorkspaceOwner(member.role)) return;
+    if (isWorkspaceOwner(member.role) || member.id === currentUser.id) return;
 
     setMemberToEdit(member);
     setSelectedRole(member.role);
@@ -216,19 +219,25 @@ const WorkspaceMembers = () => {
     });
   };
 
-  const confirmRoleUpdate = (): void => {
+  const closeRoleModal = (): void => {
+    if (!roleUpdateRequest.isLoading) setMemberToEdit(null);
+  };
+
+  const confirmRoleUpdate = async (): Promise<void> => {
     if (!memberToEdit) return;
 
-    console.log("Workspace member role update requested", {
-      workspaceId: id,
-      memberId: memberToEdit.id,
-      previousRole: memberToEdit.role,
-      nextRole: selectedRole,
-    });
-    // Future API: PATCH /workspaces/:workspaceId/members/:memberId
-    // Request body: { role: selectedRole }. Until the backend endpoint exists,
-    // logging verifies that the modal provides the correct IDs and selected role.
+    const response = await roleUpdateRequest.run(() =>
+      updateWorkspaceMemberRole(id, memberToEdit.id, { role: selectedRole }),
+    );
+    // The API interceptor reports failures. Leave the editor open so the
+    // manager can retry the update or cancel it deliberately.
+    if (!response) return;
+
     setMemberToEdit(null);
+    toast.success(response.message);
+    // Reload from the server so the table and the requester's permissions both
+    // reflect the authoritative membership state after the role change.
+    setMemberListRevision((revision) => revision + 1);
   };
 
   const openRemoveModal = (member: WorkspaceMember): void => {
@@ -327,17 +336,20 @@ const WorkspaceMembers = () => {
       className: "md:w-52",
       cell: (member) => {
         const ownerIsProtected = isWorkspaceOwner(member.role);
+        const isCurrentUser = member.id === currentUser.id;
 
         return canManageMembers && !ownerIsProtected ? (
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              leadingIcon={<FaEdit />}
-              onClick={() => openRoleModal(member)}
-            >
-              Edit
-            </Button>
+            {!isCurrentUser ? (
+              <Button
+                variant="outline"
+                size="sm"
+                leadingIcon={<FaEdit />}
+                onClick={() => openRoleModal(member)}
+              >
+                Edit
+              </Button>
+            ) : null}
             <Button
               variant="danger"
               size="sm"
@@ -464,14 +476,25 @@ const WorkspaceMembers = () => {
       <Modal
         isOpen={memberToEdit !== null}
         title="Update member role"
-        onClose={() => setMemberToEdit(null)}
+        onClose={closeRoleModal}
         footer={(
           <>
-            <Button variant="ghost" onClick={() => setMemberToEdit(null)}>
+            <Button
+              variant="ghost"
+              disabled={roleUpdateRequest.isLoading}
+              onClick={closeRoleModal}
+            >
               Cancel
             </Button>
-            <Button leadingIcon={<FaEdit />} onClick={confirmRoleUpdate}>
-              Update Role
+            <Button
+              leadingIcon={<FaEdit />}
+              disabled={
+                roleUpdateRequest.isLoading ||
+                selectedRole === memberToEdit?.role
+              }
+              onClick={() => void confirmRoleUpdate()}
+            >
+              {roleUpdateRequest.isLoading ? "Updating Role..." : "Update Role"}
             </Button>
           </>
         )}
@@ -489,6 +512,7 @@ const WorkspaceMembers = () => {
         <select
           id="updated-member-role"
           value={selectedRole}
+          disabled={roleUpdateRequest.isLoading}
           onChange={(event) => {
             const role = parseAllowedValue(WorkspaceRole, event.target.value);
             if (role) setSelectedRole(role);

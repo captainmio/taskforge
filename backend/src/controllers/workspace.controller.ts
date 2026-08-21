@@ -9,9 +9,12 @@ import {
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
+  WorkspaceMemberRoleUpdateForbiddenError,
+  WorkspaceMemberSelfRoleUpdateError,
   type InvitationAcceptanceFailure,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerRoleUpdateError,
 } from "../errors/workspace.errors.js";
 import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
@@ -20,6 +23,7 @@ import {
   getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
   removeWorkspaceMember as removeWorkspaceMemberService,
+  updateWorkspaceMemberRole as updateWorkspaceMemberRoleService,
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
@@ -30,6 +34,8 @@ import type {
   WorkspaceOverviewParams,
   WorkspaceMembersQuery,
   RemoveWorkspaceMemberParams,
+  UpdateWorkspaceMemberRoleBody,
+  UpdateWorkspaceMemberRoleParams,
 } from "../validations/workspace.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 
@@ -366,6 +372,102 @@ export const removeWorkspaceMember = async (
         ...logContext,
       },
       "[FEATURE] Unable to remove workspace member",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const updateWorkspaceMemberRole = async (
+  req: AuthenticatedRequest<
+    UpdateWorkspaceMemberRoleBody,
+    UpdateWorkspaceMemberRoleParams
+  >,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const memberUserId = Number(req.params.memberId);
+  const actorRole = req.workspaceMembership?.role;
+  const logContext = {
+    workspaceId,
+    actorUserId: req.user.id,
+    targetUserId: memberUserId,
+  };
+
+  if (!actorRole) {
+    req.log.warn(
+      {
+        logType: "feature",
+        event: "workspace.member_role_update_rejected",
+        reason: "MEMBERSHIP_CONTEXT_MISSING",
+        ...logContext,
+      },
+      "[FEATURE] Workspace member role update rejected",
+    );
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const result = await updateWorkspaceMemberRoleService(
+      workspaceId,
+      memberUserId,
+      req.user.id,
+      actorRole,
+      req.body.role,
+    );
+
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.member_role_updated",
+        previousRole: result.previousRole,
+        nextRole: result.member.role,
+        ...logContext,
+      },
+      "[FEATURE] Workspace member role updated",
+    );
+
+    return res.status(200).json(
+      createSuccessResponse("Workspace member role updated", result.member),
+    );
+  } catch (error) {
+    if (
+      error instanceof WorkspaceMemberRoleUpdateForbiddenError ||
+      error instanceof WorkspaceMemberSelfRoleUpdateError ||
+      error instanceof WorkspaceMemberNotFoundError ||
+      error instanceof WorkspaceOwnerRoleUpdateError
+    ) {
+      const status = error instanceof WorkspaceMemberNotFoundError ? 404 :
+        error instanceof WorkspaceOwnerRoleUpdateError ? 409 : 403;
+
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.member_role_update_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "[FEATURE] Workspace member role update rejected",
+      );
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    req.log.error(
+      {
+        logType: "feature",
+        event: "workspace.member_role_update_failed",
+        err: error,
+        ...logContext,
+      },
+      "[FEATURE] Unable to update workspace member role",
     );
     return res.status(500).json({
       success: false,

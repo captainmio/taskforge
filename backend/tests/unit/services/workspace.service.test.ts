@@ -11,8 +11,11 @@ import {
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
+  WorkspaceMemberRoleUpdateForbiddenError,
+  WorkspaceMemberSelfRoleUpdateError,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerRoleUpdateError,
 } from "../../../src/errors/workspace.errors.js";
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import {
@@ -35,6 +38,7 @@ import {
   markInvitationsQueued,
   replaceInvitationToken,
   removeWorkspaceMemberRecord,
+  updateWorkspaceMemberRoleRecord,
 } from "../../../src/repositories/workspace.repository.js";
 import {
   acceptWorkspaceInvitation,
@@ -43,6 +47,7 @@ import {
   inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
   removeWorkspaceMember,
+  updateWorkspaceMemberRole,
 } from "../../../src/services/workspace.service.js";
 import { validWorkspace } from "../../helpers/workspace.fixture.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -58,6 +63,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   replaceInvitationToken: vi.fn(),
   findWorkspaceMembersPage: vi.fn(),
   removeWorkspaceMemberRecord: vi.fn(),
+  updateWorkspaceMemberRoleRecord: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-members.cache.js", () => ({
@@ -558,6 +564,125 @@ describe("removeWorkspaceMember", () => {
     await expect(
       removeWorkspaceMember(10, 7, WorkspaceRole.OWNER),
     ).rejects.toBeInstanceOf(WorkspaceOwnerRemovalError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateWorkspaceMemberRole", () => {
+  beforeEach(() => {
+    vi.mocked(updateWorkspaceMemberRoleRecord).mockResolvedValue({
+      status: "UPDATED",
+      previousRole: WorkspaceRole.MEMBER,
+      membership: {
+        role: WorkspaceRole.ADMIN,
+        createdAt: new Date("2026-08-20T00:00:00.000Z"),
+        user: {
+          id: 8,
+          firstname: "Taylor",
+          lastname: "Member",
+          email: "taylor@example.com",
+        },
+      },
+    });
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+  });
+
+  it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
+    "allows a workspace %s to update another member and clears both caches",
+    async (actorRole) => {
+      await expect(
+        updateWorkspaceMemberRole(
+          10,
+          8,
+          7,
+          actorRole,
+          WorkspaceRole.ADMIN,
+        ),
+      ).resolves.toEqual({
+        member: {
+          id: 8,
+          firstname: "Taylor",
+          lastname: "Member",
+          email: "taylor@example.com",
+          role: WorkspaceRole.ADMIN,
+          joinedAt: "2026-08-20T00:00:00.000Z",
+        },
+        previousRole: WorkspaceRole.MEMBER,
+      });
+      expect(updateWorkspaceMemberRoleRecord).toHaveBeenCalledWith(
+        10,
+        8,
+        WorkspaceRole.ADMIN,
+      );
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
+    },
+  );
+
+  it("rejects a regular member before accessing the repository or caches", async () => {
+    await expect(
+      updateWorkspaceMemberRole(
+        10,
+        8,
+        7,
+        WorkspaceRole.MEMBER,
+        WorkspaceRole.ADMIN,
+      ),
+    ).rejects.toBeInstanceOf(WorkspaceMemberRoleUpdateForbiddenError);
+    expect(updateWorkspaceMemberRoleRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("rejects an admin updating their own role before accessing the repository", async () => {
+    await expect(
+      updateWorkspaceMemberRole(
+        10,
+        7,
+        7,
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+      ),
+    ).rejects.toBeInstanceOf(WorkspaceMemberSelfRoleUpdateError);
+    expect(updateWorkspaceMemberRoleRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without clearing caches when the target is absent", async () => {
+    vi.mocked(updateWorkspaceMemberRoleRecord).mockResolvedValue({
+      status: "NOT_FOUND",
+    });
+
+    await expect(
+      updateWorkspaceMemberRole(
+        10,
+        99,
+        7,
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+      ),
+    ).rejects.toBeInstanceOf(WorkspaceMemberNotFoundError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+
+  it("protects the owner role without clearing caches", async () => {
+    vi.mocked(updateWorkspaceMemberRoleRecord).mockResolvedValue({
+      status: "OWNER_PROTECTED",
+    });
+
+    await expect(
+      updateWorkspaceMemberRole(
+        10,
+        1,
+        7,
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+      ),
+    ).rejects.toBeInstanceOf(WorkspaceOwnerRoleUpdateError);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
     expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
   });

@@ -35,6 +35,9 @@ export interface UpdateWorkspaceMemberRolePayload {
   role: WorkspaceRole;
 }
 
+export type UpdateWorkspaceMemberRoleResponse =
+  ApiSuccessResponse<WorkspaceMember>;
+
 export interface WorkspaceMemberListQuery {
   page?: number;
   pageSize?: number;
@@ -75,20 +78,14 @@ export const removeWorkspaceMember = async (
   return response.data;
 };
 
-/*
- * Role updates remain documented until that backend route is implemented. The
- * page keeps its temporary role-update log so the modal flow can still be
- * verified without sending a request that returns 404.
- *
- * export const updateWorkspaceMemberRole = async (
- *   workspaceId: string,
- *   memberId: number,
- *   payload: UpdateWorkspaceMemberRolePayload,
- * ): Promise<ApiSuccessResponse<WorkspaceMember>> => {
- *   const response = await apiClient.patch<ApiSuccessResponse<WorkspaceMember>>(
- *     `/workspaces/${workspaceId}/members/${memberId}`,
- *     payload,
- *   );
- *   return response.data;
- * };
- */
+export const updateWorkspaceMemberRole = async (
+  workspaceId: string,
+  memberId: number,
+  payload: UpdateWorkspaceMemberRolePayload,
+): Promise<UpdateWorkspaceMemberRoleResponse> => {
+  const response = await apiClient.patch<UpdateWorkspaceMemberRoleResponse>(
+    `/workspaces/${workspaceId}/members/${memberId}`,
+    payload,
+  );
+  return response.data;
+};

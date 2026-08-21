@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceMember } from "../../types/workspace";
@@ -6,12 +6,17 @@ import WorkspaceMembers from "./WorkspaceMembers";
 
 const mocks = vi.hoisted(() => ({
   currentUserId: 1,
-  getWorkspaceOverview: vi.fn(),
+  getWorkspaceMembers: vi.fn(),
   navigate: vi.fn(),
+  removeWorkspaceMember: vi.fn(),
+  showSuccess: vi.fn(),
+  updateWorkspaceMemberRole: vi.fn(),
 }));
 
 vi.mock("../../services/workspaces", () => ({
-  getWorkspaceOverview: mocks.getWorkspaceOverview,
+  getWorkspaceMembers: mocks.getWorkspaceMembers,
+  removeWorkspaceMember: mocks.removeWorkspaceMember,
+  updateWorkspaceMemberRole: mocks.updateWorkspaceMemberRole,
 }));
 
 vi.mock("../../hooks/useAuthenticatedSession", () => ({
@@ -24,6 +29,10 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
     },
     workspaceIds: [42],
   }),
+}));
+
+vi.mock("react-toastify", () => ({
+  toast: { success: mocks.showSuccess },
 }));
 
 vi.mock("react-router", async () => {
@@ -65,6 +74,23 @@ const members: WorkspaceMember[] = [
   },
 ];
 
+const memberListResponse = (
+  currentUserRole: "OWNER" | "ADMIN" | "MEMBER" = "OWNER",
+) => ({
+  success: true as const,
+  message: "Workspace members retrieved",
+  data: {
+    members,
+    currentUserRole,
+    pagination: {
+      page: 1,
+      pageSize: 20,
+      total: members.length,
+      totalPages: 1,
+    },
+  },
+});
+
 const renderPage = async () => {
   render(
     <MemoryRouter>
@@ -81,36 +107,43 @@ const tableRows = () =>
     .slice(1)
     .map((row) => row.textContent);
 
+const openZoeRoleEditor = () => {
+  fireEvent.click(screen.getAllByRole("button", { name: "Edit" })[0]);
+  return screen.getByRole("dialog", { name: "Update member role" });
+};
+
 describe("Workspace members page", () => {
   beforeEach(() => {
     mocks.currentUserId = 1;
-    mocks.getWorkspaceOverview.mockResolvedValue({
+    mocks.getWorkspaceMembers.mockResolvedValue(memberListResponse());
+    mocks.removeWorkspaceMember.mockResolvedValue({
       success: true,
-      message: "Workspace members retrieved",
-      data: members,
+      message: "Workspace member removed",
+      data: { memberId: 2 },
+    });
+    mocks.updateWorkspaceMemberRole.mockResolvedValue({
+      success: true,
+      message: "Workspace member role updated",
+      data: { ...members[1], role: "MEMBER" },
     });
   });
 
-  it("loads every member including the owner and renders joined dates in their own column", async () => {
+  it("loads the requested member page and renders its pagination total", async () => {
     await renderPage();
 
-    expect(mocks.getWorkspaceOverview).toHaveBeenCalledWith("42");
+    expect(mocks.getWorkspaceMembers).toHaveBeenCalledWith("42", {
+      page: 1,
+      pageSize: 20,
+    });
     expect(screen.getByText("Workspace Owner (You)")).toBeVisible();
     expect(screen.getByText("Zoe Admin")).toBeVisible();
     expect(screen.getByText("Ada Member")).toBeVisible();
-
-    const table = screen.getByRole("table", { name: "Workspace members" });
     expect(
-      within(table).getByRole("columnheader", { name: "Joined at" }),
-    ).toBeVisible();
-    expect(
-      within(table).getByText(
-        new Date(members[0].joinedAt).toLocaleDateString(),
-      ),
+      screen.getByRole("heading", { name: "Workspace Members (3)" }),
     ).toBeVisible();
   });
 
-  it("searches by member details and filters by role", async () => {
+  it("searches member details and filters the loaded page by role", async () => {
     const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
     await renderPage();
 
@@ -132,14 +165,9 @@ describe("Workspace members page", () => {
     });
     expect(screen.getByText("Zoe Admin")).toBeVisible();
     expect(screen.queryByText("Ada Member")).not.toBeInTheDocument();
-    expect(consoleLog).toHaveBeenCalledWith(
-      "Workspace member role filter changed",
-      { workspaceId: "42", role: "ADMIN" },
-    );
   });
 
   it("sorts one column at a time in ascending and descending order", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
     await renderPage();
     const table = screen.getByRole("table", { name: "Workspace members" });
     const memberHeader = within(table).getByRole("columnheader", {
@@ -161,64 +189,154 @@ describe("Workspace members page", () => {
     expect(tableRows()[0]).toContain("Workspace Owner");
     expect(joinedHeader).toHaveAttribute("aria-sort", "ascending");
     expect(memberHeader).toHaveAttribute("aria-sort", "none");
-    expect(consoleLog).toHaveBeenLastCalledWith(
-      "Workspace member sorting changed",
-      { workspaceId: "42", column: "joinedAt", direction: "ascending" },
-    );
   });
 
-  it("hides management actions from regular members", async () => {
+  it("hides management actions when the requester is a regular member", async () => {
     mocks.currentUserId = 3;
+    mocks.getWorkspaceMembers.mockResolvedValue(memberListResponse("MEMBER"));
     await renderPage();
 
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Remove" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   });
 
-  it("lets an owner prepare role updates and member removal", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+  it("prevents an admin from editing their own role while allowing edits to other members", async () => {
+    mocks.currentUserId = 2;
+    mocks.getWorkspaceMembers.mockResolvedValue(memberListResponse("ADMIN"));
     await renderPage();
 
-    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(2);
+    const adminRow = screen.getByText("Zoe Admin (You)").closest("tr");
+    const memberRow = screen.getByText("Ada Member").closest("tr");
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Edit" })[0]);
-    const editDialog = screen.getByRole("dialog", { name: "Update member role" });
+    expect(adminRow).not.toBeNull();
+    expect(memberRow).not.toBeNull();
+    expect(
+      within(adminRow as HTMLTableRowElement).queryByRole("button", {
+        name: "Edit",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(adminRow as HTMLTableRowElement).getByRole("button", {
+        name: "Remove",
+      }),
+    ).toBeVisible();
+    expect(
+      within(memberRow as HTMLTableRowElement).getByRole("button", {
+        name: "Edit",
+      }),
+    ).toBeVisible();
+  });
+
+  it("updates a member role, reports success, and refreshes the member list", async () => {
+    await renderPage();
+    const editDialog = openZoeRoleEditor();
     const roleSelect = within(editDialog).getByLabelText("Workspace role");
+
     expect(within(roleSelect).queryByRole("option", { name: "Owner" })).toBeNull();
-    expect(within(roleSelect).getByRole("option", { name: "Admin" })).toBeVisible();
-    expect(within(roleSelect).getByRole("option", { name: "Member" })).toBeVisible();
+    expect(within(editDialog).getByRole("button", { name: "Update Role" })).toBeDisabled();
 
     fireEvent.change(roleSelect, { target: { value: "MEMBER" } });
     fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
-    expect(consoleLog).toHaveBeenCalledWith(
-      "Workspace member role update requested",
-      {
-        workspaceId: "42",
-        memberId: 2,
-        previousRole: "ADMIN",
-        nextRole: "MEMBER",
-      },
-    );
 
+    await waitFor(() => {
+      expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledWith("42", 2, {
+        role: "MEMBER",
+      });
+      expect(mocks.getWorkspaceMembers).toHaveBeenCalledTimes(2);
+    });
+    expect(mocks.showSuccess).toHaveBeenCalledWith(
+      "Workspace member role updated",
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Update member role" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("locks the role editor while an update is pending", async () => {
+    let finishUpdate:
+      | ((value: {
+          success: true;
+          message: string;
+          data: WorkspaceMember;
+        }) => void)
+      | undefined;
+    mocks.updateWorkspaceMemberRole.mockReturnValue(
+      new Promise((resolve) => {
+        finishUpdate = resolve;
+      }),
+    );
+    await renderPage();
+    const editDialog = openZoeRoleEditor();
+    const roleSelect = within(editDialog).getByLabelText("Workspace role");
+
+    fireEvent.change(roleSelect, { target: { value: "MEMBER" } });
+    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+
+    expect(
+      await within(editDialog).findByRole("button", { name: "Updating Role..." }),
+    ).toBeDisabled();
+    expect(roleSelect).toBeDisabled();
+    expect(within(editDialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+
+    await act(async () => {
+      finishUpdate?.({
+        success: true,
+        message: "Workspace member role updated",
+        data: { ...members[1], role: "MEMBER" },
+      });
+    });
+  });
+
+  it("keeps the role editor open after failure and allows a retry", async () => {
+    mocks.updateWorkspaceMemberRole.mockRejectedValueOnce(
+      new Error("Role update conflict"),
+    );
+    await renderPage();
+    const editDialog = openZoeRoleEditor();
+    fireEvent.change(within(editDialog).getByLabelText("Workspace role"), {
+      target: { value: "MEMBER" },
+    });
+
+    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+
+    await waitFor(() => {
+      expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledTimes(1);
+      expect(
+        within(editDialog).getByRole("button", { name: "Update Role" }),
+      ).toBeEnabled();
+    });
+    expect(editDialog).toBeVisible();
+    expect(mocks.showSuccess).not.toHaveBeenCalled();
+
+    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+    await waitFor(() => {
+      expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledTimes(2);
+      expect(mocks.showSuccess).toHaveBeenCalledWith(
+        "Workspace member role updated",
+      );
+    });
+  });
+
+  it("removes a member through the service and refreshes the list", async () => {
+    await renderPage();
     fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]);
     const removeDialog = screen.getByRole("dialog", {
       name: "Remove workspace member",
     });
-    expect(within(removeDialog).getByText(/Zoe Admin/)).toBeVisible();
+
     fireEvent.click(
       within(removeDialog).getByRole("button", { name: "Remove Member" }),
     );
-    expect(consoleLog).toHaveBeenCalledWith(
-      "Workspace member removal requested",
-      { workspaceId: "42", memberId: 2, email: "zoe@example.com" },
-    );
+
+    await waitFor(() => {
+      expect(mocks.removeWorkspaceMember).toHaveBeenCalledWith("42", 2);
+      expect(mocks.getWorkspaceMembers).toHaveBeenCalledTimes(2);
+    });
+    expect(mocks.showSuccess).toHaveBeenCalledWith("Workspace member removed");
   });
 
   it("returns to the landing page when member loading fails", async () => {
-    mocks.getWorkspaceOverview.mockRejectedValue(new Error("Not authorized"));
+    mocks.getWorkspaceMembers.mockRejectedValue(new Error("Not authorized"));
     render(
       <MemoryRouter>
         <WorkspaceMembers />
