@@ -76,6 +76,9 @@ export const getCurrentUser = async (userId: number) => {
   const { workspaceMemberships, ...userDetails } = user;
   return {
     user: userDetails,
-    workspaceIds: workspaceMemberships.map(({ workspaceId }) => workspaceId),
+    workspaces: workspaceMemberships.map(({ workspace }) => ({
+      id: workspace.id,
+      name: workspace.displayName,
+    })),
   };
 };

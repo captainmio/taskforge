@@ -79,7 +79,10 @@ describe("POST /api/workspaces with PostgreSQL", () => {
       .get("/api/auth/me")
       .set("Cookie", authCookie);
     expect(currentUserResponse.status).toBe(200);
-    expect(currentUserResponse.body.workspaceIds).toEqual([workspace?.id]);
+    expect(currentUserResponse.body.workspaces).toEqual([
+      { id: workspace?.id, name: "Engineering Team" },
+    ]);
+    expect(currentUserResponse.body).not.toHaveProperty("workspaceIds");
   });
 
   it("returns 409 when another workspace uses the same normalized name", async () => {

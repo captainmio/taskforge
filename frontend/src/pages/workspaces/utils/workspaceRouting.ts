@@ -1,9 +1,11 @@
+import type { JoinedWorkspace } from "../../../services/auth";
+
 export type WorkspaceDestination = `/workspace/${number}` | "/create-workspace";
 
 export const getWorkspaceDestination = (
-  workspaceIds: readonly number[]
+  workspaces: readonly JoinedWorkspace[],
 ): WorkspaceDestination => {
-  return workspaceIds.length > 0
-    ? `/workspace/${workspaceIds[0]}`
+  return workspaces.length > 0
+    ? `/workspace/${workspaces[0].id}`
     : "/create-workspace";
 };

@@ -15,11 +15,14 @@ describe("getCurrentUser", () => {
       email: "owner@example.com",
       firstname: "Workspace",
       lastname: "Owner",
-      workspaceMemberships: [{ workspaceId: 10 }, { workspaceId: 11 }],
+      workspaceMemberships: [
+        { workspace: { id: 10, displayName: "Engineering" } },
+        { workspace: { id: 11, displayName: "Product" } },
+      ],
     });
   });
 
-  it("returns safe user details and the IDs of joined workspaces", async () => {
+  it("returns safe user details and summaries of joined workspaces", async () => {
     await expect(getCurrentUser(7)).resolves.toEqual({
       user: {
         id: 7,
@@ -27,7 +30,30 @@ describe("getCurrentUser", () => {
         firstname: "Workspace",
         lastname: "Owner",
       },
-      workspaceIds: [10, 11],
+      workspaces: [
+        { id: 10, name: "Engineering" },
+        { id: 11, name: "Product" },
+      ],
+    });
+  });
+
+  it("returns an empty workspace list when the user has no memberships", async () => {
+    vi.mocked(findUserWithWorkspaceMembershipsById).mockResolvedValue({
+      id: 7,
+      email: "owner@example.com",
+      firstname: "Workspace",
+      lastname: "Owner",
+      workspaceMemberships: [],
+    });
+
+    await expect(getCurrentUser(7)).resolves.toEqual({
+      user: {
+        id: 7,
+        email: "owner@example.com",
+        firstname: "Workspace",
+        lastname: "Owner",
+      },
+      workspaces: [],
     });
   });
 

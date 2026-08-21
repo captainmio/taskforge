@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
-import { Outlet } from "react-router";
+import { Outlet, useParams } from "react-router";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import AppFooter from "../ui/AppFooter";
 import AppSidebar from "./AppSidebar";
@@ -13,8 +13,18 @@ interface AppLayoutProps {
 const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const session = useAuthenticatedSession();
+  const { id: workspaceId } = useParams();
+  const workspaces = session?.workspaces ?? [];
+  const activeWorkspace = workspaces.find(
+    (workspace) => workspace.id === Number(workspaceId),
+  ) ?? workspaces[0];
   const sidebarContent = sidebar ?? (
-    <AppSidebar workspaceName="TaskForge Dev" />
+    <AppSidebar
+      workspaceName={activeWorkspace?.name ?? "No workspace"}
+      workspaces={workspaces}
+      currentWorkspaceId={activeWorkspace?.id}
+      onWorkspaceChange={() => setIsSidebarOpen(false)}
+    />
   );
   const pageContent = children ?? <Outlet context={session} />;
 

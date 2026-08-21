@@ -23,6 +23,16 @@ export const findUserWithWorkspaceMembershipsById = async (id: number) =>
       email: true,
       firstname: true,
       lastname: true,
-      workspaceMemberships: { select: { workspaceId: true } },
+      workspaceMemberships: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          workspace: {
+            select: {
+              id: true,
+              displayName: true,
+            },
+          },
+        },
+      },
     },
   });

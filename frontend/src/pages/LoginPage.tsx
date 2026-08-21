@@ -33,7 +33,7 @@ const LoginPage = () => {
 
             if (response.success) {
                 const currentUser = await getCurrentUser();
-                navigate(returnTo ?? getWorkspaceDestination(currentUser.workspaceIds));
+                navigate(returnTo ?? getWorkspaceDestination(currentUser.workspaces));
             }
         });
     }

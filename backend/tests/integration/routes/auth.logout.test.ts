@@ -35,7 +35,7 @@ describe("POST /api/auth/logout", () => {
     });
     vi.mocked(getCurrentUser).mockResolvedValue({
       user: authenticatedUser,
-      workspaceIds: [10],
+      workspaces: [{ id: 10, name: "Engineering" }],
     });
   });
 
@@ -77,8 +77,9 @@ describe("POST /api/auth/logout", () => {
     expect(authenticatedResponse.status).toBe(200);
     expect(authenticatedResponse.body).toMatchObject({
       user: authenticatedUser,
-      workspaceIds: [10],
+      workspaces: [{ id: 10, name: "Engineering" }],
     });
+    expect(authenticatedResponse.body).not.toHaveProperty("workspaceIds");
 
     await client.post("/api/auth/logout").expect(200);
 
@@ -89,7 +90,7 @@ describe("POST /api/auth/logout", () => {
       error: "Missing bearer token",
     });
     expect(loggedOutResponse.body).not.toHaveProperty("user");
-    expect(loggedOutResponse.body).not.toHaveProperty("workspaceIds");
+    expect(loggedOutResponse.body).not.toHaveProperty("workspaces");
     expect(getCurrentUser).toHaveBeenCalledTimes(1);
   });
 });

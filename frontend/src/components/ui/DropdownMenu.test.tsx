@@ -50,4 +50,21 @@ describe("DropdownMenu", () => {
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
+
+  it("lets render-prop menu content close the menu after selection", () => {
+    render(
+      <DropdownMenu trigger={() => <span>Choose option</span>}>
+        {(close) => (
+          <button type="button" role="menuitem" onClick={close}>
+            Select option
+          </button>
+        )}
+      </DropdownMenu>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose option" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Select option" }));
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
 });

@@ -71,7 +71,7 @@ const me = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({
         success: true,
-        workspaceIds: result.workspaceIds,
+        workspaces: result.workspaces,
         user: result.user,
     });
 };

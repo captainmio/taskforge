@@ -17,9 +17,14 @@ export interface LoginResponse {
     user: User;
 }
 
+export interface JoinedWorkspace {
+    id: number;
+    name: string;
+}
+
 export interface MeResponse {
     success: boolean;
-    workspaceIds: number[];
+    workspaces: JoinedWorkspace[];
     user: User;
 }
 

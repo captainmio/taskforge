@@ -28,8 +28,8 @@ export const GuestRoute = () => {
 
   useEffect(() => {
     getCurrentUser()
-      .then(({ workspaceIds }) => {
-        setDestination(getWorkspaceDestination(workspaceIds));
+      .then(({ workspaces }) => {
+        setDestination(getWorkspaceDestination(workspaces));
       })
       .catch(() => setDestination("guest"));
   }, []);

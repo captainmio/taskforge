@@ -26,7 +26,7 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
       firstname: "Workspace",
       lastname: "Owner",
     },
-    workspaceIds: [42],
+    workspaces: [{ id: 42, name: "Engineering" }],
   }),
 }));
 
