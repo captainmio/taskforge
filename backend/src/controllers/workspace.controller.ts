@@ -82,6 +82,16 @@ export const acceptWorkspaceInvitation = async (
       req.user,
     );
 
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.invitation_accepted",
+        workspaceId: workspace.id,
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Workspace invitation accepted",
+    );
+
     return res.status(200).json({
       success: true,
       message: "Invitation accepted",
@@ -90,12 +100,30 @@ export const acceptWorkspaceInvitation = async (
   } catch (error) {
     if (error instanceof InvitationAcceptanceError) {
       const response = invitationFailureResponses[error.reason];
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.invitation_acceptance_rejected",
+          reason: error.reason,
+          actorUserId: req.user.id,
+        },
+        "[FEATURE] Workspace invitation acceptance rejected",
+      );
       return res.status(response.status).json({
         success: false,
         error: response.error,
       });
     }
 
+    req.log.error(
+      {
+        logType: "feature",
+        event: "workspace.invitation_acceptance_failed",
+        err: error,
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Unable to accept workspace invitation",
+    );
     return res.status(500).json({
       success: false,
       error: "Something went wrong on our end",
@@ -107,11 +135,28 @@ export const inviteWorkspaceMembers = async (
   req: AuthenticatedRequest<InviteWorkspaceMembersBody, WorkspaceParams>,
   res: Response,
 ) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const logContext = {
+    workspaceId,
+    actorUserId: req.user.id,
+    invitationCount: req.body.invitations.length,
+  };
+
   try {
     const result = await inviteWorkspaceMembersService(
-      Number(req.params.workspaceId),
+      workspaceId,
       req.user.id,
       req.body,
+    );
+
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.invitations_queued",
+        ...logContext,
+        invitationCount: result.invitationCount,
+      },
+      "[FEATURE] Workspace invitations queued",
     );
 
     return res
@@ -121,15 +166,42 @@ export const inviteWorkspaceMembers = async (
     if (error instanceof WorkspaceMemberAlreadyExistsError) {
       // Reject the whole list so the frontend can ask the user to remove the
       // existing member instead of reporting that only some emails were saved.
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.invitation_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "[FEATURE] Workspace invitation rejected",
+      );
       return res.status(409).json({ success: false, error: error.message });
     }
 
     if (error instanceof WorkspaceInvitationAlreadyExistsError) {
       // A previous invitation for any email also rejects the complete request.
       // HTTP 409 tells the frontend that the request conflicts with saved data.
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.invitation_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "[FEATURE] Workspace invitation rejected",
+      );
       return res.status(409).json({ success: false, error: error.message });
     }
 
+    req.log.error(
+      {
+        logType: "feature",
+        event: "workspace.invitation_failed",
+        err: error,
+        ...logContext,
+      },
+      "[FEATURE] Unable to create workspace invitations",
+    );
     return res.status(500).json({
       success: false,
       error: "Something went wrong on our end",
