@@ -235,6 +235,7 @@ If a new package is needed:
 * Use the shared Pino logger instead of adding new `console.log`, `console.warn`, or `console.error` calls.
 * Use `req.log` inside request handlers so business events include the HTTP request ID. Use the shared logger from `/src/config/logger.ts` for code that does not have a request, such as workers and startup logic.
 * Log structured fields with stable event names, database identifiers, and outcomes. Do not log passwords, cookies, authorization headers, invitation tokens, or unnecessary personal data.
+* Set `logType` to `api` for automatic HTTP logs, `feature` for business events, or `system` for process lifecycle events. Prefix messages with `[API]`, `[FEATURE]`, or `[SYSTEM]` so terminal and file output is easy to scan.
 * Pass unexpected errors through the `err` field so Pino records their message and stack trace.
 * Application logs are written to stdout and, when enabled, rotated files under `backend/logs`. The invitation delivery file is a separate temporary substitute for email and must not be treated as an application log.
 

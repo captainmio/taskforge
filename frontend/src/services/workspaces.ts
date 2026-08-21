@@ -61,10 +61,24 @@ export const getWorkspaceMembers = async (
   return response.data;
 };
 
+export type RemoveWorkspaceMemberResponse = ApiSuccessResponse<{
+  memberId: number;
+}>;
+
+export const removeWorkspaceMember = async (
+  workspaceId: string,
+  memberId: number,
+): Promise<RemoveWorkspaceMemberResponse> => {
+  const response = await apiClient.delete<RemoveWorkspaceMemberResponse>(
+    `/workspaces/${workspaceId}/members/${memberId}`,
+  );
+  return response.data;
+};
+
 /*
- * These mutation calls remain documented until the backend member-management
- * routes are implemented. The page logs the same IDs and payloads so its modal
- * flows can still be verified without sending requests that return 404.
+ * Role updates remain documented until that backend route is implemented. The
+ * page keeps its temporary role-update log so the modal flow can still be
+ * verified without sending a request that returns 404.
  *
  * export const updateWorkspaceMemberRole = async (
  *   workspaceId: string,
@@ -75,16 +89,6 @@ export const getWorkspaceMembers = async (
  *     `/workspaces/${workspaceId}/members/${memberId}`,
  *     payload,
  *   );
- *   return response.data;
- * };
- *
- * export const removeWorkspaceMember = async (
- *   workspaceId: string,
- *   memberId: number,
- * ): Promise<ApiSuccessResponse<{ memberId: number }>> => {
- *   const response = await apiClient.delete<
- *     ApiSuccessResponse<{ memberId: number }>
- *   >(`/workspaces/${workspaceId}/members/${memberId}`);
  *   return response.data;
  * };
  */

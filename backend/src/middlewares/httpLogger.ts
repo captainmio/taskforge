@@ -8,6 +8,12 @@ const getRequestPath = (url: string | undefined): string =>
 
 export const httpLogger = pinoHttp({
   logger,
+  // Automatic request records use a filterable category and event name.
+  // Feature handlers add their own category when they call req.log directly.
+  customProps: () => ({
+    logType: "api",
+    event: "api.request",
+  }),
   genReqId: (req, res) => {
     const suppliedRequestId = req.headers["x-request-id"];
     const requestId =
@@ -27,9 +33,9 @@ export const httpLogger = pinoHttp({
     return "info";
   },
   customSuccessMessage: (req, res) =>
-    `${req.method} ${getRequestPath(req.url)} completed with ${res.statusCode}`,
+    `[API] ${req.method} ${getRequestPath(req.url)} completed with ${res.statusCode}`,
   customErrorMessage: (req, res) =>
-    `${req.method} ${getRequestPath(req.url)} failed with ${res.statusCode}`,
+    `[API] ${req.method} ${getRequestPath(req.url)} failed with ${res.statusCode}`,
   serializers: {
     // Store only fields needed for diagnosis. In particular, omitting headers
     // and query strings prevents credentials or future URL tokens from being

@@ -114,6 +114,19 @@ export const createWorkspaceInvitationsRecord = async (
       where: { id: data.workspaceId },
       select: { displayName: true },
     });
+
+    // An accepted invitation can outlive its membership when a member is
+    // removed. Clear that used record so the same email can be invited again
+    // without violating the workspace/email unique constraint. The membership
+    // check above prevents this cleanup for anyone who is still a member.
+    await transaction.workspaceInvitation.deleteMany({
+      where: {
+        workspaceId: data.workspaceId,
+        normalizedEmail: { in: normalizedEmails },
+        status: InvitationStatus.ACCEPTED,
+      },
+    });
+
     // Send the complete invitation list to PostgreSQL as one operation. The
     // database permits only one invitation per email in a workspace. If an
     // email was invited before, PostgreSQL rejects this operation, so the other

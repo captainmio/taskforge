@@ -7,6 +7,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "react-toastify";
 import AppHeader from "../../components/layout/AppHeader";
 import Badge, { type BadgeVariant } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -20,7 +21,12 @@ import PaginationControls from "../../components/ui/PaginationControls";
 import SectionCard from "../../components/ui/SectionCard";
 import Textbox from "../../components/ui/Textbox";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
-import { getWorkspaceMembers } from "../../services/workspaces";
+import { useLoading } from "../../hooks/useLoading";
+import {
+  getWorkspaceMembers,
+  removeWorkspaceMember,
+  type RemoveWorkspaceMemberResponse,
+} from "../../services/workspaces";
 import {
   WorkspaceMemberRole,
   WorkspaceRole,
@@ -64,6 +70,7 @@ const WorkspaceMembers = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthenticatedSession();
+  const removalRequest = useLoading<RemoveWorkspaceMemberResponse>();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
@@ -71,6 +78,7 @@ const WorkspaceMembers = () => {
   const [currentUserRole, setCurrentUserRole] =
     useState<WorkspaceMemberRoleValue>();
   const [page, setPage] = useState<number>(1);
+  const [memberListRevision, setMemberListRevision] = useState<number>(0);
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: MEMBERS_PER_PAGE,
@@ -127,7 +135,7 @@ const WorkspaceMembers = () => {
     return () => {
       isActive = false;
     };
-  }, [id, navigate, page]);
+  }, [id, memberListRevision, navigate, page]);
 
   const canManageMembers = canManageWorkspaceMembers(currentUserRole);
 
@@ -227,24 +235,40 @@ const WorkspaceMembers = () => {
     if (isWorkspaceOwner(member.role)) return;
 
     setMemberToRemove(member);
-    console.log("Workspace member removal confirmation opened", {
-      workspaceId: id,
-      memberId: member.id,
-      email: member.email,
-    });
   };
 
-  const confirmMemberRemoval = (): void => {
+  const closeRemoveModal = (): void => {
+    if (!removalRequest.isLoading) setMemberToRemove(null);
+  };
+
+  const confirmMemberRemoval = async (): Promise<void> => {
     if (!memberToRemove) return;
 
-    console.log("Workspace member removal requested", {
-      workspaceId: id,
-      memberId: memberToRemove.id,
-      email: memberToRemove.email,
-    });
-    // Future API: DELETE /workspaces/:workspaceId/members/:memberId. The member
-    // remains visible for now because no backend deletion has taken place.
+    const response = await removalRequest.run(() =>
+      removeWorkspaceMember(id, memberToRemove.id),
+    );
+    // The global API interceptor displays the backend error. Keep the member and
+    // modal intact after failure so the manager can retry or cancel deliberately.
+    if (!response) return;
+
     setMemberToRemove(null);
+    toast.success(response.message);
+
+    const remainingTotal = Math.max(0, pagination.total - 1);
+    const lastRemainingPage = Math.max(
+      1,
+      Math.ceil(remainingTotal / pagination.pageSize),
+    );
+
+    if (page > lastRemainingPage) {
+      // Deleting the only row on the final page makes that page invalid. Moving
+      // back triggers the same member-list effect with the new valid page.
+      setPage(lastRemainingPage);
+    } else {
+      // The backend cleared every cached member page after the delete. Trigger
+      // a fresh GET so rows and pagination totals come from the updated database.
+      setMemberListRevision((revision) => revision + 1);
+    }
   };
 
   const columns: DataTableColumn<WorkspaceMember>[] = [
@@ -479,18 +503,25 @@ const WorkspaceMembers = () => {
       <Modal
         isOpen={memberToRemove !== null}
         title="Remove workspace member"
-        onClose={() => setMemberToRemove(null)}
+        onClose={closeRemoveModal}
         footer={(
           <>
-            <Button variant="ghost" onClick={() => setMemberToRemove(null)}>
+            <Button
+              variant="ghost"
+              disabled={removalRequest.isLoading}
+              onClick={closeRemoveModal}
+            >
               Cancel
             </Button>
             <Button
               variant="danger"
               leadingIcon={<FaTrashAlt />}
-              onClick={confirmMemberRemoval}
+              disabled={removalRequest.isLoading}
+              onClick={() => void confirmMemberRemoval()}
             >
-              Remove Member
+              {removalRequest.isLoading
+                ? "Removing Member..."
+                : "Remove Member"}
             </Button>
           </>
         )}

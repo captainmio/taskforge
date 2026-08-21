@@ -65,7 +65,7 @@ const Modal = ({ isOpen, title, children, footer, onClose }: ModalProps) => {
             type="button"
             aria-label="Close modal"
             onClick={onClose}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+        className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
           >
             <FaTimes aria-hidden="true" />
           </button>

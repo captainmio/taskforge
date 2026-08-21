@@ -223,11 +223,12 @@ export const removeWorkspaceMember = async (
     // authorization boundary or expose member-management behavior.
     req.log.warn(
       {
+        logType: "feature",
         event: "workspace.member_removal_rejected",
         reason: "MEMBERSHIP_CONTEXT_MISSING",
         ...logContext,
       },
-      "Workspace member removal rejected",
+      "[FEATURE] Workspace member removal rejected",
     );
     return res.status(403).json({
       success: false,
@@ -246,11 +247,12 @@ export const removeWorkspaceMember = async (
     // profile fields are unnecessary for diagnosis and would add personal data.
     req.log.info(
       {
+        logType: "feature",
         event: "workspace.member_removed",
         previousRole: result.previousRole,
         ...logContext,
       },
-      "Workspace member removed",
+      "[FEATURE] Workspace member removed",
     );
 
     return res.status(200).json(
@@ -269,11 +271,12 @@ export const removeWorkspaceMember = async (
 
       req.log.warn(
         {
+          logType: "feature",
           event: "workspace.member_removal_rejected",
           reason: error.name,
           ...logContext,
         },
-        "Workspace member removal rejected",
+        "[FEATURE] Workspace member removal rejected",
       );
       return res.status(status).json({
         success: false,
@@ -285,11 +288,12 @@ export const removeWorkspaceMember = async (
     // its stack trace. The global redaction rules still remove known secrets.
     req.log.error(
       {
+        logType: "feature",
         event: "workspace.member_removal_failed",
         err: error,
         ...logContext,
       },
-      "Unable to remove workspace member",
+      "[FEATURE] Unable to remove workspace member",
     );
     return res.status(500).json({
       success: false,

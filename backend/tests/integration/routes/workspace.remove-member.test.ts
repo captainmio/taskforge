@@ -133,13 +133,14 @@ describe("DELETE /api/workspaces/:workspaceId/members/:memberId", () => {
       expect(removeWorkspaceMember).toHaveBeenCalledWith(42, 8, role);
       expect(logMocks.info).toHaveBeenCalledWith(
         {
+          logType: "feature",
           event: "workspace.member_removed",
           previousRole: "MEMBER",
           workspaceId: 42,
           actorUserId: 7,
           targetUserId: 8,
         },
-        "Workspace member removed",
+        "[FEATURE] Workspace member removed",
       );
       const loggedFields = logMocks.info.mock.calls[0]?.[0];
       expect(loggedFields).not.toHaveProperty("email");
@@ -169,13 +170,14 @@ describe("DELETE /api/workspaces/:workspaceId/members/:memberId", () => {
     });
     expect(logMocks.warn).toHaveBeenCalledWith(
       {
+        logType: "feature",
         event: "workspace.member_removal_rejected",
         reason: serviceError.name,
         workspaceId: 42,
         actorUserId: 7,
         targetUserId: 8,
       },
-      "Workspace member removal rejected",
+      "[FEATURE] Workspace member removal rejected",
     );
   });
 
@@ -194,13 +196,14 @@ describe("DELETE /api/workspaces/:workspaceId/members/:memberId", () => {
     });
     expect(logMocks.error).toHaveBeenCalledWith(
       {
+        logType: "feature",
         event: "workspace.member_removal_failed",
         err: serviceError,
         workspaceId: 42,
         actorUserId: 7,
         targetUserId: 8,
       },
-      "Unable to remove workspace member",
+      "[FEATURE] Unable to remove workspace member",
     );
   });
 });

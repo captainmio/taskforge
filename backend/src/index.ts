@@ -6,7 +6,10 @@ import { logger } from "./config/logger.js";
 const port = env.PORT;
 
 const server = app.listen(port, () => {
-  logger.info({ event: "server.started", port }, "====HTTP server started====");
+  logger.info(
+    { logType: "system", event: "server.started", port },
+    "[SYSTEM] HTTP server started",
+  );
 });
 
 let isShuttingDown = false;
@@ -22,14 +25,17 @@ const shutdown = (): void => {
 
     if (error) {
       logger.error(
-        { event: "server.shutdown_failed", err: error },
-        "Unable to close HTTP server cleanly",
+        { logType: "system", event: "server.shutdown_failed", err: error },
+        "[SYSTEM] Unable to close HTTP server cleanly",
       );
       process.exitCode = 1;
       return;
     }
 
-    logger.info({ event: "server.stopped" }, "HTTP server stopped");
+    logger.info(
+      { logType: "system", event: "server.stopped" },
+      "[SYSTEM] HTTP server stopped",
+    );
   });
 };
 
