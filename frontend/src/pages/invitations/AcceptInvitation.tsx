@@ -5,7 +5,10 @@ import { Link, useSearchParams } from "react-router";
 import SubmitButton from "../../components/ui/SubmitButton";
 import SuccessState from "../../components/ui/SuccessState";
 import AppFooter from "../../components/ui/AppFooter";
-import { acceptWorkspaceInvitation } from "../../services/invitations";
+import {
+  acceptWorkspaceInvitation,
+  acceptWorkspaceInviteLink,
+} from "../../services/invitations";
 
 interface InvitationErrorResponse {
   error?: string;
@@ -21,11 +24,14 @@ type InvitationPageState =
 const AcceptInvitation = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
+  const isSharedLink = searchParams.get("type") === "link";
   const [pageState, setPageState] = useState<InvitationPageState>("ready");
   const [acceptedWorkspaceName, setAcceptedWorkspaceName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const invitationPath: string = `/invitations/accept?token=${encodeURIComponent(token)}`;
+  const invitationSearchParams = new URLSearchParams({ token });
+  if (isSharedLink) invitationSearchParams.set("type", "link");
+  const invitationPath: string = `/invitations/accept?${invitationSearchParams.toString()}`;
   const returnToQuery: string = `returnTo=${encodeURIComponent(invitationPath)}`;
 
   const acceptInvitation = async () => {
@@ -35,7 +41,9 @@ const AcceptInvitation = () => {
     setErrorMessage("");
 
     try {
-      const response = await acceptWorkspaceInvitation(token);
+      const response = isSharedLink
+        ? await acceptWorkspaceInviteLink(token)
+        : await acceptWorkspaceInvitation(token);
       setAcceptedWorkspaceName(response.workspace.displayName);
       setPageState("accepted");
     } catch (error: unknown) {
@@ -112,7 +120,9 @@ const AcceptInvitation = () => {
             {pageState === "authentication-required" && (
               <div className="mt-5 rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
                 <p role="alert">
-                  Sign in with the invited email address before accepting this invitation.
+                  {isSharedLink
+                    ? "Sign in or create an account before accepting this invitation."
+                    : "Sign in with the invited email address before accepting this invitation."}
                 </p>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <Link

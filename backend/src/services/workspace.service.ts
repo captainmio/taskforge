@@ -15,6 +15,7 @@ import { env } from "../config/env.js";
 import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
+  WorkspaceInviteLinkGenerationForbiddenError,
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
@@ -36,10 +37,12 @@ import {
 } from "../queues/invitation.queue.js";
 import {
   acceptInvitationRecord,
+  acceptWorkspaceInviteLinkRecord,
   createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
+  findWorkspaceInviteLinkByTokenHash,
   findWorkspaceMembers,
   findWorkspaceMembersPage,
   markInvitationExpired,
@@ -47,6 +50,7 @@ import {
   replaceInvitationToken,
   removeWorkspaceMemberRecord,
   updateWorkspaceMemberRoleRecord,
+  upsertWorkspaceInviteLink,
   type CreateWorkspaceInvitationData,
 } from "../repositories/workspace.repository.js";
 import type {
@@ -69,6 +73,13 @@ const createVerificationUrl = (token: string): string => {
   const verificationUrl = new URL("/invitations/accept", env.FRONTEND_API);
   verificationUrl.searchParams.set("token", token);
   return verificationUrl.toString();
+};
+
+const createSharedInviteUrl = (token: string): string => {
+  const inviteUrl = new URL("/invitations/accept", env.FRONTEND_API);
+  inviteUrl.searchParams.set("token", token);
+  inviteUrl.searchParams.set("type", "link");
+  return inviteUrl.toString();
 };
 
 export const createWorkspace = async (
@@ -302,6 +313,61 @@ export const acceptWorkspaceInvitation = async (
   await deleteCachedWorkspaceMemberLists(invitation.workspaceId);
 
   return invitation.workspace;
+};
+
+export const createWorkspaceInviteLink = async (
+  workspaceId: number,
+  createdById: number,
+  actorRole: WorkspaceRole,
+) => {
+  if (
+    actorRole !== WorkspaceRole.OWNER &&
+    actorRole !== WorkspaceRole.ADMIN
+  ) {
+    throw new WorkspaceInviteLinkGenerationForbiddenError();
+  }
+
+  const token = createInvitationToken();
+  const expiresAt = new Date(
+    Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1_000,
+  );
+
+  const inviteLink = await upsertWorkspaceInviteLink({
+    workspaceId,
+    createdById,
+    tokenHash: hashInvitationToken(token),
+    expiresAt,
+  });
+
+  return {
+    invitationLink: createSharedInviteUrl(token),
+    expiresAt: inviteLink.expiresAt.toISOString(),
+  };
+};
+
+export const acceptWorkspaceInviteLink = async (
+  token: string,
+  userId: number,
+) => {
+  const inviteLink = await findWorkspaceInviteLinkByTokenHash(
+    hashInvitationToken(token),
+  );
+
+  if (!inviteLink || inviteLink.revokedAt) {
+    throw new InvitationAcceptanceError("INVALID");
+  }
+
+  if (inviteLink.expiresAt <= new Date()) {
+    throw new InvitationAcceptanceError("EXPIRED");
+  }
+
+  await acceptWorkspaceInviteLinkRecord(inviteLink.workspaceId, userId);
+  await Promise.all([
+    deleteCachedWorkspaceOverview(inviteLink.workspaceId),
+    deleteCachedWorkspaceMemberLists(inviteLink.workspaceId),
+  ]);
+
+  return inviteLink.workspace;
 };
 
 export const getWorkspaceOverview = async (

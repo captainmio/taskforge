@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import {
   FaArrowLeft,
+  FaCopy,
   FaEnvelope,
   FaLink,
   FaPaperPlane,
@@ -16,7 +17,9 @@ import InitialsAvatar from "../../components/ui/InitialsAvatar";
 import Textbox from "../../components/ui/Textbox";
 import { useLoading } from "../../hooks/useLoading";
 import {
+  generateWorkspaceInviteLink,
   inviteWorkspaceMembers,
+  type GenerateWorkspaceInviteLinkResponse,
   type InviteWorkspaceMembersResponse,
 } from "../../services/invitations";
 import { getWorkspaceOverview } from "../../services/workspaces";
@@ -44,6 +47,11 @@ const InviteMembers = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const invitationRequest = useLoading<InviteWorkspaceMembersResponse>();
+  const inviteLinkRequest = useLoading<GenerateWorkspaceInviteLinkResponse>();
+  const [generatedInviteLink, setGeneratedInviteLink] = useState<
+    GenerateWorkspaceInviteLinkResponse["data"] | null
+  >(null);
+  const [isInviteLinkCopied, setIsInviteLinkCopied] = useState(false);
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
@@ -102,6 +110,16 @@ const InviteMembers = () => {
     };
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (!isInviteLinkCopied) return;
+
+    const copiedLabelTimer = window.setTimeout(() => {
+      setIsInviteLinkCopied(false);
+    }, 2_000);
+
+    return () => window.clearTimeout(copiedLabelTimer);
+  }, [isInviteLinkCopied]);
+
   const addInvitation = (values: InviteMembersFormValues): void => {
     append({ email: values.email, role: values.role });
     resetField("email");
@@ -121,6 +139,29 @@ const InviteMembers = () => {
 
     toast.success(response.message);
     navigate(basePath);
+  };
+
+  const generateInviteLink = async (): Promise<void> => {
+    const response = await inviteLinkRequest.run(() =>
+      generateWorkspaceInviteLink(id),
+    );
+
+    if (!response) return;
+
+    setGeneratedInviteLink(response.data);
+    setIsInviteLinkCopied(false);
+    toast.success(response.message);
+  };
+
+  const copyInviteLink = async (): Promise<void> => {
+    if (!generatedInviteLink) return;
+
+    try {
+      await navigator.clipboard.writeText(generatedInviteLink.invitationLink);
+      setIsInviteLinkCopied(true);
+    } catch {
+      toast.error("Unable to copy the invitation link");
+    }
   };
 
   if (authorizedWorkspaceId !== id) return null;
@@ -301,24 +342,72 @@ const InviteMembers = () => {
           </footer>
         </section>
 
-        <section className="mt-5 flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
-          <div>
-            <h2 className="text-lg font-bold text-gray-950">
-              Invite with a link
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Share a link with anyone. They can request to join this workspace.
-            </p>
+        <section className="mt-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-950">
+                Invite with a link
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Share a link that lets authenticated users join as workspace members.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              leadingIcon={<FaLink />}
+              onClick={() => void generateInviteLink()}
+              disabled={inviteLinkRequest.isLoading}
+              className="sm:shrink-0"
+            >
+              {inviteLinkRequest.isLoading
+                ? "Generating link..."
+                : generatedInviteLink
+                  ? "Generate new link"
+                  : "Generate invite link"}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            leadingIcon={<FaLink />}
-            disabled
-            title="The invite-link API is not available yet"
-            className="sm:shrink-0"
-          >
-            Generate invite link
-          </Button>
+
+          {inviteLinkRequest.error ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              Unable to generate an invitation link. Please try again.
+            </p>
+          ) : null}
+
+          {generatedInviteLink ? (
+            <div className="mt-5 border-t border-gray-100 pt-5">
+              <label
+                htmlFor="workspace-invite-link"
+                className="text-xs font-semibold text-gray-700"
+              >
+                Invitation link
+              </label>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+                <div className="min-w-0 flex-1">
+                  <Textbox
+                    id="workspace-invite-link"
+                    value={generatedInviteLink.invitationLink}
+                    readOnly
+                    className="text-xs"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  leadingIcon={<FaCopy />}
+                  onClick={() => void copyInviteLink()}
+                  className="sm:shrink-0"
+                >
+                  {isInviteLinkCopied ? "Copied" : "Copy link"}
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                This link expires {new Date(generatedInviteLink.expiresAt).toLocaleString()}.
+                Generating a new link replaces this one.
+              </p>
+            </div>
+          ) : null}
         </section>
     </div>
   );

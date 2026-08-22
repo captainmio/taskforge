@@ -19,6 +19,13 @@ export class WorkspaceInvitationAlreadyExistsError extends Error {
   }
 }
 
+export class WorkspaceInviteLinkGenerationForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can generate invitation links");
+    this.name = "WorkspaceInviteLinkGenerationForbiddenError";
+  }
+}
+
 export class WorkspaceMemberRemovalForbiddenError extends Error {
   constructor() {
     super("Only workspace owners and admins can remove members");

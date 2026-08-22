@@ -37,6 +37,13 @@ interface AcceptInvitationData {
   role: Exclude<WorkspaceRoleValue, "OWNER">;
 }
 
+interface UpsertWorkspaceInviteLinkData {
+  workspaceId: number;
+  createdById: number;
+  tokenHash: string;
+  expiresAt: Date;
+}
+
 export const createWorkspaceRecord = async (data: CreateWorkspaceData) =>
   prisma.$transaction(async (transaction) => {
     const workspace = await transaction.workspace.create({
@@ -243,6 +250,56 @@ export const findInvitationByTokenHash = async (tokenHash: string) =>
       },
     },
   });
+  
+// update and insert
+export const upsertWorkspaceInviteLink = async (
+  data: UpsertWorkspaceInviteLinkData,
+) =>
+  prisma.workspaceInviteLink.upsert({
+    where: { workspaceId: data.workspaceId },
+    create: data,
+    update: {
+      createdById: data.createdById,
+      tokenHash: data.tokenHash,
+      expiresAt: data.expiresAt,
+      revokedAt: null,
+    },
+    select: { expiresAt: true },
+  });
+
+export const findWorkspaceInviteLinkByTokenHash = async (tokenHash: string) =>
+  prisma.workspaceInviteLink.findUnique({
+    where: { tokenHash },
+    select: {
+      workspaceId: true,
+      expiresAt: true,
+      revokedAt: true,
+      workspace: {
+        select: {
+          id: true,
+          displayName: true,
+        },
+      },
+    },
+  });
+
+export const acceptWorkspaceInviteLinkRecord = async (
+  workspaceId: number,
+  userId: number,
+): Promise<void> => {
+  await prisma.workspaceMember.upsert({
+    where: {
+      workspaceId_userId: { workspaceId, userId },
+    },
+    create: {
+      workspaceId,
+      userId,
+      role: WorkspaceRole.MEMBER,
+    },
+    // Shared links are idempotent and never downgrade an existing member.
+    update: {},
+  });
+};
 
 export const findWorkspaceMembership = async (
   workspaceId: number,

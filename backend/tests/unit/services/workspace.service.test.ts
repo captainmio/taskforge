@@ -8,6 +8,7 @@ import {
 import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
+  WorkspaceInviteLinkGenerationForbiddenError,
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
@@ -29,19 +30,24 @@ import {
 } from "../../../src/queues/invitation.queue.js";
 import {
   acceptInvitationRecord,
+  acceptWorkspaceInviteLinkRecord,
   createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
+  findWorkspaceInviteLinkByTokenHash,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
   replaceInvitationToken,
   removeWorkspaceMemberRecord,
   updateWorkspaceMemberRoleRecord,
+  upsertWorkspaceInviteLink,
 } from "../../../src/repositories/workspace.repository.js";
 import {
+  acceptWorkspaceInviteLink,
   acceptWorkspaceInvitation,
+  createWorkspaceInviteLink,
   createWorkspace,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
@@ -54,16 +60,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   acceptInvitationRecord: vi.fn(),
+  acceptWorkspaceInviteLinkRecord: vi.fn(),
   createWorkspaceInvitationsRecord: vi.fn(),
   createWorkspaceRecord: vi.fn(),
   findInvitationByTokenHash: vi.fn(),
   findInvitationsAwaitingQueue: vi.fn(),
+  findWorkspaceInviteLinkByTokenHash: vi.fn(),
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
   findWorkspaceMembersPage: vi.fn(),
   removeWorkspaceMemberRecord: vi.fn(),
   updateWorkspaceMemberRoleRecord: vi.fn(),
+  upsertWorkspaceInviteLink: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-members.cache.js", () => ({
@@ -432,6 +441,115 @@ describe("acceptWorkspaceInvitation", () => {
       reason: "ALREADY_USED",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+  });
+});
+
+describe("createWorkspaceInviteLink", () => {
+  const persistedExpiry = new Date("2026-08-29T00:00:00.000Z");
+
+  beforeEach(() => {
+    vi.mocked(upsertWorkspaceInviteLink).mockResolvedValue({
+      expiresAt: persistedExpiry,
+    });
+  });
+
+  it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
+    "generates a hashed seven-day link for a %s",
+    async (actorRole) => {
+      const beforeGeneration = Date.now();
+      const result = await createWorkspaceInviteLink(10, 7, actorRole);
+      const afterGeneration = Date.now();
+      const invitationUrl = new URL(result.invitationLink);
+      const token = invitationUrl.searchParams.get("token");
+
+      expect(token).toBeTruthy();
+      expect(invitationUrl.pathname).toBe("/invitations/accept");
+      expect(invitationUrl.searchParams.get("type")).toBe("link");
+      expect(result.expiresAt).toBe(persistedExpiry.toISOString());
+      expect(upsertWorkspaceInviteLink).toHaveBeenCalledWith({
+        workspaceId: 10,
+        createdById: 7,
+        tokenHash: createHash("sha256").update(token ?? "").digest("hex"),
+        expiresAt: expect.any(Date),
+      });
+
+      const upsertInput = vi.mocked(upsertWorkspaceInviteLink).mock.calls[0]?.[0];
+      expect(upsertInput?.expiresAt.getTime()).toBeGreaterThanOrEqual(
+        beforeGeneration + 7 * 24 * 60 * 60 * 1_000,
+      );
+      expect(upsertInput?.expiresAt.getTime()).toBeLessThanOrEqual(
+        afterGeneration + 7 * 24 * 60 * 60 * 1_000,
+      );
+    },
+  );
+
+  it("rejects a member without writing an invitation link", async () => {
+    await expect(
+      createWorkspaceInviteLink(10, 7, WorkspaceRole.MEMBER),
+    ).rejects.toBeInstanceOf(WorkspaceInviteLinkGenerationForbiddenError);
+    expect(upsertWorkspaceInviteLink).not.toHaveBeenCalled();
+  });
+});
+
+describe("acceptWorkspaceInviteLink", () => {
+  const token = "shared-workspace-link-token";
+  const activeLink = {
+    workspaceId: 10,
+    expiresAt: new Date(Date.now() + 60_000),
+    revokedAt: null,
+    workspace: { id: 10, displayName: "Engineering Team" },
+  };
+
+  beforeEach(() => {
+    vi.mocked(findWorkspaceInviteLinkByTokenHash).mockResolvedValue(activeLink);
+    vi.mocked(acceptWorkspaceInviteLinkRecord).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+  });
+
+  it("adds the authenticated user and clears both workspace caches", async () => {
+    await expect(acceptWorkspaceInviteLink(token, 8)).resolves.toEqual(
+      activeLink.workspace,
+    );
+    expect(findWorkspaceInviteLinkByTokenHash).toHaveBeenCalledWith(
+      createHash("sha256").update(token).digest("hex"),
+    );
+    expect(acceptWorkspaceInviteLinkRecord).toHaveBeenCalledWith(10, 8);
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
+  });
+
+  it("rejects an unknown token without adding a member", async () => {
+    vi.mocked(findWorkspaceInviteLinkByTokenHash).mockResolvedValue(null);
+
+    await expect(acceptWorkspaceInviteLink(token, 8)).rejects.toMatchObject({
+      reason: "INVALID",
+    } satisfies Partial<InvitationAcceptanceError>);
+    expect(acceptWorkspaceInviteLinkRecord).not.toHaveBeenCalled();
+  });
+
+  it("rejects a revoked link without adding a member", async () => {
+    vi.mocked(findWorkspaceInviteLinkByTokenHash).mockResolvedValue({
+      ...activeLink,
+      revokedAt: new Date(),
+    });
+
+    await expect(acceptWorkspaceInviteLink(token, 8)).rejects.toMatchObject({
+      reason: "INVALID",
+    } satisfies Partial<InvitationAcceptanceError>);
+    expect(acceptWorkspaceInviteLinkRecord).not.toHaveBeenCalled();
+  });
+
+  it("rejects an expired link without adding a member", async () => {
+    vi.mocked(findWorkspaceInviteLinkByTokenHash).mockResolvedValue({
+      ...activeLink,
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+
+    await expect(acceptWorkspaceInviteLink(token, 8)).rejects.toMatchObject({
+      reason: "EXPIRED",
+    } satisfies Partial<InvitationAcceptanceError>);
+    expect(acceptWorkspaceInviteLinkRecord).not.toHaveBeenCalled();
   });
 });
 

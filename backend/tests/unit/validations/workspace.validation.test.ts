@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validWorkspace } from "../../helpers/workspace.fixture.js";
 import {
   acceptWorkspaceInvitationSchema,
+  createWorkspaceInviteLinkSchema,
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   removeWorkspaceMemberSchema,
@@ -80,6 +81,27 @@ describe("acceptWorkspaceInvitationSchema", () => {
 
     expect(result.success).toBe(false);
   });
+});
+
+describe("createWorkspaceInviteLinkSchema", () => {
+  it("accepts a positive workspace ID", () => {
+    const result = createWorkspaceInviteLinkSchema.safeParse({
+      params: { workspaceId: "42" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["0", "-1", "1.5", "invalid", "9007199254740992"])(
+    "rejects invalid workspace ID %s",
+    (workspaceId) => {
+      const result = createWorkspaceInviteLinkSchema.safeParse({
+        params: { workspaceId },
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
 });
 
 describe("inviteWorkspaceMembersSchema", () => {

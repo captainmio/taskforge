@@ -1,6 +1,8 @@
 import Router from "express";
 import {
+  acceptWorkspaceInviteLink,
   acceptWorkspaceInvitation,
+  createWorkspaceInviteLink,
   createWorkspace,
   getWorkspaceOverview,
   getWorkspaceMembers,
@@ -13,7 +15,9 @@ import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
 import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembership.js";
 import { validate } from "../middlewares/validate.js";
 import {
+  acceptWorkspaceInviteLinkSchema,
   acceptWorkspaceInvitationSchema,
+  createWorkspaceInviteLinkSchema,
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   workspaceOverviewSchema,
@@ -59,11 +63,25 @@ router.patch(
   authenticatedHandler(updateWorkspaceMemberRole),
 );
 router.post(
+  "/:workspaceId/invitation-link",
+  requireAuth,
+  validate(createWorkspaceInviteLinkSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(createWorkspaceInviteLink),
+);
+router.post(
   "/:workspaceId/invitations",
   requireAuth,
   validate(inviteWorkspaceMembersSchema),
   requireWorkspaceMembership,
   authenticatedHandler(inviteWorkspaceMembers),
+);
+
+router.post(
+  "/invitation-links/accept",
+  requireAuth,
+  validate(acceptWorkspaceInviteLinkSchema),
+  authenticatedHandler(acceptWorkspaceInviteLink),
 );
 
 router.post(

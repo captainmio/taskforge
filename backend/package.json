@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail --names api,worker \"npm:dev:api\" \"npm:dev:worker\"",
+    "dev": "concurrently --raw --kill-others-on-fail \"npm:dev:api\" \"npm:dev:worker\"",
     "dev:api": "tsx watch src/index.ts",
     "dev:worker": "tsx watch src/workers/invitation.worker.ts",
     "worker:invitations": "tsx src/workers/invitation.worker.ts",

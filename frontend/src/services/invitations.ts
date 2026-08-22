@@ -21,6 +21,17 @@ export const acceptWorkspaceInvitation = async (
   return response.data;
 };
 
+export const acceptWorkspaceInviteLink = async (
+  token: string,
+): Promise<AcceptInvitationResponse> => {
+  const response = await apiClient.post<AcceptInvitationResponse>(
+    "/workspaces/invitation-links/accept",
+    { token },
+  );
+
+  return response.data;
+};
+
 export interface InviteWorkspaceMembersPayload {
   invitations: Array<{
     email: string;
@@ -39,6 +50,21 @@ export const inviteWorkspaceMembers = async (
   const response = await apiClient.post<InviteWorkspaceMembersResponse>(
     `/workspaces/${workspaceId}/invitations`,
     payload,
+  );
+
+  return response.data;
+};
+
+export type GenerateWorkspaceInviteLinkResponse = ApiSuccessResponse<{
+  invitationLink: string;
+  expiresAt: string;
+}>;
+
+export const generateWorkspaceInviteLink = async (
+  workspaceId: string,
+): Promise<GenerateWorkspaceInviteLinkResponse> => {
+  const response = await apiClient.post<GenerateWorkspaceInviteLinkResponse>(
+    `/workspaces/${workspaceId}/invitation-link`,
   );
 
   return response.data;

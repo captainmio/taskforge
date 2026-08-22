@@ -6,6 +6,7 @@ import {
 import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
+  WorkspaceInviteLinkGenerationForbiddenError,
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberRemovalForbiddenError,
@@ -17,7 +18,9 @@ import {
   WorkspaceOwnerRoleUpdateError,
 } from "../errors/workspace.errors.js";
 import {
+  acceptWorkspaceInviteLink as acceptWorkspaceInviteLinkService,
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
+  createWorkspaceInviteLink as createWorkspaceInviteLinkService,
   createWorkspace as createWorkspaceService,
   getWorkspaceOverview as getWorkspaceOverviewService,
   getWorkspaceMembers as getWorkspaceMembersService,
@@ -27,6 +30,7 @@ import {
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
+  AcceptWorkspaceInviteLinkBody,
   AcceptWorkspaceInvitationBody,
   CreateWorkspaceBody,
   InviteWorkspaceMembersBody,
@@ -129,6 +133,129 @@ export const acceptWorkspaceInvitation = async (
         actorUserId: req.user.id,
       },
       "[FEATURE] Unable to accept workspace invitation",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const createWorkspaceInviteLink = async (
+  req: AuthenticatedRequest<unknown, WorkspaceParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const actorRole = req.workspaceMembership?.role;
+  const logContext = { workspaceId, actorUserId: req.user.id };
+
+  if (!actorRole) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const result = await createWorkspaceInviteLinkService(
+      workspaceId,
+      req.user.id,
+      actorRole,
+    );
+
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.invite_link_generated",
+        ...logContext,
+      },
+      "[FEATURE] Workspace invitation link generated",
+    );
+
+    return res
+      .status(201)
+      .json(createSuccessResponse("Workspace invitation link generated", result));
+  } catch (error) {
+    if (error instanceof WorkspaceInviteLinkGenerationForbiddenError) {
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.invite_link_generation_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "[FEATURE] Workspace invitation link generation rejected",
+      );
+      return res.status(403).json({ success: false, error: error.message });
+    }
+
+    req.log.error(
+      {
+        logType: "feature",
+        event: "workspace.invite_link_generation_failed",
+        err: error,
+        ...logContext,
+      },
+      "[FEATURE] Unable to generate workspace invitation link",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const acceptWorkspaceInviteLink = async (
+  req: AuthenticatedRequest<AcceptWorkspaceInviteLinkBody>,
+  res: Response,
+) => {
+  try {
+    const workspace = await acceptWorkspaceInviteLinkService(
+      req.body.token,
+      req.user.id,
+    );
+
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.invite_link_accepted",
+        workspaceId: workspace.id,
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Workspace invitation link accepted",
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Invitation accepted",
+      workspace,
+    });
+  } catch (error) {
+    if (error instanceof InvitationAcceptanceError) {
+      const response = invitationFailureResponses[error.reason];
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "workspace.invite_link_acceptance_rejected",
+          reason: error.reason,
+          actorUserId: req.user.id,
+        },
+        "[FEATURE] Workspace invitation link acceptance rejected",
+      );
+      return res.status(response.status).json({
+        success: false,
+        error: response.error,
+      });
+    }
+
+    req.log.error(
+      {
+        logType: "feature",
+        event: "workspace.invite_link_acceptance_failed",
+        err: error,
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Unable to accept workspace invitation link",
     );
     return res.status(500).json({
       success: false,

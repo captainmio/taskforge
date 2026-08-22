@@ -55,6 +55,8 @@ export const acceptWorkspaceInvitationSchema = z.object({
   }),
 });
 
+export const acceptWorkspaceInviteLinkSchema = acceptWorkspaceInvitationSchema;
+
 const workspaceParamsSchema = z.object({
   workspaceId: z
     .string()
@@ -77,6 +79,10 @@ export const inviteWorkspaceMembersSchema = z.object({
       "At least one invitation is required",
     ),
   }),
+});
+
+export const createWorkspaceInviteLinkSchema = z.object({
+  params: workspaceParamsSchema,
 });
 
 export const workspaceOverviewSchema = z.object({
@@ -127,6 +133,9 @@ export const updateWorkspaceMemberRoleSchema = z.object({
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
 export type AcceptWorkspaceInvitationBody = z.infer<
   typeof acceptWorkspaceInvitationSchema
+>["body"];
+export type AcceptWorkspaceInviteLinkBody = z.infer<
+  typeof acceptWorkspaceInviteLinkSchema
 >["body"];
 export type InviteWorkspaceMembersBody = z.infer<
   typeof inviteWorkspaceMembersSchema
