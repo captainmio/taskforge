@@ -6,7 +6,6 @@ import {
   FaEdit,
   FaFolder,
   FaMobileAlt,
-  FaPlus,
   FaSignOutAlt,
   FaTasks,
   FaTrashAlt,
@@ -32,9 +31,9 @@ import type {
 } from "../../types/workspace";
 
 const projects = [
-  { name: "Website Redesign", tasks: 12, icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
-  { name: "Mobile App", tasks: 18, icon: <FaMobileAlt />, iconClassName: "bg-blue-50 text-blue-600" },
-  { name: "Backend API", tasks: 9, icon: <FaCode />, iconClassName: "bg-purple-50 text-purple-600" },
+  { name: "Website Redesign", icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
+  { name: "Mobile App", icon: <FaMobileAlt />, iconClassName: "bg-blue-50 text-blue-600" },
+  { name: "Backend API", icon: <FaCode />, iconClassName: "bg-purple-50 text-purple-600" },
 ];
 
 const memberRoleLabels: Record<WorkspaceMember["role"], string> = {
@@ -72,6 +71,7 @@ const WorkspaceOverview = () => {
   const { user: currentUser } = useAuthenticatedSession();
   const basePath = `/workspace/${id}`;
   const inviteMembersPath:string = `${basePath}/members/invite`;
+  const projectsPath: string = `${basePath}/projects`;
 
   useEffect(() => {
     let isActive = true;
@@ -171,7 +171,14 @@ const WorkspaceOverview = () => {
           <SectionCard
             title="Projects"
             className="border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 shadow-sm"
-            action={<Button variant="outline" size="sm" leadingIcon={<FaPlus />}>New Project</Button>}
+            action={(
+              <Link
+                to={projectsPath}
+                className="text-xs font-semibold text-green-700 hover:text-green-800"
+              >
+                View projects
+              </Link>
+            )}
           >
             <ul className="-m-4">
               {projects.map((project) => (
@@ -182,16 +189,12 @@ const WorkspaceOverview = () => {
                   <IconDescriptionItem
                     icon={project.icon}
                     title={project.name}
-                    description={`${project.tasks} tasks`}
                     iconContainerClassName={project.iconClassName}
                     trailing={<FaChevronRight className="size-3" aria-hidden="true" />}
                   />
                 </li>
               ))}
             </ul>
-            <button type="button" className="mx-auto mt-7 block text-sm font-semibold text-green-700 hover:text-green-800">
-              View all projects
-            </button>
           </SectionCard>
 
           <SectionCard

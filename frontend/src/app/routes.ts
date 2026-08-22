@@ -5,6 +5,7 @@ import { Register } from "../pages/Register";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
 import CreateProject from "../pages/projects/CreateProject";
+import Projects from "../pages/projects/Projects";
 import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 import InviteMembers from "../pages/workspaces/InviteMembers";
 import WorkspaceOverview from "../pages/workspaces/WorkspaceOverview";
@@ -52,7 +53,11 @@ export const router = createBrowserRouter([
             Component: WorkspaceMembers,
           },
           {
-            path: "create-project",
+            path: "projects",
+            Component: Projects,
+          },
+          {
+            path: "projects/create",
             Component: CreateProject,
           },
         ],

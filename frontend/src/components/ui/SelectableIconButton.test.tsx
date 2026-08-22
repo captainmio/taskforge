@@ -10,6 +10,7 @@ describe("SelectableIconButton", () => {
       <SelectableIconButton
         icon={<span>Icon</span>}
         label="Team workspace"
+        title="Team workspace"
         selected
         onClick={handleClick}
       />
@@ -17,6 +18,7 @@ describe("SelectableIconButton", () => {
 
     const button = screen.getByRole("button", { name: "Team workspace" });
     expect(button).toHaveAttribute("type", "button");
+    expect(button).toHaveAttribute("title", "Team workspace");
     expect(button).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(button);

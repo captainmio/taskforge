@@ -1,30 +1,36 @@
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaPlus } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
-import ProjectForm from "../../components/projects/ProjectForm";
 import Button from "../../components/ui/Button";
 
-const CreateProject = () => {
+const Projects = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <AppHeader
-        title="Create Project"
+        title="Projects"
         secondaryAction={(
           <Button
             variant="outline"
             leadingIcon={<FaArrowLeft />}
-            onClick={() => navigate(`/workspace/${id}/projects`)}
+            onClick={() => navigate(`/workspace/${id}`)}
           >
-            Back to Projects
+            Back to Overview
+          </Button>
+        )}
+        primaryAction={(
+          <Button
+            leadingIcon={<FaPlus />}
+            onClick={() => navigate(`/workspace/${id}/projects/create`)}
+          >
+            Create project
           </Button>
         )}
       />
-      <ProjectForm onCancel={() => navigate(`/workspace/${id}/projects`)} />
     </div>
   );
 };
 
-export default CreateProject;
+export default Projects;
