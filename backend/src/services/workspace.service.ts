@@ -43,7 +43,7 @@ import {
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
-  findWorkspaceMembers,
+  findWorkspaceOverview,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -378,15 +378,21 @@ export const getWorkspaceOverview = async (
   const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
   if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
 
-  const members = await findWorkspaceMembers(workspaceId);
+  const { members, createdAt, ...workspace } = await findWorkspaceOverview(
+    workspaceId,
+  );
 
   // Normalize Prisma dates before caching so cache hits and database reads expose
   // the same JSON-safe response shape.
-  const overview = members.map(({ user, role, createdAt }) => ({
-    ...user,
-    role,
-    joinedAt: createdAt.toISOString(),
-  }));
+  const overview: WorkspaceOverviewData = {
+    ...workspace,
+    createdAt: createdAt.toISOString(),
+    members: members.map(({ user, role, createdAt: joinedAt }) => ({
+      ...user,
+      role,
+      joinedAt: joinedAt.toISOString(),
+    })),
+  };
 
   await setCachedWorkspaceOverview(workspaceId, overview);
   return overview;

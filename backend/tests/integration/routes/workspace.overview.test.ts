@@ -45,11 +45,19 @@ const workspaceMembers = [
     joinedAt: "2026-08-19T00:00:00.000Z",
   },
 ];
+const workspaceOverview = {
+  id: 42,
+  displayName: "Engineering Team",
+  description: "Builds and maintains the product.",
+  icon: "code" as const,
+  createdAt: "2026-08-18T00:00:00.000Z",
+  members: workspaceMembers,
+};
 
 describe("GET /api/workspaces/:workspaceId/overview", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
-    vi.mocked(getWorkspaceOverview).mockResolvedValue(workspaceMembers);
+    vi.mocked(getWorkspaceOverview).mockResolvedValue(workspaceOverview);
   });
 
   it("returns 401 without checking membership when authentication is missing", async () => {
@@ -103,8 +111,8 @@ describe("GET /api/workspaces/:workspaceId/overview", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         success: true,
-        message: "Workspace members retrieved",
-        data: workspaceMembers,
+        message: "Workspace overview retrieved",
+        data: workspaceOverview,
       });
       expect(findWorkspaceMembership).toHaveBeenCalledWith(
         42,

@@ -312,19 +312,28 @@ export const findWorkspaceMembership = async (
     select: { role: true },
   });
 
-export const findWorkspaceMembers = async (workspaceId: number) =>
-  prisma.workspaceMember.findMany({
-    where: { workspaceId },
-    orderBy: { createdAt: "asc" },
+export const findWorkspaceOverview = async (workspaceId: number) =>
+  prisma.workspace.findUniqueOrThrow({
+    where: { id: workspaceId },
     select: {
-      role: true,
+      id: true,
+      displayName: true,
+      description: true,
+      icon: true,
       createdAt: true,
-      user: {
+      members: {
+        orderBy: { createdAt: "asc" },
         select: {
-          id: true,
-          firstname: true,
-          lastname: true,
-          email: true,
+          role: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              email: true,
+            },
+          },
         },
       },
     },

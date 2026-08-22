@@ -18,7 +18,11 @@ import {
   WorkspaceOwnerRemovalError,
   WorkspaceOwnerRoleUpdateError,
 } from "../../../src/errors/workspace.errors.js";
-import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
+import {
+  deleteCachedWorkspaceOverview,
+  getCachedWorkspaceOverview,
+  setCachedWorkspaceOverview,
+} from "../../../src/cache/workspace-overview.cache.js";
 import {
   deleteCachedWorkspaceMemberLists,
   getCachedWorkspaceMembers,
@@ -36,6 +40,7 @@ import {
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
+  findWorkspaceOverview,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -49,6 +54,7 @@ import {
   acceptWorkspaceInvitation,
   createWorkspaceInviteLink,
   createWorkspace,
+  getWorkspaceOverview,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
@@ -66,6 +72,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   findInvitationByTokenHash: vi.fn(),
   findInvitationsAwaitingQueue: vi.fn(),
   findWorkspaceInviteLinkByTokenHash: vi.fn(),
+  findWorkspaceOverview: vi.fn(),
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
@@ -550,6 +557,69 @@ describe("acceptWorkspaceInviteLink", () => {
       reason: "EXPIRED",
     } satisfies Partial<InvitationAcceptanceError>);
     expect(acceptWorkspaceInviteLinkRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe("getWorkspaceOverview", () => {
+  const repositoryOverview = {
+    id: 10,
+    displayName: "Engineering Team",
+    description: "Builds and maintains the product.",
+    icon: WorkspaceIcon.code,
+    createdAt: new Date("2026-08-18T00:00:00.000Z"),
+    members: [
+      {
+        user: {
+          id: 8,
+          firstname: "Workspace",
+          lastname: "Member",
+          email: "member@example.com",
+        },
+        role: WorkspaceRole.MEMBER,
+        createdAt: new Date("2026-08-20T00:00:00.000Z"),
+      },
+    ],
+  };
+  const normalizedOverview = {
+    id: 10,
+    displayName: "Engineering Team",
+    description: "Builds and maintains the product.",
+    icon: WorkspaceIcon.code,
+    createdAt: "2026-08-18T00:00:00.000Z",
+    members: [
+      {
+        id: 8,
+        firstname: "Workspace",
+        lastname: "Member",
+        email: "member@example.com",
+        role: WorkspaceRole.MEMBER,
+        joinedAt: "2026-08-20T00:00:00.000Z",
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.mocked(getCachedWorkspaceOverview).mockResolvedValue(null);
+    vi.mocked(findWorkspaceOverview).mockResolvedValue(repositoryOverview);
+    vi.mocked(setCachedWorkspaceOverview).mockResolvedValue(undefined);
+  });
+
+  it("returns a cached overview without querying PostgreSQL", async () => {
+    vi.mocked(getCachedWorkspaceOverview).mockResolvedValue(normalizedOverview);
+
+    await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
+    expect(getCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(findWorkspaceOverview).not.toHaveBeenCalled();
+    expect(setCachedWorkspaceOverview).not.toHaveBeenCalled();
+  });
+
+  it("normalizes workspace and membership dates before caching the overview", async () => {
+    await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
+    expect(findWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(setCachedWorkspaceOverview).toHaveBeenCalledWith(
+      10,
+      normalizedOverview,
+    );
   });
 });
 

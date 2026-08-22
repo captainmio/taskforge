@@ -3,7 +3,10 @@ import {
   getCachedWorkspaceMembers,
   setCachedWorkspaceMembers,
 } from "../../../src/cache/workspace-members.cache.js";
-import { getCacheRedisConnection } from "../../../src/config/cache.js";
+import {
+  CACHE_VERSION,
+  getCacheRedisConnection,
+} from "../../../src/config/cache.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
@@ -23,8 +26,8 @@ const mocks = vi.hoisted(() => {
   return { redis, transaction };
 });
 
-vi.mock("../../../src/config/cache.js", () => ({
-  CACHE_VERSION: "v1",
+vi.mock("../../../src/config/cache.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/config/cache.js")>()),
   getCacheRedisConnection: vi.fn(() => mocks.redis),
 }));
 
@@ -68,7 +71,7 @@ describe("workspace member-list cache", () => {
       cachedPage,
     );
     expect(mocks.redis.get).toHaveBeenCalledWith(
-      "workspace:members:v1:10:page:2:size:20",
+      `workspace:members:${CACHE_VERSION}:10:page:2:size:20`,
     );
   });
 
@@ -77,7 +80,7 @@ describe("workspace member-list cache", () => {
 
     await expect(getCachedWorkspaceMembers(10, 2, 20)).resolves.toBeNull();
     expect(mocks.redis.del).toHaveBeenCalledWith(
-      "workspace:members:v1:10:page:2:size:20",
+      `workspace:members:${CACHE_VERSION}:10:page:2:size:20`,
     );
   });
 
@@ -96,8 +99,8 @@ describe("workspace member-list cache", () => {
   it("stores the page, registers its key, and expires both together", async () => {
     await setCachedWorkspaceMembers(10, cachedPage);
 
-    const pageKey = "workspace:members:v1:10:page:2:size:20";
-    const registryKey = "workspace:members:v1:10:keys";
+    const pageKey = `workspace:members:${CACHE_VERSION}:10:page:2:size:20`;
+    const registryKey = `workspace:members:${CACHE_VERSION}:10:keys`;
     expect(getCacheRedisConnection).toHaveBeenCalled();
     expect(mocks.transaction.set).toHaveBeenCalledWith(
       pageKey,
@@ -112,16 +115,16 @@ describe("workspace member-list cache", () => {
 
   it("deletes every registered page and the workspace registry", async () => {
     mocks.redis.smembers.mockResolvedValue([
-      "workspace:members:v1:10:page:1:size:20",
-      "workspace:members:v1:10:page:2:size:20",
+      `workspace:members:${CACHE_VERSION}:10:page:1:size:20`,
+      `workspace:members:${CACHE_VERSION}:10:page:2:size:20`,
     ]);
 
     await deleteCachedWorkspaceMemberLists(10);
 
     expect(mocks.redis.del).toHaveBeenCalledWith(
-      "workspace:members:v1:10:page:1:size:20",
-      "workspace:members:v1:10:page:2:size:20",
-      "workspace:members:v1:10:keys",
+      `workspace:members:${CACHE_VERSION}:10:page:1:size:20`,
+      `workspace:members:${CACHE_VERSION}:10:page:2:size:20`,
+      `workspace:members:${CACHE_VERSION}:10:keys`,
     );
   });
 

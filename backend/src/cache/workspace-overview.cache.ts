@@ -3,7 +3,10 @@ import {
   getCacheRedisConnection,
 } from "../config/cache.js";
 import { env } from "../config/env.js";
-import type { WorkspaceRole } from "../generated/prisma/enums.js";
+import type {
+  WorkspaceIcon,
+  WorkspaceRole,
+} from "../generated/prisma/enums.js";
 
 export interface WorkspaceOverviewMember {
   id: number;
@@ -14,7 +17,14 @@ export interface WorkspaceOverviewMember {
   joinedAt: string;
 }
 
-export type WorkspaceOverviewData = WorkspaceOverviewMember[];
+export interface WorkspaceOverviewData {
+  id: number;
+  displayName: string;
+  description: string;
+  icon: WorkspaceIcon;
+  createdAt: string;
+  members: WorkspaceOverviewMember[];
+}
 
 // The version segment lets a future response-shape change use a new namespace
 // instead of interpreting older cached records as the new format.

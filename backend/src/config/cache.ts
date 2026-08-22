@@ -1,7 +1,7 @@
 import IORedis from "ioredis";
 import { env } from "./env.js";
 
-export const CACHE_VERSION = "v1";
+export const CACHE_VERSION = "v2";
 
 let cacheRedisConnection: IORedis | undefined;
 

@@ -347,13 +347,13 @@ export const getWorkspaceOverview = async (
   res: Response,
 ) => {
   try {
-    const members = await getWorkspaceOverviewService(
+    const overview = await getWorkspaceOverviewService(
       Number(req.params.workspaceId),
     );
 
     return res
       .status(200)
-      .json(createSuccessResponse("Workspace members retrieved", members));
+      .json(createSuccessResponse("Workspace overview retrieved", overview));
   } catch {
     return res.status(500).json({
       success: false,
