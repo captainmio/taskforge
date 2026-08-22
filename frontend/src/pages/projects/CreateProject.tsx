@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "react-toastify";
 import AppHeader from "../../components/layout/AppHeader";
-import ProjectForm from "../../components/projects/ProjectForm";
+import ProjectForm, {
+  type ProjectFormValues,
+} from "../../components/projects/ProjectForm";
 import Button from "../../components/ui/Button";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
+import { createProject } from "../../services/projects";
 import { getWorkspaceOverview } from "../../services/workspaces";
 import { canCreateWorkspaceProjects } from "../../types/roles";
 
@@ -50,6 +54,14 @@ const CreateProject = () => {
     };
   }, [currentUser.id, id, navigate]);
 
+  const handleCreateProject = async (
+    values: ProjectFormValues,
+  ): Promise<void> => {
+    const response = await createProject(id, values);
+    toast.success(response.message);
+    navigate(`/workspace/${id}/projects`);
+  };
+
   if (!isAuthorized) return null;
 
   return (
@@ -66,7 +78,10 @@ const CreateProject = () => {
           </Button>
         )}
       />
-      <ProjectForm onCancel={() => navigate(`/workspace/${id}/projects`)} />
+      <ProjectForm
+        onCancel={() => navigate(`/workspace/${id}/projects`)}
+        onSubmit={handleCreateProject}
+      />
     </div>
   );
 };

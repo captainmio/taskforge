@@ -1,10 +1,12 @@
 import Router from 'express';
 import auth from './auth.routes.js';
+import project from './project.routes.js';
 import workspace from './workspace.routes.js';
 
 const router = Router();
 
 router.use("/auth", auth);
 router.use("/workspaces", workspace);
+router.use("/workspaces/:workspaceId/projects", project);
 
 export default router;

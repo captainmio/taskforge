@@ -17,6 +17,7 @@ model User {
   workspaceMemberships WorkspaceMember[]
   sentInvitations      WorkspaceInvitation[] @relation("InvitationSender")
   createdInviteLinks   WorkspaceInviteLink[]  @relation("InviteLinkCreator")
+  createdProjects      Project[]              @relation("ProjectCreator")
 }
 
 model Workspace {
@@ -32,8 +33,29 @@ model Workspace {
   members     WorkspaceMember[]
   invitations WorkspaceInvitation[]
   inviteLink  WorkspaceInviteLink?
+  projects    Project[]
 
   @@index([ownerId])
+}
+
+model Project {
+  id          Int                @id @default(autoincrement())
+  workspaceId Int                @map("workspace_id")
+  createdById Int                @map("created_by_id")
+  name        String             @db.VarChar(100)
+  description String             @db.VarChar(500)
+  icon        ProjectIcon
+  status      ProjectStatus      @default(planning)
+  startDate   DateTime?          @map("start_date") @db.Date
+  dueDate     DateTime?          @map("due_date") @db.Date
+  defaultView ProjectDefaultView @default(list) @map("default_view")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User               @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId])
+  @@index([createdById])
 }
 
 model WorkspaceInviteLink {
@@ -100,6 +122,34 @@ enum WorkspaceRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum ProjectIcon {
+  desktop
+  mobile
+  code
+  launch
+  flag
+  database
+  server
+  design
+  analytics
+  marketing
+  commerce
+  quality
+}
+
+enum ProjectStatus {
+  planning
+  active
+  on_hold
+  completed
+}
+
+enum ProjectDefaultView {
+  list
+  board
+  calendar
 }
 
 enum InvitationStatus {
