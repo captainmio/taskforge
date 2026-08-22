@@ -378,7 +378,7 @@ export const getWorkspaceOverview = async (
   const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
   if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
 
-  const { members, createdAt, ...workspace } = await findWorkspaceOverview(
+  const { members, projects, createdAt, ...workspace } = await findWorkspaceOverview(
     workspaceId,
   );
 
@@ -391,6 +391,12 @@ export const getWorkspaceOverview = async (
       ...user,
       role,
       joinedAt: joinedAt.toISOString(),
+    })),
+    projects: projects.map((project) => ({
+      ...project,
+      startDate: project.startDate?.toISOString() ?? null,
+      dueDate: project.dueDate?.toISOString() ?? null,
+      createdAt: project.createdAt.toISOString(),
     })),
   };
 

@@ -1,11 +1,8 @@
 import {
   FaCalendarAlt,
   FaChevronRight,
-  FaCode,
-  FaDesktop,
   FaEdit,
   FaFolder,
-  FaMobileAlt,
   FaSignOutAlt,
   FaTasks,
   FaTrashAlt,
@@ -14,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
+import { projectIconOptions } from "../../components/projects/projectIconOptions";
 import ActionCard from "../../components/ui/ActionCard";
 import Badge, { type BadgeVariant } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -29,12 +27,6 @@ import type {
   WorkspaceMember,
   WorkspaceOverview as WorkspaceOverviewData,
 } from "../../types/workspace";
-
-const projects = [
-  { name: "Website Redesign", icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
-  { name: "Mobile App", icon: <FaMobileAlt />, iconClassName: "bg-blue-50 text-blue-600" },
-  { name: "Backend API", icon: <FaCode />, iconClassName: "bg-purple-50 text-purple-600" },
-];
 
 const memberRoleLabels: Record<WorkspaceMember["role"], string> = {
   OWNER: "Owner",
@@ -109,6 +101,9 @@ const WorkspaceOverview = () => {
   if (authorizedWorkspaceId !== id || !workspaceOverview) return null;
 
   const workspaceMembers = workspaceOverview.members;
+  // The fallback keeps the overview usable while a deployment transitions from
+  // an older API response that did not yet include projects.
+  const workspaceProjects = workspaceOverview.projects ?? [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -150,7 +145,11 @@ const WorkspaceOverview = () => {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard icon={<FaFolder />} label="Projects" value={3} />
+              <StatCard
+                icon={<FaFolder />}
+                label="Projects"
+                value={workspaceProjects.length}
+              />
               <StatCard
                 icon={<FaUsers />}
                 label="Members"
@@ -169,7 +168,7 @@ const WorkspaceOverview = () => {
 
         <div className="mt-5 grid gap-5 xl:grid-cols-2">
           <SectionCard
-            title="Projects"
+            title={`Projects (${workspaceProjects.length})`}
             className="border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 shadow-sm"
             action={(
               <Link
@@ -180,21 +179,36 @@ const WorkspaceOverview = () => {
               </Link>
             )}
           >
-            <ul className="-m-4">
-              {projects.map((project) => (
-                <li
-                  key={project.name}
-                  className="border-b border-gray-100 px-4 py-3.5 last:border-b-0"
-                >
-                  <IconDescriptionItem
-                    icon={project.icon}
-                    title={project.name}
-                    iconContainerClassName={project.iconClassName}
-                    trailing={<FaChevronRight className="size-3" aria-hidden="true" />}
-                  />
-                </li>
-              ))}
-            </ul>
+            {workspaceProjects.length > 0 ? (
+              <ul className="-m-4">
+                {workspaceProjects.map((project) => {
+                  const iconOption = projectIconOptions.find(
+                    (option) => option.id === project.icon,
+                  );
+
+                  return (
+                    <li
+                      key={project.id}
+                      className="border-b border-gray-100 px-4 py-3.5 last:border-b-0"
+                    >
+                      <IconDescriptionItem
+                        icon={iconOption?.icon ?? <FaFolder />}
+                        title={project.name}
+                        description={project.description || undefined}
+                        iconContainerClassName={
+                          iconOption?.className ?? "bg-gray-100 text-gray-600"
+                        }
+                        trailing={<FaChevronRight className="size-3" aria-hidden="true" />}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-500">
+                No projects yet.
+              </p>
+            )}
           </SectionCard>
 
           <SectionCard

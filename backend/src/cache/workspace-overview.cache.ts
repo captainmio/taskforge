@@ -4,6 +4,9 @@ import {
 } from "../config/cache.js";
 import { env } from "../config/env.js";
 import type {
+  ProjectDefaultView,
+  ProjectIcon,
+  ProjectStatus,
   WorkspaceIcon,
   WorkspaceRole,
 } from "../generated/prisma/enums.js";
@@ -17,6 +20,18 @@ export interface WorkspaceOverviewMember {
   joinedAt: string;
 }
 
+export interface WorkspaceOverviewProject {
+  id: number;
+  name: string;
+  description: string;
+  icon: ProjectIcon;
+  status: ProjectStatus;
+  startDate: string | null;
+  dueDate: string | null;
+  defaultView: ProjectDefaultView;
+  createdAt: string;
+}
+
 export interface WorkspaceOverviewData {
   id: number;
   displayName: string;
@@ -24,6 +39,7 @@ export interface WorkspaceOverviewData {
   icon: WorkspaceIcon;
   createdAt: string;
   members: WorkspaceOverviewMember[];
+  projects: WorkspaceOverviewProject[];
 }
 
 // The version segment lets a future response-shape change use a new namespace

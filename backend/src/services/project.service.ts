@@ -1,3 +1,4 @@
+import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
 import { ProjectCreationForbiddenError } from "../errors/project.errors.js";
 import {
   ProjectStatus,
@@ -26,7 +27,7 @@ export const createProject = async (
     throw new ProjectCreationForbiddenError();
   }
 
-  return createProjectRecord({
+  const project = await createProjectRecord({
     workspaceId,
     createdById,
     name: input.projectName,
@@ -37,4 +38,10 @@ export const createProject = async (
     dueDate: toProjectDate(input.dueDate),
     defaultView: input.defaultView,
   });
+
+  // The overview now contains projects. Clear its cache only after PostgreSQL
+  // has committed the new record so the next read contains the new project.
+  await deleteCachedWorkspaceOverview(workspaceId);
+
+  return project;
 };

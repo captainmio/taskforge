@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
 import { ProjectCreationForbiddenError } from "../../../src/errors/project.errors.js";
 import {
   ProjectStatus,
@@ -9,6 +10,10 @@ import { createProject } from "../../../src/services/project.service.js";
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
   createProjectRecord: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
+  deleteCachedWorkspaceOverview: vi.fn(),
 }));
 
 const input = {
@@ -22,6 +27,10 @@ const input = {
 };
 
 describe("createProject", () => {
+  beforeEach(() => {
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+  });
+
   it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
     "allows a workspace %s to create a project",
     async (actorRole) => {
@@ -41,6 +50,7 @@ describe("createProject", () => {
         dueDate: new Date("2026-10-01T00:00:00.000Z"),
         defaultView: "board",
       });
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
     },
   );
 
@@ -56,6 +66,7 @@ describe("createProject", () => {
     expect(createProjectRecord).toHaveBeenCalledWith(
       expect.objectContaining({ startDate: null, dueDate: null }),
     );
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
   });
 
   it("rejects a member before writing a project", async () => {
@@ -63,5 +74,6 @@ describe("createProject", () => {
       createProject(10, 7, WorkspaceRole.MEMBER, input),
     ).rejects.toBeInstanceOf(ProjectCreationForbiddenError);
     expect(createProjectRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 });

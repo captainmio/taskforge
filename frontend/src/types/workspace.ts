@@ -46,6 +46,36 @@ export interface WorkspaceMember {
   joinedAt: string;
 }
 
+export type ProjectIcon =
+  | "desktop"
+  | "mobile"
+  | "code"
+  | "launch"
+  | "flag"
+  | "database"
+  | "server"
+  | "design"
+  | "analytics"
+  | "marketing"
+  | "commerce"
+  | "quality";
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed";
+
+export type ProjectDefaultView = "list" | "board" | "calendar";
+
+export interface WorkspaceProject {
+  id: number;
+  name: string;
+  description: string;
+  icon: ProjectIcon;
+  status: ProjectStatus;
+  startDate: string | null;
+  dueDate: string | null;
+  defaultView: ProjectDefaultView;
+  createdAt: string;
+}
+
 export interface WorkspaceOverview {
   id: number;
   displayName: string;
@@ -53,4 +83,5 @@ export interface WorkspaceOverview {
   icon: WorkspaceIcon;
   createdAt: string;
   members: WorkspaceMember[];
+  projects: WorkspaceProject[];
 }

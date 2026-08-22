@@ -52,6 +52,19 @@ const workspaceOverview = {
   icon: "code" as const,
   createdAt: "2026-08-18T00:00:00.000Z",
   members: workspaceMembers,
+  projects: [
+    {
+      id: 25,
+      name: "Website Redesign",
+      description: "Refresh the marketing site.",
+      icon: "desktop" as const,
+      status: "planning" as const,
+      startDate: "2026-09-01T00:00:00.000Z",
+      dueDate: "2026-10-01T00:00:00.000Z",
+      defaultView: "board" as const,
+      createdAt: "2026-08-22T00:00:00.000Z",
+    },
+  ],
 };
 
 describe("GET /api/workspaces/:workspaceId/overview", () => {

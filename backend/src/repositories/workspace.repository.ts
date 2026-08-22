@@ -336,6 +336,20 @@ export const findWorkspaceOverview = async (workspaceId: number) =>
           },
         },
       },
+      projects: {
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          icon: true,
+          status: true,
+          startDate: true,
+          dueDate: true,
+          defaultView: true,
+          createdAt: true,
+        },
+      },
     },
   });
 

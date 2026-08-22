@@ -6,7 +6,13 @@ import {
   CACHE_VERSION,
   getCacheRedisConnection,
 } from "../../../src/config/cache.js";
-import { WorkspaceIcon, WorkspaceRole } from "../../../src/generated/prisma/enums.js";
+import {
+  ProjectDefaultView,
+  ProjectIcon,
+  ProjectStatus,
+  WorkspaceIcon,
+  WorkspaceRole,
+} from "../../../src/generated/prisma/enums.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -40,6 +46,19 @@ const cachedOverview = {
       email: "member@example.com",
       role: WorkspaceRole.MEMBER,
       joinedAt: "2026-08-20T00:00:00.000Z",
+    },
+  ],
+  projects: [
+    {
+      id: 25,
+      name: "Website Redesign",
+      description: "Refresh the marketing site.",
+      icon: ProjectIcon.desktop,
+      status: ProjectStatus.planning,
+      startDate: "2026-09-01T00:00:00.000Z",
+      dueDate: "2026-10-01T00:00:00.000Z",
+      defaultView: ProjectDefaultView.board,
+      createdAt: "2026-08-22T00:00:00.000Z",
     },
   ],
 };

@@ -8,6 +8,9 @@ import {
 import { JWT_SECRET } from "../../../src/config/auth.js";
 import { prisma } from "../../../src/config/database.js";
 import {
+  ProjectDefaultView,
+  ProjectIcon,
+  ProjectStatus,
   WorkspaceIcon,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
@@ -73,6 +76,32 @@ describe("GET /api/workspaces/:workspaceId/overview with PostgreSQL", () => {
             },
           ],
         },
+        projects: {
+          create: [
+            {
+              name: "Website Redesign",
+              description: "Refresh the marketing site.",
+              icon: ProjectIcon.desktop,
+              status: ProjectStatus.planning,
+              startDate: new Date("2026-09-01T00:00:00.000Z"),
+              dueDate: new Date("2026-10-01T00:00:00.000Z"),
+              defaultView: ProjectDefaultView.board,
+              createdById: owner.id,
+              createdAt: new Date("2026-08-22T00:00:00.000Z"),
+            },
+            {
+              name: "Mobile App",
+              description: "Build the mobile application.",
+              icon: ProjectIcon.mobile,
+              status: ProjectStatus.active,
+              startDate: null,
+              dueDate: null,
+              defaultView: ProjectDefaultView.list,
+              createdById: owner.id,
+              createdAt: new Date("2026-08-23T00:00:00.000Z"),
+            },
+          ],
+        },
       },
     });
     const authCookie = `accessToken=${jwt.sign(
@@ -110,6 +139,30 @@ describe("GET /api/workspaces/:workspaceId/overview with PostgreSQL", () => {
             email: member.email,
             role: WorkspaceRole.MEMBER,
             joinedAt: "2026-08-20T00:00:00.000Z",
+          },
+        ],
+        projects: [
+          {
+            id: expect.any(Number),
+            name: "Mobile App",
+            description: "Build the mobile application.",
+            icon: ProjectIcon.mobile,
+            status: ProjectStatus.active,
+            startDate: null,
+            dueDate: null,
+            defaultView: ProjectDefaultView.list,
+            createdAt: "2026-08-23T00:00:00.000Z",
+          },
+          {
+            id: expect.any(Number),
+            name: "Website Redesign",
+            description: "Refresh the marketing site.",
+            icon: ProjectIcon.desktop,
+            status: ProjectStatus.planning,
+            startDate: "2026-09-01T00:00:00.000Z",
+            dueDate: "2026-10-01T00:00:00.000Z",
+            defaultView: ProjectDefaultView.board,
+            createdAt: "2026-08-22T00:00:00.000Z",
           },
         ],
       },

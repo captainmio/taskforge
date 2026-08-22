@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { Prisma } from "../../../src/generated/prisma/client.js";
 import {
   InvitationStatus,
+  ProjectDefaultView,
+  ProjectIcon,
+  ProjectStatus,
   WorkspaceIcon,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
@@ -579,6 +582,19 @@ describe("getWorkspaceOverview", () => {
         createdAt: new Date("2026-08-20T00:00:00.000Z"),
       },
     ],
+    projects: [
+      {
+        id: 25,
+        name: "Website Redesign",
+        description: "Refresh the marketing site.",
+        icon: ProjectIcon.desktop,
+        status: ProjectStatus.planning,
+        startDate: new Date("2026-09-01T00:00:00.000Z"),
+        dueDate: new Date("2026-10-01T00:00:00.000Z"),
+        defaultView: ProjectDefaultView.board,
+        createdAt: new Date("2026-08-22T00:00:00.000Z"),
+      },
+    ],
   };
   const normalizedOverview = {
     id: 10,
@@ -594,6 +610,19 @@ describe("getWorkspaceOverview", () => {
         email: "member@example.com",
         role: WorkspaceRole.MEMBER,
         joinedAt: "2026-08-20T00:00:00.000Z",
+      },
+    ],
+    projects: [
+      {
+        id: 25,
+        name: "Website Redesign",
+        description: "Refresh the marketing site.",
+        icon: ProjectIcon.desktop,
+        status: ProjectStatus.planning,
+        startDate: "2026-09-01T00:00:00.000Z",
+        dueDate: "2026-10-01T00:00:00.000Z",
+        defaultView: ProjectDefaultView.board,
+        createdAt: "2026-08-22T00:00:00.000Z",
       },
     ],
   };
@@ -613,7 +642,7 @@ describe("getWorkspaceOverview", () => {
     expect(setCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
-  it("normalizes workspace and membership dates before caching the overview", async () => {
+  it("normalizes workspace, membership, and project dates before caching the overview", async () => {
     await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
     expect(findWorkspaceOverview).toHaveBeenCalledWith(10);
     expect(setCachedWorkspaceOverview).toHaveBeenCalledWith(
