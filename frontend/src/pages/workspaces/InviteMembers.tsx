@@ -55,6 +55,7 @@ const InviteMembers = () => {
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
+  const [workspaceName, setWorkspaceName] = useState("");
   const {
     control,
     formState: { errors },
@@ -75,7 +76,6 @@ const InviteMembers = () => {
     name: "invitations",
   });
 
-  const workspaceName: string = "TaskForge Dev";
   const basePath: string = `/workspace/${id}`;
 
   useEffect(() => {
@@ -97,6 +97,7 @@ const InviteMembers = () => {
           return;
         }
 
+        setWorkspaceName(response.data.displayName);
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });

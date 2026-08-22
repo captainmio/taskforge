@@ -26,7 +26,10 @@ import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { getInitials } from "../../utils/getInitials";
 import { useEffect, useState } from "react";
 import { getWorkspaceOverview } from "../../services/workspaces";
-import type { WorkspaceMember } from "../../types/workspace";
+import type {
+  WorkspaceMember,
+  WorkspaceOverview as WorkspaceOverviewData,
+} from "../../types/workspace";
 
 const projects = [
   { name: "Website Redesign", tasks: 12, icon: <FaDesktop />, iconClassName: "bg-green-50 text-site-green" },
@@ -49,13 +52,24 @@ const memberRoleBadgeVariants: Record<
   MEMBER: "gray",
 };
 
+const formatCreationDate = (createdAt: string): string => {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+};
+
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<string | null>(null);
-  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
+  const [workspaceOverview, setWorkspaceOverview] =
+    useState<WorkspaceOverviewData | null>(null);
   const { user: currentUser } = useAuthenticatedSession();
-  const workspaceName = "TaskForge Dev";
   const basePath = `/workspace/${id}`;
   const inviteMembersPath:string = `${basePath}/members/invite`;
 
@@ -78,7 +92,7 @@ const WorkspaceOverview = () => {
           return;
         }
 
-        setWorkspaceMembers(response.data ?? []);
+        setWorkspaceOverview(response.data);
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });
@@ -92,7 +106,9 @@ const WorkspaceOverview = () => {
     };
   }, [id, navigate]);
 
-  if (authorizedWorkspaceId !== id) return null;
+  if (authorizedWorkspaceId !== id || !workspaceOverview) return null;
+
+  const workspaceMembers = workspaceOverview.members;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -117,16 +133,18 @@ const WorkspaceOverview = () => {
           <div className="grid gap-6 xl:grid-cols-[1fr_1.15fr] xl:items-center">
             <div className="flex items-start gap-4">
               <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-site-green text-lg font-bold text-white shadow-sm">
-                {getInitials(workspaceName)}
+                {getInitials(workspaceOverview.displayName)}
               </span>
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-bold text-gray-950">{workspaceName}</h2>
+                <h2 className="truncate text-xl font-bold text-gray-950">
+                  {workspaceOverview.displayName}
+                </h2>
                 <p className="mt-1 max-w-md text-sm leading-6 text-gray-500">
-                  Workspace for managing and collaborating on our development projects.
+                  {workspaceOverview.description || "No description provided."}
                 </p>
                 <p className="mt-4 flex items-center gap-2 text-xs text-gray-400">
                   <FaCalendarAlt className="size-3" aria-hidden="true" />
-                  Created on May 16, 2024 by you
+                  Created on {formatCreationDate(workspaceOverview.createdAt)}
                 </p>
               </div>
             </div>

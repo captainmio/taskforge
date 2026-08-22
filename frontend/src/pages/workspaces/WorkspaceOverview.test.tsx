@@ -40,18 +40,49 @@ describe("Workspace overview", () => {
   beforeEach(() => {
     mocks.getWorkspaceOverview.mockResolvedValue({
       success: true,
-      message: "Workspace members retrieved",
-      data: [
-        {
-          id: 1,
-          firstname: "Workspace",
-          lastname: "Owner",
-          email: "owner@example.com",
-          role: "OWNER",
-          joinedAt: "2024-01-15T00:00:00.000Z",
-        },
-      ],
+      message: "Workspace overview retrieved",
+      data: {
+        id: 42,
+        displayName: "Product Launch Team",
+        description: "Coordinates the upcoming product launch.",
+        icon: "launch",
+        createdAt: "2026-08-18T12:00:00.000Z",
+        members: [
+          {
+            id: 1,
+            firstname: "Workspace",
+            lastname: "Owner",
+            email: "owner@example.com",
+            role: "OWNER",
+            joinedAt: "2026-08-18T12:00:00.000Z",
+          },
+        ],
+      },
     });
+  });
+
+  it("renders the selected workspace metadata and member preview", async () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceOverview />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Product Launch Team" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Coordinates the upcoming product launch."),
+    ).toBeVisible();
+    expect(screen.getByText("PL")).toBeVisible();
+    expect(screen.getByText(/Created on .*2026/)).toBeVisible();
+    const membersStatLabel = screen
+      .getAllByText("Members")
+      .find((element) => element.tagName === "P");
+    expect(membersStatLabel).toBeDefined();
+    expect(membersStatLabel?.parentElement).toHaveTextContent("1");
+    expect(screen.getByText("Workspace Owner (You)")).toBeVisible();
+    expect(screen.getByText("owner@example.com")).toBeVisible();
   });
 
   it("links the members preview to the complete member list", async () => {

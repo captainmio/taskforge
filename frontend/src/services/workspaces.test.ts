@@ -1,15 +1,47 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { updateWorkspaceMemberRole } from "./workspaces";
+import { getWorkspaceOverview, updateWorkspaceMemberRole } from "./workspaces";
 
 const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
   patch: vi.fn(),
 }));
 
 vi.mock("./api", () => ({
   apiClient: {
+    get: mocks.get,
     patch: mocks.patch,
   },
 }));
+
+describe("getWorkspaceOverview", () => {
+  it("returns the selected workspace metadata and members", async () => {
+    const apiResponse = {
+      success: true as const,
+      message: "Workspace overview retrieved",
+      data: {
+        id: 42,
+        displayName: "Engineering Team",
+        description: "Builds and maintains the product.",
+        icon: "code" as const,
+        createdAt: "2026-08-18T00:00:00.000Z",
+        members: [
+          {
+            id: 7,
+            firstname: "Workspace",
+            lastname: "Owner",
+            email: "owner@example.com",
+            role: "OWNER" as const,
+            joinedAt: "2026-08-18T00:00:00.000Z",
+          },
+        ],
+      },
+    };
+    mocks.get.mockResolvedValue({ data: apiResponse });
+
+    await expect(getWorkspaceOverview("42")).resolves.toEqual(apiResponse);
+    expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/overview");
+  });
+});
 
 describe("updateWorkspaceMemberRole", () => {
   beforeEach(() => {

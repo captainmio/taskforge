@@ -1,6 +1,7 @@
 import type {
   CreateWorkspacePayload,
   WorkspaceMember,
+  WorkspaceOverview,
 } from "../types/workspace";
 import type { WorkspaceMemberRole, WorkspaceRole } from "../types/roles";
 import { apiClient, type ApiSuccessResponse } from "./api";
@@ -24,8 +25,8 @@ export const createWorkspace = async (
 
 export const getWorkspaceOverview = async (
   workspaceId: string,
-): Promise<ApiSuccessResponse<WorkspaceMember[]>> => {
-  const response = await apiClient.get<ApiSuccessResponse<WorkspaceMember[]>>(
+): Promise<ApiSuccessResponse<WorkspaceOverview>> => {
+  const response = await apiClient.get<ApiSuccessResponse<WorkspaceOverview>>(
     `/workspaces/${workspaceId}/overview`,
   );
   return response.data;

@@ -45,3 +45,12 @@ export interface WorkspaceMember {
   role: WorkspaceMemberRole;
   joinedAt: string;
 }
+
+export interface WorkspaceOverview {
+  id: number;
+  displayName: string;
+  description: string;
+  icon: WorkspaceIcon;
+  createdAt: string;
+  members: WorkspaceMember[];
+}

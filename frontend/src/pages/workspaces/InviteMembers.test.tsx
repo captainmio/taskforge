@@ -13,6 +13,19 @@ const mocks = vi.hoisted(() => ({
   writeClipboard: vi.fn(),
 }));
 
+const workspaceOverviewResponse = {
+  success: true as const,
+  message: "Workspace overview retrieved",
+  data: {
+    id: 42,
+    displayName: "Engineering Team",
+    description: "Builds and maintains the product.",
+    icon: "code" as const,
+    createdAt: "2026-08-18T00:00:00.000Z",
+    members: [],
+  },
+};
+
 vi.mock("../../services/workspaces", () => ({
   getWorkspaceOverview: mocks.getWorkspaceOverview,
 }));
@@ -86,11 +99,7 @@ describe("Invite members page", () => {
       configurable: true,
       value: { writeText: mocks.writeClipboard },
     });
-    mocks.getWorkspaceOverview.mockResolvedValue({
-      success: true,
-      message: "Workspace members retrieved",
-      data: [],
-    });
+    mocks.getWorkspaceOverview.mockResolvedValue(workspaceOverviewResponse);
     mocks.inviteWorkspaceMembers.mockResolvedValue({
       success: true,
       message: "Workspace invitations queued",
@@ -124,11 +133,7 @@ describe("Invite members page", () => {
     expect(mocks.getWorkspaceOverview).toHaveBeenCalledWith("42");
 
     await act(async () => {
-      authorize?.({
-        success: true,
-        message: "Workspace members retrieved",
-        data: [],
-      });
+      authorize?.(workspaceOverviewResponse);
     });
 
     expect(
@@ -139,6 +144,11 @@ describe("Invite members page", () => {
   it("starts with invitation submission disabled", async () => {
     await renderAuthorizedPage();
 
+    expect(
+      screen.getByText(
+        "Invite people to join Engineering Team and start collaborating.",
+      ),
+    ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Send Invitations" }),
     ).toBeDisabled();
