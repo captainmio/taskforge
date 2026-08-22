@@ -1,13 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import InviteMembers from "./InviteMembers";
 
 const mocks = vi.hoisted(() => ({
   getWorkspaceOverview: vi.fn(),
+  generateWorkspaceInviteLink: vi.fn(),
   inviteWorkspaceMembers: vi.fn(),
   navigate: vi.fn(),
+  showError: vi.fn(),
   showSuccess: vi.fn(),
+  writeClipboard: vi.fn(),
 }));
 
 vi.mock("../../services/workspaces", () => ({
@@ -15,6 +18,7 @@ vi.mock("../../services/workspaces", () => ({
 }));
 
 vi.mock("../../services/invitations", () => ({
+  generateWorkspaceInviteLink: mocks.generateWorkspaceInviteLink,
   inviteWorkspaceMembers: mocks.inviteWorkspaceMembers,
 }));
 
@@ -31,7 +35,7 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
 }));
 
 vi.mock("react-toastify", () => ({
-  toast: { success: mocks.showSuccess },
+  toast: { error: mocks.showError, success: mocks.showSuccess },
 }));
 
 vi.mock("react-router", async () => {
@@ -73,7 +77,15 @@ const addInvitation = async (
 };
 
 describe("Invite members page", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: mocks.writeClipboard },
+    });
     mocks.getWorkspaceOverview.mockResolvedValue({
       success: true,
       message: "Workspace members retrieved",
@@ -84,6 +96,16 @@ describe("Invite members page", () => {
       message: "Workspace invitations queued",
       data: { invitationCount: 1 },
     });
+    mocks.generateWorkspaceInviteLink.mockResolvedValue({
+      success: true,
+      message: "Workspace invitation link generated",
+      data: {
+        invitationLink:
+          "http://localhost:5173/invitations/accept?token=shared-token&type=link",
+        expiresAt: "2026-08-29T00:00:00.000Z",
+      },
+    });
+    mocks.writeClipboard.mockResolvedValue(undefined);
   });
 
   it("waits for workspace authorization before showing the page", async () => {
@@ -230,5 +252,153 @@ describe("Invite members page", () => {
     expect(screen.getByText("member@example.com")).toBeVisible();
     expect(mocks.showSuccess).not.toHaveBeenCalled();
     expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it("shows loading and then displays the generated invitation link", async () => {
+    let finishRequest:
+      | ((value: {
+          success: true;
+          message: string;
+          data: { invitationLink: string; expiresAt: string };
+        }) => void)
+      | undefined;
+    mocks.generateWorkspaceInviteLink.mockReturnValue(
+      new Promise((resolve) => {
+        finishRequest = resolve;
+      }),
+    );
+    await renderAuthorizedPage();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Generating link..." }),
+    ).toBeDisabled();
+    expect(mocks.generateWorkspaceInviteLink).toHaveBeenCalledWith("42");
+
+    await act(async () => {
+      finishRequest?.({
+        success: true,
+        message: "Workspace invitation link generated",
+        data: {
+          invitationLink:
+            "http://localhost:5173/invitations/accept?token=shared-token&type=link",
+          expiresAt: "2026-08-29T00:00:00.000Z",
+        },
+      });
+    });
+
+    expect(screen.getByLabelText("Invitation link")).toHaveValue(
+      "http://localhost:5173/invitations/accept?token=shared-token&type=link",
+    );
+    expect(
+      screen.getByRole("button", { name: "Generate new link" }),
+    ).toBeEnabled();
+    expect(mocks.showSuccess).toHaveBeenCalledWith(
+      "Workspace invitation link generated",
+    );
+  });
+
+  it("shows an inline error and keeps generation available after failure", async () => {
+    mocks.generateWorkspaceInviteLink.mockRejectedValue(
+      new Error("Database unavailable"),
+    );
+    await renderAuthorizedPage();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "",
+      }),
+    ).toHaveTextContent(
+      "Unable to generate an invitation link. Please try again.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    ).toBeEnabled();
+    expect(screen.queryByLabelText("Invitation link")).not.toBeInTheDocument();
+  });
+
+  it("replaces the displayed value when a new link is generated", async () => {
+    mocks.generateWorkspaceInviteLink
+      .mockResolvedValueOnce({
+        success: true,
+        message: "Workspace invitation link generated",
+        data: {
+          invitationLink: "https://example.com/first-link",
+          expiresAt: "2026-08-29T00:00:00.000Z",
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        message: "Workspace invitation link generated",
+        data: {
+          invitationLink: "https://example.com/replacement-link",
+          expiresAt: "2026-08-30T00:00:00.000Z",
+        },
+      });
+    await renderAuthorizedPage();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+    expect(await screen.findByLabelText("Invitation link")).toHaveValue(
+      "https://example.com/first-link",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Generate new link" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Invitation link")).toHaveValue(
+        "https://example.com/replacement-link",
+      );
+    });
+  });
+
+  it("shows Copied temporarily without displaying a success toast", async () => {
+    await renderAuthorizedPage();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+    await screen.findByLabelText("Invitation link");
+    mocks.showSuccess.mockClear();
+    vi.useFakeTimers();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+    await act(async () => Promise.resolve());
+
+    expect(mocks.writeClipboard).toHaveBeenCalledWith(
+      "http://localhost:5173/invitations/accept?token=shared-token&type=link",
+    );
+    expect(screen.getByRole("button", { name: "Copied" })).toBeVisible();
+    expect(mocks.showSuccess).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeVisible();
+    vi.useRealTimers();
+  });
+
+  it("keeps the original copy label and shows an error when copying fails", async () => {
+    mocks.writeClipboard.mockRejectedValue(new Error("Clipboard unavailable"));
+    await renderAuthorizedPage();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+    await screen.findByLabelText("Invitation link");
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+
+    await waitFor(() => {
+      expect(mocks.showError).toHaveBeenCalledWith(
+        "Unable to copy the invitation link",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeVisible();
   });
 });
