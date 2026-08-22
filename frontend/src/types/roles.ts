@@ -36,3 +36,9 @@ export const isWorkspaceMember = (
 export const canManageWorkspaceMembers = (
   role: WorkspaceMemberRole | undefined,
 ): boolean => isWorkspaceOwner(role) || isWorkspaceAdmin(role);
+
+// Project creation follows the same workspace-level authority as member
+// management: owners and admins may create projects, members may not.
+export const canCreateWorkspaceProjects = (
+  role: WorkspaceMemberRole | undefined,
+): boolean => isWorkspaceOwner(role) || isWorkspaceAdmin(role);
