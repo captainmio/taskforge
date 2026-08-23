@@ -1,8 +1,11 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
-import { ProjectCreationForbiddenError } from "../../../src/errors/project.errors.js";
+import {
+  ProjectNotFoundError,
+  ProjectUpdateForbiddenError,
+} from "../../../src/errors/project.errors.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
-import { createProject } from "../../../src/services/project.service.js";
+import { updateProject } from "../../../src/services/project.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock(
@@ -39,92 +42,105 @@ const payload = {
   dueDate: "2026-10-01",
   defaultView: "board",
 };
-const createdProject = {
-  id: 25,
-  workspaceId: 42,
-  createdById: 7,
-  name: payload.projectName,
-  description: payload.description,
-  icon: payload.icon,
-  status: payload.status,
-  startDate: new Date("2026-09-01T00:00:00.000Z"),
-  dueDate: new Date("2026-10-01T00:00:00.000Z"),
-  defaultView: payload.defaultView,
-  createdAt: new Date("2026-08-22T00:00:00.000Z"),
-};
 
-describe("POST /api/workspaces/:workspaceId/projects", () => {
+describe("PATCH /api/workspaces/:workspaceId/projects/:projectId", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "OWNER" });
-    vi.mocked(createProject).mockResolvedValue(createdProject as never);
+    vi.mocked(updateProject).mockResolvedValue({ id: 25 });
   });
 
   it.each(["OWNER", "ADMIN"] as const)(
-    "creates a project for a workspace %s and receives the parent workspace ID",
+    "updates a project when the requester is a workspace %s",
     async (role) => {
       vi.mocked(findWorkspaceMembership).mockResolvedValueOnce({ role });
 
       const response = await request(app)
-        .post("/api/workspaces/42/projects")
+        .patch("/api/workspaces/42/projects/25")
         .set("Cookie", authCookie)
         .send(payload);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toEqual({
         success: true,
-        message: "Project created",
-        data: {
-          ...createdProject,
-          startDate: "2026-09-01T00:00:00.000Z",
-          dueDate: "2026-10-01T00:00:00.000Z",
-          createdAt: "2026-08-22T00:00:00.000Z",
-        },
+        message: "Project updated",
+        data: { id: 25 },
       });
-      expect(findWorkspaceMembership).toHaveBeenCalledWith(42, 7);
-      expect(createProject).toHaveBeenCalledWith(42, 7, role, payload);
+      expect(updateProject).toHaveBeenCalledWith(42, 25, role, payload);
     },
   );
 
-  it("rejects an invalid payload before checking workspace membership", async () => {
+  it("rejects invalid route parameters before checking membership", async () => {
     const response = await request(app)
-      .post("/api/workspaces/42/projects")
+      .patch("/api/workspaces/42/projects/invalid")
+      .set("Cookie", authCookie)
+      .send(payload);
+
+    expect(response.status).toBe(400);
+    expect(findWorkspaceMembership).not.toHaveBeenCalled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid payload before checking membership", async () => {
+    const response = await request(app)
+      .patch("/api/workspaces/42/projects/25")
       .set("Cookie", authCookie)
       .send({ ...payload, dueDate: "2026-08-31" });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe("Validation failed");
     expect(findWorkspaceMembership).not.toHaveBeenCalled();
-    expect(createProject).not.toHaveBeenCalled();
+    expect(updateProject).not.toHaveBeenCalled();
   });
 
   it("rejects a non-member before calling the project service", async () => {
     vi.mocked(findWorkspaceMembership).mockResolvedValueOnce(null);
 
     const response = await request(app)
-      .post("/api/workspaces/42/projects")
+      .patch("/api/workspaces/42/projects/25")
       .set("Cookie", authCookie)
       .send(payload);
 
     expect(response.status).toBe(403);
-    expect(response.body.error).toBe("You do not have access to this workspace");
-    expect(createProject).not.toHaveBeenCalled();
+    expect(updateProject).not.toHaveBeenCalled();
   });
 
-  it("returns 403 when a member tries to create a project", async () => {
+  it("returns 403 when a member attempts an update", async () => {
     vi.mocked(findWorkspaceMembership).mockResolvedValueOnce({ role: "MEMBER" });
-    vi.mocked(createProject).mockRejectedValueOnce(
-      new ProjectCreationForbiddenError(),
+    vi.mocked(updateProject).mockRejectedValueOnce(
+      new ProjectUpdateForbiddenError(),
     );
 
     const response = await request(app)
-      .post("/api/workspaces/42/projects")
+      .patch("/api/workspaces/42/projects/25")
       .set("Cookie", authCookie)
       .send(payload);
 
     expect(response.status).toBe(403);
     expect(response.body.error).toBe(
-      "Only workspace owners and admins can create projects",
+      "Only workspace owners and admins can update projects",
     );
-    expect(createProject).toHaveBeenCalledWith(42, 7, "MEMBER", payload);
+  });
+
+  it("returns 404 when the project is not in the workspace", async () => {
+    vi.mocked(updateProject).mockRejectedValueOnce(new ProjectNotFoundError());
+
+    const response = await request(app)
+      .patch("/api/workspaces/42/projects/25")
+      .set("Cookie", authCookie)
+      .send(payload);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("Project not found");
+  });
+
+  it("returns 500 when the update service fails unexpectedly", async () => {
+    vi.mocked(updateProject).mockRejectedValueOnce(new Error("Database offline"));
+
+    const response = await request(app)
+      .patch("/api/workspaces/42/projects/25")
+      .set("Cookie", authCookie)
+      .send(payload);
+
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe("Something went wrong on our end");
   });
 });

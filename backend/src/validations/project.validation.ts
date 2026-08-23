@@ -25,9 +25,7 @@ const projectIconSchema = z.enum([
 
 const optionalProjectDateSchema = z.union([z.iso.date(), z.literal("")]);
 
-export const createProjectSchema = z.object({
-  params: z.object({ workspaceId: workspaceIdSchema }),
-  body: z.object({
+const projectBodySchema = z.object({
     projectName: z.string().trim().min(1, "Project name is required").max(100),
     description: z.string().trim().max(500),
     icon: projectIconSchema,
@@ -47,7 +45,11 @@ export const createProjectSchema = z.object({
         message: "Due date cannot be earlier than the start date",
       });
     }
-  }),
+  });
+
+export const createProjectSchema = z.object({
+  params: z.object({ workspaceId: workspaceIdSchema }),
+  body: projectBodySchema,
 });
 
 export const projectListSchema = z.object({
@@ -61,7 +63,25 @@ export const deleteProjectSchema = z.object({
   }),
 });
 
+export const projectDetailSchema = z.object({
+  params: z.object({
+    workspaceId: workspaceIdSchema,
+    projectId: workspaceIdSchema,
+  }),
+});
+
+export const updateProjectSchema = z.object({
+  params: z.object({
+    workspaceId: workspaceIdSchema,
+    projectId: workspaceIdSchema,
+  }),
+  body: projectBodySchema,
+});
+
 export type CreateProjectBody = z.infer<typeof createProjectSchema>["body"];
 export type CreateProjectParams = z.infer<typeof createProjectSchema>["params"];
 export type ProjectListParams = z.infer<typeof projectListSchema>["params"];
 export type DeleteProjectParams = z.infer<typeof deleteProjectSchema>["params"];
+export type ProjectDetailParams = z.infer<typeof projectDetailSchema>["params"];
+export type UpdateProjectBody = z.infer<typeof updateProjectSchema>["body"];
+export type UpdateProjectParams = z.infer<typeof updateProjectSchema>["params"];

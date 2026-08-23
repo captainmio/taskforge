@@ -276,6 +276,7 @@ const Projects = () => {
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end lg:hidden">
             <button
               type="button"
+              onClick={() => navigate(`/workspace/${id}/projects/${project.id}/edit`)}
               className="inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 md:w-auto"
             >
               <FaEdit aria-hidden="true" />
@@ -307,7 +308,10 @@ const Projects = () => {
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={close}
+                    onClick={() => {
+                      close();
+                      navigate(`/workspace/${id}/projects/${project.id}/edit`);
+                    }}
                     className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     <FaEdit aria-hidden="true" />

@@ -14,6 +14,7 @@ const logMocks = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
+  setBindings: vi.fn(),
 }));
 
 vi.mock("../../../src/middlewares/httpLogger.js", () => ({

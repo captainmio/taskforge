@@ -5,6 +5,7 @@ import { Register } from "../pages/Register";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
 import CreateProject from "../pages/projects/CreateProject";
+import EditProject from "../pages/projects/EditProject";
 import Projects from "../pages/projects/Projects";
 import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 import InviteMembers from "../pages/workspaces/InviteMembers";
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
           {
             path: "projects/create",
             Component: CreateProject,
+          },
+          {
+            path: "projects/:projectId/edit",
+            Component: EditProject,
           },
         ],
       },

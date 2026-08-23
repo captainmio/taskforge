@@ -9,6 +9,7 @@ import {
   ProjectCreationForbiddenError,
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
+  ProjectUpdateForbiddenError,
 } from "../errors/project.errors.js";
 import {
   ProjectStatus,
@@ -17,9 +18,14 @@ import {
 import {
   createProjectRecord,
   deleteProjectRecord,
+  findProjectByWorkspace,
   findProjectsByWorkspace,
+  updateProjectRecord,
 } from "../repositories/project.repository.js";
-import type { CreateProjectBody } from "../validations/project.validation.js";
+import type {
+  CreateProjectBody,
+  UpdateProjectBody,
+} from "../validations/project.validation.js";
 
 const projectStatusByInput = {
   planning: ProjectStatus.planning,
@@ -81,6 +87,18 @@ export const getProjects = async (
   return result;
 };
 
+export const getProjectById = async (workspaceId: number, projectId: number) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+
+  return {
+    ...project,
+    startDate: project.startDate?.toISOString() ?? null,
+    dueDate: project.dueDate?.toISOString() ?? null,
+    createdAt: project.createdAt.toISOString(),
+  };
+};
+
 export const deleteProject = async (
   workspaceId: number,
   projectId: number,
@@ -96,6 +114,35 @@ export const deleteProject = async (
   if (deletion.count === 0) {
     throw new ProjectNotFoundError();
   }
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedProjectList(workspaceId),
+  ]);
+
+  return { id: projectId };
+};
+
+export const updateProject = async (
+  workspaceId: number,
+  projectId: number,
+  actorRole: WorkspaceRole,
+  input: UpdateProjectBody,
+) => {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
+    throw new ProjectUpdateForbiddenError();
+  }
+
+  const update = await updateProjectRecord(workspaceId, projectId, {
+    name: input.projectName,
+    description: input.description,
+    icon: input.icon,
+    status: projectStatusByInput[input.status],
+    startDate: toProjectDate(input.startDate),
+    dueDate: toProjectDate(input.dueDate),
+    defaultView: input.defaultView,
+  });
+  if (update.count === 0) throw new ProjectNotFoundError();
 
   await Promise.all([
     deleteCachedWorkspaceOverview(workspaceId),

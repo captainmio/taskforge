@@ -21,7 +21,9 @@ vi.mock(
 vi.mock("../../../src/services/project.service.js", () => ({
   createProject: vi.fn(),
   deleteProject: vi.fn(),
+  getProjectById: vi.fn(),
   getProjects: vi.fn(),
+  updateProject: vi.fn(),
 }));
 
 const { default: app } = await import("../../../src/app.js");

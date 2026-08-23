@@ -17,6 +17,16 @@ export interface CreateProjectData {
   defaultView: ProjectDefaultView;
 }
 
+export interface UpdateProjectData {
+  name: string;
+  description: string;
+  icon: ProjectIcon;
+  status: ProjectStatus;
+  startDate: Date | null;
+  dueDate: Date | null;
+  defaultView: ProjectDefaultView;
+}
+
 export const createProjectRecord = async (data: CreateProjectData) =>
   prisma.project.create({
     data,
@@ -52,10 +62,39 @@ export const findProjectsByWorkspace = async (workspaceId: number) =>
     },
   });
 
+export const findProjectByWorkspace = async (
+  workspaceId: number,
+  projectId: number,
+) =>
+  prisma.project.findFirst({
+    where: { id: projectId, workspaceId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      icon: true,
+      status: true,
+      startDate: true,
+      dueDate: true,
+      defaultView: true,
+      createdAt: true,
+    },
+  });
+
 export const deleteProjectRecord = async (
   workspaceId: number,
   projectId: number,
 ) =>
   prisma.project.deleteMany({
     where: { id: projectId, workspaceId },
+  });
+
+export const updateProjectRecord = async (
+  workspaceId: number,
+  projectId: number,
+  data: UpdateProjectData,
+) =>
+  prisma.project.updateMany({
+    where: { id: projectId, workspaceId },
+    data,
   });

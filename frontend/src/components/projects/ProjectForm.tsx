@@ -25,6 +25,8 @@ export interface ProjectFormValues {
 interface ProjectFormProps {
   onCancel: () => void;
   onSubmit?: (values: ProjectFormValues) => void | Promise<void>;
+  defaultValues?: ProjectFormValues;
+  submitLabel?: string;
 }
 
 const statusIconClassNames: Record<ProjectFormValues["status"], string> = {
@@ -34,7 +36,12 @@ const statusIconClassNames: Record<ProjectFormValues["status"], string> = {
   completed: "text-purple-500",
 };
 
-const ProjectForm = ({ onCancel, onSubmit }: ProjectFormProps) => {
+const ProjectForm = ({
+  onCancel,
+  onSubmit,
+  defaultValues,
+  submitLabel = "Create Project",
+}: ProjectFormProps) => {
   const {
     register,
     control,
@@ -42,7 +49,7 @@ const ProjectForm = ({ onCancel, onSubmit }: ProjectFormProps) => {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProjectFormValues>({
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       projectName: "",
       description: "",
       icon: "desktop",
@@ -223,7 +230,7 @@ const ProjectForm = ({ onCancel, onSubmit }: ProjectFormProps) => {
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          Create Project
+          {isSubmitting ? "Saving…" : submitLabel}
         </Button>
       </div>
     </form>

@@ -1,14 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Projects from "./Projects";
 
 const mocks = vi.hoisted(() => ({
   getProjects: vi.fn(),
+  deleteProject: vi.fn(),
   navigate: vi.fn(),
 }));
 
 vi.mock("../../services/projects", () => ({
+  deleteProject: mocks.deleteProject,
   getProjects: mocks.getProjects,
 }));
 
@@ -61,6 +63,7 @@ const projectListFor = (currentUserRole: "OWNER" | "ADMIN" | "MEMBER") => ({
 describe("Projects page", () => {
   beforeEach(() => {
     mocks.getProjects.mockReset();
+    mocks.deleteProject.mockReset();
     mocks.navigate.mockReset();
     mocks.getProjects.mockResolvedValue(projectListFor("MEMBER"));
   });
@@ -106,5 +109,57 @@ describe("Projects page", () => {
     renderPage();
 
     expect(await screen.findByText("No projects yet")).toBeVisible();
+  });
+
+  it("closes the delete confirmation without deleting the project", async () => {
+    mocks.getProjects.mockResolvedValue(projectListFor("OWNER"));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    expect(screen.getByRole("dialog", { name: "Delete project" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog", { name: "Delete project" })).toBeNull();
+    expect(mocks.deleteProject).not.toHaveBeenCalled();
+  });
+
+  it("deletes the selected project after modal confirmation", async () => {
+    mocks.getProjects.mockResolvedValue(projectListFor("OWNER"));
+    mocks.deleteProject.mockResolvedValue({
+      success: true,
+      message: "Project deleted",
+      data: { id: 25 },
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
+
+    await waitFor(() => {
+      expect(mocks.deleteProject).toHaveBeenCalledWith("workspace-42", 25);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Website Redesign")).toBeNull();
+    });
+  });
+
+  it("disables delete modal actions while deletion is pending", async () => {
+    mocks.getProjects.mockResolvedValue(projectListFor("OWNER"));
+    mocks.deleteProject.mockReturnValue(new Promise(() => undefined));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
+
+    await waitFor(() => {
+      const modal = screen.getByRole("dialog", { name: "Delete project" });
+      expect(within(modal).getByRole("button", { name: "Deleting…" })).toBeDisabled();
+      expect(within(modal).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    });
+    expect(mocks.deleteProject).toHaveBeenCalledTimes(1);
   });
 });

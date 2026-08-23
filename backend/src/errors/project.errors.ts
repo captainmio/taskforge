@@ -12,6 +12,13 @@ export class ProjectDeletionForbiddenError extends Error {
   }
 }
 
+export class ProjectUpdateForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can update projects");
+    this.name = "ProjectUpdateForbiddenError";
+  }
+}
+
 export class ProjectNotFoundError extends Error {
   constructor() {
     super("Project not found");

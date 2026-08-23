@@ -3,11 +3,14 @@ import {
   ProjectCreationForbiddenError,
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
+  ProjectUpdateForbiddenError,
 } from "../errors/project.errors.js";
 import {
   createProject as createProjectService,
   deleteProject as deleteProjectService,
+  getProjectById as getProjectByIdService,
   getProjects as getProjectsService,
+  updateProject as updateProjectService,
 } from "../services/project.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
@@ -15,6 +18,9 @@ import type {
   CreateProjectParams,
   DeleteProjectParams,
   ProjectListParams,
+  ProjectDetailParams,
+  UpdateProjectBody,
+  UpdateProjectParams,
 } from "../validations/project.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 
@@ -123,6 +129,50 @@ export const getProjects = async (
   }
 };
 
+export const getProjectById = async (
+  req: AuthenticatedRequest<unknown, ProjectDetailParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const currentUserRole = req.workspaceMembership?.role;
+
+  if (!currentUserRole) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const project = await getProjectByIdService(workspaceId, projectId);
+    return res.status(200).json(createSuccessResponse("Project retrieved", {
+      project,
+      currentUserRole,
+    }));
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+
+    req.log.error(
+      {
+        logType: "feature",
+        event: "project.retrieve_failed",
+        err: error,
+        workspaceId,
+        projectId,
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Unable to retrieve project",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
 export const deleteProject = async (
   req: AuthenticatedRequest<unknown, DeleteProjectParams>,
   res: Response,
@@ -173,6 +223,68 @@ export const deleteProject = async (
         ...logContext,
       },
       "[FEATURE] Unable to delete project",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const updateProject = async (
+  req: AuthenticatedRequest<UpdateProjectBody, UpdateProjectParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const actorRole = req.workspaceMembership?.role;
+  const logContext = { workspaceId, projectId, actorUserId: req.user.id };
+
+  if (!actorRole) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const project = await updateProjectService(
+      workspaceId,
+      projectId,
+      actorRole,
+      req.body,
+    );
+    req.log.info(
+      { logType: "feature", event: "project.updated", ...logContext },
+      "[FEATURE] Project updated",
+    );
+    return res.status(200).json(createSuccessResponse("Project updated", project));
+  } catch (error) {
+    if (
+      error instanceof ProjectUpdateForbiddenError ||
+      error instanceof ProjectNotFoundError
+    ) {
+      const status = error instanceof ProjectNotFoundError ? 404 : 403;
+      req.log.warn(
+        {
+          logType: "feature",
+          event: "project.update_rejected",
+          reason: error.name,
+          ...logContext,
+        },
+        "[FEATURE] Project update rejected",
+      );
+      return res.status(status).json({ success: false, error: error.message });
+    }
+
+    req.log.error(
+      {
+        logType: "feature",
+        event: "project.update_failed",
+        err: error,
+        ...logContext,
+      },
+      "[FEATURE] Unable to update project",
     );
     return res.status(500).json({
       success: false,

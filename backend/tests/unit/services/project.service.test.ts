@@ -9,6 +9,7 @@ import {
   ProjectCreationForbiddenError,
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
+  ProjectUpdateForbiddenError,
 } from "../../../src/errors/project.errors.js";
 import {
   ProjectStatus,
@@ -18,17 +19,20 @@ import {
   createProjectRecord,
   deleteProjectRecord,
   findProjectsByWorkspace,
+  updateProjectRecord,
 } from "../../../src/repositories/project.repository.js";
 import {
   createProject,
   deleteProject,
   getProjects,
+  updateProject,
 } from "../../../src/services/project.service.js";
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
   createProjectRecord: vi.fn(),
   deleteProjectRecord: vi.fn(),
   findProjectsByWorkspace: vi.fn(),
+  updateProjectRecord: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
@@ -179,6 +183,50 @@ describe("deleteProject", () => {
     vi.mocked(deleteProjectRecord).mockResolvedValueOnce({ count: 0 });
 
     await expect(deleteProject(10, 25, WorkspaceRole.OWNER))
+      .rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateProject", () => {
+  beforeEach(() => {
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
+  });
+
+  it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
+    "allows a workspace %s to update its project and clears cached lists",
+    async (actorRole) => {
+      vi.mocked(updateProjectRecord).mockResolvedValueOnce({ count: 1 });
+
+      await expect(updateProject(10, 25, actorRole, input)).resolves.toEqual({ id: 25 });
+      expect(updateProjectRecord).toHaveBeenCalledWith(10, 25, {
+        name: "Website Redesign",
+        description: "Refresh the marketing site.",
+        icon: "desktop",
+        status: ProjectStatus.on_hold,
+        startDate: new Date("2026-09-01T00:00:00.000Z"),
+        dueDate: new Date("2026-10-01T00:00:00.000Z"),
+        defaultView: "board",
+      });
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
+    },
+  );
+
+  it("rejects a member before attempting an update", async () => {
+    await expect(updateProject(10, 25, WorkspaceRole.MEMBER, input))
+      .rejects.toBeInstanceOf(ProjectUpdateForbiddenError);
+    expect(updateProjectRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without clearing caches when the project is absent", async () => {
+    vi.mocked(updateProjectRecord).mockResolvedValueOnce({ count: 0 });
+
+    await expect(updateProject(10, 25, WorkspaceRole.OWNER, input))
       .rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
     expect(deleteCachedProjectList).not.toHaveBeenCalled();

@@ -3,6 +3,7 @@ import {
   createProjectSchema,
   deleteProjectSchema,
   projectListSchema,
+  updateProjectSchema,
 } from "../../../src/validations/project.validation.js";
 
 const validProject = {
@@ -94,5 +95,21 @@ describe("deleteProjectSchema", () => {
     [{ workspaceId: "42", projectId: "9007199254740992" }],
   ])("rejects invalid route parameters", (params) => {
     expect(deleteProjectSchema.safeParse({ params }).success).toBe(false);
+  });
+});
+
+describe("updateProjectSchema", () => {
+  it("accepts a complete project update payload", () => {
+    expect(updateProjectSchema.safeParse({
+      params: { workspaceId: "42", projectId: "25" },
+      body: validProject,
+    }).success).toBe(true);
+  });
+
+  it.each([
+    ["an invalid project ID", { workspaceId: "42", projectId: "0" }, validProject],
+    ["a due date before the start date", { workspaceId: "42", projectId: "25" }, { ...validProject, dueDate: "2026-08-31" }],
+  ])("rejects %s", (_, params, body) => {
+    expect(updateProjectSchema.safeParse({ params, body }).success).toBe(false);
   });
 });
