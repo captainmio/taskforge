@@ -4,3 +4,17 @@ export class ProjectCreationForbiddenError extends Error {
     this.name = "ProjectCreationForbiddenError";
   }
 }
+
+export class ProjectDeletionForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can delete projects");
+    this.name = "ProjectDeletionForbiddenError";
+  }
+}
+
+export class ProjectNotFoundError extends Error {
+  constructor() {
+    super("Project not found");
+    this.name = "ProjectNotFoundError";
+  }
+}

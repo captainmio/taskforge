@@ -54,6 +54,14 @@ export const projectListSchema = z.object({
   params: z.object({ workspaceId: workspaceIdSchema }),
 });
 
+export const deleteProjectSchema = z.object({
+  params: z.object({
+    workspaceId: workspaceIdSchema,
+    projectId: workspaceIdSchema,
+  }),
+});
+
 export type CreateProjectBody = z.infer<typeof createProjectSchema>["body"];
 export type CreateProjectParams = z.infer<typeof createProjectSchema>["params"];
 export type ProjectListParams = z.infer<typeof projectListSchema>["params"];
+export type DeleteProjectParams = z.infer<typeof deleteProjectSchema>["params"];

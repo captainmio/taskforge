@@ -5,22 +5,29 @@ import {
   getCachedProjectList,
   setCachedProjectList,
 } from "../../../src/cache/project-list.cache.js";
-import { ProjectCreationForbiddenError } from "../../../src/errors/project.errors.js";
+import {
+  ProjectCreationForbiddenError,
+  ProjectDeletionForbiddenError,
+  ProjectNotFoundError,
+} from "../../../src/errors/project.errors.js";
 import {
   ProjectStatus,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
 import {
   createProjectRecord,
+  deleteProjectRecord,
   findProjectsByWorkspace,
 } from "../../../src/repositories/project.repository.js";
 import {
   createProject,
+  deleteProject,
   getProjects,
 } from "../../../src/services/project.service.js";
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
   createProjectRecord: vi.fn(),
+  deleteProjectRecord: vi.fn(),
   findProjectsByWorkspace: vi.fn(),
 }));
 
@@ -139,5 +146,41 @@ describe("getProjects", () => {
     await expect(getProjects(10)).resolves.toEqual(cachedProjects);
     expect(findProjectsByWorkspace).toHaveBeenCalledWith(10);
     expect(setCachedProjectList).toHaveBeenCalledWith(10, cachedProjects);
+  });
+});
+
+describe("deleteProject", () => {
+  beforeEach(() => {
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
+  });
+
+  it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
+    "allows a workspace %s to delete its project and clears cached lists",
+    async (actorRole) => {
+      vi.mocked(deleteProjectRecord).mockResolvedValueOnce({ count: 1 });
+
+      await expect(deleteProject(10, 25, actorRole)).resolves.toEqual({ id: 25 });
+      expect(deleteProjectRecord).toHaveBeenCalledWith(10, 25);
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
+    },
+  );
+
+  it("rejects a member before attempting deletion", async () => {
+    await expect(deleteProject(10, 25, WorkspaceRole.MEMBER))
+      .rejects.toBeInstanceOf(ProjectDeletionForbiddenError);
+    expect(deleteProjectRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without clearing caches when the project is absent", async () => {
+    vi.mocked(deleteProjectRecord).mockResolvedValueOnce({ count: 0 });
+
+    await expect(deleteProject(10, 25, WorkspaceRole.OWNER))
+      .rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
   });
 });

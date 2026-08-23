@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createProjectSchema,
+  deleteProjectSchema,
   projectListSchema,
 } from "../../../src/validations/project.validation.js";
 
@@ -78,4 +79,20 @@ describe("projectListSchema", () => {
         .toBe(false);
     },
   );
+});
+
+describe("deleteProjectSchema", () => {
+  it("accepts positive workspace and project IDs", () => {
+    expect(deleteProjectSchema.safeParse({
+      params: { workspaceId: "42", projectId: "25" },
+    }).success).toBe(true);
+  });
+
+  it.each([
+    [{ workspaceId: "invalid", projectId: "25" }],
+    [{ workspaceId: "42", projectId: "0" }],
+    [{ workspaceId: "42", projectId: "9007199254740992" }],
+  ])("rejects invalid route parameters", (params) => {
+    expect(deleteProjectSchema.safeParse({ params }).success).toBe(false);
+  });
 });

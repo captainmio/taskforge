@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createProject,
+  deleteProject,
   getProjects,
 } from "../controllers/project.controller.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
@@ -9,6 +10,7 @@ import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembe
 import { validate } from "../middlewares/validate.js";
 import {
   createProjectSchema,
+  deleteProjectSchema,
   projectListSchema,
 } from "../validations/project.validation.js";
 
@@ -30,6 +32,14 @@ router.post(
   validate(createProjectSchema),
   requireWorkspaceMembership,
   authenticatedHandler(createProject),
+);
+
+router.delete(
+  "/:projectId",
+  requireAuth,
+  validate(deleteProjectSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(deleteProject),
 );
 
 export default router;

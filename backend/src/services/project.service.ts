@@ -5,13 +5,18 @@ import {
   type ProjectListItem,
 } from "../cache/project-list.cache.js";
 import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
-import { ProjectCreationForbiddenError } from "../errors/project.errors.js";
+import {
+  ProjectCreationForbiddenError,
+  ProjectDeletionForbiddenError,
+  ProjectNotFoundError,
+} from "../errors/project.errors.js";
 import {
   ProjectStatus,
   WorkspaceRole,
 } from "../generated/prisma/enums.js";
 import {
   createProjectRecord,
+  deleteProjectRecord,
   findProjectsByWorkspace,
 } from "../repositories/project.repository.js";
 import type { CreateProjectBody } from "../validations/project.validation.js";
@@ -74,4 +79,28 @@ export const getProjects = async (
 
   await setCachedProjectList(workspaceId, result);
   return result;
+};
+
+export const deleteProject = async (
+  workspaceId: number,
+  projectId: number,
+  actorRole: WorkspaceRole,
+) => {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
+    throw new ProjectDeletionForbiddenError();
+  }
+
+  // Scope the database write to the current workspace so a valid project ID
+  // cannot delete a project that belongs to a different workspace.
+  const deletion = await deleteProjectRecord(workspaceId, projectId);
+  if (deletion.count === 0) {
+    throw new ProjectNotFoundError();
+  }
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedProjectList(workspaceId),
+  ]);
+
+  return { id: projectId };
 };

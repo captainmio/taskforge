@@ -51,3 +51,11 @@ export const findProjectsByWorkspace = async (workspaceId: number) =>
       createdAt: true,
     },
   });
+
+export const deleteProjectRecord = async (
+  workspaceId: number,
+  projectId: number,
+) =>
+  prisma.project.deleteMany({
+    where: { id: projectId, workspaceId },
+  });
