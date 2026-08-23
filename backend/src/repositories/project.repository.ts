@@ -47,7 +47,7 @@ export const createProjectRecord = async (data: CreateProjectData) =>
 
 export const findProjectsByWorkspace = async (workspaceId: number) =>
   prisma.project.findMany({
-    where: { workspaceId },
+    where: { workspaceId, deletedAt: null },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: {
       id: true,
@@ -67,7 +67,7 @@ export const findProjectByWorkspace = async (
   projectId: number,
 ) =>
   prisma.project.findFirst({
-    where: { id: projectId, workspaceId },
+    where: { id: projectId, workspaceId, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -85,8 +85,9 @@ export const deleteProjectRecord = async (
   workspaceId: number,
   projectId: number,
 ) =>
-  prisma.project.deleteMany({
-    where: { id: projectId, workspaceId },
+  prisma.project.updateMany({
+    where: { id: projectId, workspaceId, deletedAt: null },
+    data: { deletedAt: new Date() },
   });
 
 export const updateProjectRecord = async (
@@ -95,6 +96,6 @@ export const updateProjectRecord = async (
   data: UpdateProjectData,
 ) =>
   prisma.project.updateMany({
-    where: { id: projectId, workspaceId },
+    where: { id: projectId, workspaceId, deletedAt: null },
     data,
   });
