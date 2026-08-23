@@ -19,6 +19,7 @@ import InitialsAvatar from "../../components/ui/InitialsAvatar";
 import Modal from "../../components/ui/Modal";
 import PaginationControls from "../../components/ui/PaginationControls";
 import SectionCard from "../../components/ui/SectionCard";
+import Skeleton from "../../components/ui/Skeleton";
 import Textbox from "../../components/ui/Textbox";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { useLoading } from "../../hooks/useLoading";
@@ -368,7 +369,9 @@ const WorkspaceMembers = () => {
     },
   ];
 
-  if (authorizedWorkspaceId !== id) return null;
+  // Keep the authorization boundary after loading, while allowing the existing
+  // member-list shimmer to render during the initial workspace request.
+  if (authorizedWorkspaceId !== id && !isLoading) return null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -424,14 +427,20 @@ const WorkspaceMembers = () => {
         </div>
 
         {isLoading ? (
-          <div className="py-12 text-center" role="status">
-            <FaUsers
-              className="mx-auto size-7 animate-pulse text-site-green"
-              aria-hidden="true"
-            />
-            <p className="mt-3 text-sm font-semibold text-gray-700">
-              Loading workspace members…
-            </p>
+          <div className="space-y-3 py-4" role="status" aria-label="Loading workspace members">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="grid items-center gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_9rem]">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-9 shrink-0 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-9 w-24" />
+              </div>
+            ))}
           </div>
         ) : (
           <DataTable

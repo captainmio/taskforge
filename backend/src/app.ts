@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
 import { httpLogger } from "./middlewares/httpLogger.js";
+import { responseDelay } from "./middlewares/responseDelay.js";
 import apiRoute from "./routes/index.route.js";
 
 const app = express();
@@ -10,6 +11,7 @@ const app = express();
 // Register logging before other middleware so validation, authorization, and
 // route failures all produce the same structured request-completion event.
 app.use(httpLogger);
+app.use("/api", responseDelay);
 app.use(cors({
   origin: env.FRONTEND_API,
   credentials: true,

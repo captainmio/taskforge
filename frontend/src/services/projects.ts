@@ -1,4 +1,5 @@
 import { apiClient, type ApiSuccessResponse } from "./api";
+import type { WorkspaceMemberRole } from "../types/roles";
 import type { WorkspaceProject } from "../types/workspace";
 
 export interface CreateProjectPayload {
@@ -31,6 +32,11 @@ export interface DeletedProject {
   id: number;
 }
 
+export interface ProjectListData {
+  projects: WorkspaceProject[];
+  currentUserRole: WorkspaceMemberRole;
+}
+
 export const createProject = async (
   workspaceId: string,
   payload: CreateProjectPayload,
@@ -44,8 +50,8 @@ export const createProject = async (
 
 export const getProjects = async (
   workspaceId: string,
-): Promise<ApiSuccessResponse<WorkspaceProject[]>> => {
-  const response = await apiClient.get<ApiSuccessResponse<WorkspaceProject[]>>(
+): Promise<ApiSuccessResponse<ProjectListData>> => {
+  const response = await apiClient.get<ApiSuccessResponse<ProjectListData>>(
     `/workspaces/${workspaceId}/projects`,
   );
   return response.data;

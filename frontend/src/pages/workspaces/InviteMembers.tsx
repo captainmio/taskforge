@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import AppHeader from "../../components/layout/AppHeader";
 import Button from "../../components/ui/Button";
 import InitialsAvatar from "../../components/ui/InitialsAvatar";
+import Skeleton from "../../components/ui/Skeleton";
 import Textbox from "../../components/ui/Textbox";
 import { useLoading } from "../../hooks/useLoading";
 import {
@@ -43,6 +44,22 @@ interface InviteMembersFormValues {
 const roleLabel = (role: WorkspaceRoleValue): string =>
   role === WorkspaceRole.ADMIN ? "Admin" : "Member";
 
+const InviteMembersSkeleton = () => (
+  <div className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 lg:px-8 lg:py-8" role="status" aria-label="Loading invite members form">
+    <div className="flex items-start justify-between gap-4">
+      <div className="space-y-3"><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-80" /></div>
+      <Skeleton className="h-10 w-40" />
+    </div>
+    <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
+      <Skeleton className="h-6 w-48" />
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_10rem_auto]"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-20" /></div>
+      <div className="space-y-3 border-t border-gray-100 pt-5">{[1, 2].map((item) => <Skeleton key={item} className="h-16 w-full" />)}</div>
+      <div className="flex justify-end"><Skeleton className="h-10 w-44" /></div>
+    </section>
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7"><Skeleton className="h-6 w-36" /><Skeleton className="mt-3 h-4 w-3/5" /><Skeleton className="mt-5 h-10 w-44" /></section>
+  </div>
+);
+
 const InviteMembers = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -55,6 +72,7 @@ const InviteMembers = () => {
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [workspaceName, setWorkspaceName] = useState("");
   const {
     control,
@@ -101,6 +119,8 @@ const InviteMembers = () => {
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });
+      } finally {
+        if (isActive) setIsLoadingWorkspace(false);
       }
     };
 
@@ -165,7 +185,9 @@ const InviteMembers = () => {
     }
   };
 
-  if (authorizedWorkspaceId !== id) return null;
+  if (authorizedWorkspaceId !== id) {
+    return isLoadingWorkspace ? <InviteMembersSkeleton /> : null;
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

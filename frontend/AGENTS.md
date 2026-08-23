@@ -150,6 +150,12 @@ Use the existing application colors:
   * Explain where it will be used.
   * Ask for permission before adding it.
 
+## Loading Placeholders
+
+* Use the shared `Skeleton` shimmer only for an initial data or authorization request when a data-backed page would otherwise be blank.
+* Match the placeholder to the page layout so the loading state does not cause a noticeable layout shift.
+* Do not replace an interactive form while it is submitting; preserve entered values and use disabled controls with clear progress text instead.
+
 ## Comments
 
 * Add comments when they help explain:

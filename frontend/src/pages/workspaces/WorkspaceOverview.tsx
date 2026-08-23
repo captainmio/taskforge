@@ -18,6 +18,7 @@ import Button from "../../components/ui/Button";
 import IconDescriptionItem from "../../components/ui/IconDescriptionItem";
 import ProfileListItem from "../../components/ui/ProfileListItem";
 import SectionCard from "../../components/ui/SectionCard";
+import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { getInitials } from "../../utils/getInitials";
@@ -53,6 +54,23 @@ const formatCreationDate = (createdAt: string): string => {
     year: "numeric",
   }).format(date);
 };
+
+const WorkspaceOverviewSkeleton = () => (
+  <div className="mx-auto max-w-6xl space-y-5 px-4 py-6 sm:px-6 lg:px-8 lg:py-8" role="status" aria-label="Loading workspace overview">
+    <div className="flex items-start justify-between gap-4">
+      <div className="space-y-3"><Skeleton className="h-8 w-56" /><Skeleton className="h-4 w-72" /></div>
+      <Skeleton className="h-10 w-36" />
+    </div>
+    <section className="grid gap-6 rounded-2xl border border-emerald-100 bg-white p-5 xl:grid-cols-[1fr_1.15fr]">
+      <div className="flex items-center gap-4"><Skeleton className="size-14 rounded-xl" /><div className="flex-1 space-y-3"><Skeleton className="h-6 w-2/5" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-1/3" /></div></div>
+      <div className="grid gap-3 sm:grid-cols-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-28" />)}</div>
+    </section>
+    <div className="grid gap-5 xl:grid-cols-2">
+      {[1, 2].map((item) => <div key={item} className="space-y-4 rounded-xl border border-gray-200 bg-white p-4"><Skeleton className="h-6 w-32" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>)}
+    </div>
+    <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4"><Skeleton className="h-6 w-48" /><div className="grid gap-3 lg:grid-cols-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-24" />)}</div></div>
+  </div>
+);
 
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
@@ -98,7 +116,9 @@ const WorkspaceOverview = () => {
     };
   }, [id, navigate]);
 
-  if (authorizedWorkspaceId !== id || !workspaceOverview) return null;
+  if (authorizedWorkspaceId !== id || !workspaceOverview) {
+    return <WorkspaceOverviewSkeleton />;
+  }
 
   const workspaceMembers = workspaceOverview.members;
   // The fallback keeps the overview usable while a deployment transitions from

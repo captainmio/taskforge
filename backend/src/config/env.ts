@@ -22,6 +22,11 @@ const environmentSchema = z.object({
     .max(365)
     .default(30),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  API_RESPONSE_DELAY_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(0),
   FRONTEND_API: z.url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default("redis://127.0.0.1:6379"),

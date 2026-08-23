@@ -22,6 +22,7 @@ import DataTable, { type DataTableColumn } from "../../components/ui/DataTable";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
+import Skeleton from "../../components/ui/Skeleton";
 import Textbox from "../../components/ui/Textbox";
 import { deleteProject, getProjects } from "../../services/projects";
 import { ProjectListTab, type ProjectListTab as ProjectListTabValue } from "../../types/project";
@@ -378,14 +379,21 @@ const Projects = () => {
         </div>
 
         {isLoading ? (
-          <div className="py-12 text-center" role="status">
-            <FaFolder
-              className="mx-auto size-7 animate-pulse text-site-green"
-              aria-hidden="true"
-            />
-            <p className="mt-3 text-sm font-semibold text-gray-700">
-              Loading projects…
-            </p>
+          <div className="space-y-3 py-4" role="status" aria-label="Loading projects">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="grid gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_8rem_8rem]">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-9 shrink-0 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            ))}
           </div>
         ) : (
           <DataTable
