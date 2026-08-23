@@ -20,6 +20,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     }
 
     req.user = { id: result.data.sub, email: result.data.email };
+    req.log.setBindings({ userId: req.user.id });
     next();
   } catch {
     return res.status(401).json({ success: false, error: "Invalid or expired token" });

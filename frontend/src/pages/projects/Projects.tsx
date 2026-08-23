@@ -20,6 +20,7 @@ import AvatarGroup, {
 import Button from "../../components/ui/Button";
 import DataTable, { type DataTableColumn } from "../../components/ui/DataTable";
 import DropdownMenu from "../../components/ui/DropdownMenu";
+import Modal from "../../components/ui/Modal";
 import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
@@ -88,6 +89,7 @@ const Projects = () => {
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<WorkspaceProject | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectListTabValue>(
     ProjectListTab.ALL,
@@ -126,20 +128,16 @@ const Projects = () => {
     };
   }, [id]);
 
-  const handleDeleteProject = async (project: WorkspaceProject) => {
-    if (!id || deletingProjectId !== null) return;
+  const handleDeleteProject = async () => {
+    if (!id || !projectToDelete || deletingProjectId !== null) return;
 
-    const isConfirmed = window.confirm(
-      `Delete "${project.name}"? This action cannot be undone.`,
-    );
-    if (!isConfirmed) return;
-
-    setDeletingProjectId(project.id);
+    setDeletingProjectId(projectToDelete.id);
     try {
-      const response = await deleteProject(id, project.id);
+      const response = await deleteProject(id, projectToDelete.id);
       setProjects((currentProjects) =>
         currentProjects.filter(({ id: projectId }) => projectId !== response.data.id),
       );
+      setProjectToDelete(null);
       toast.success(response.message);
     } catch {
       // The shared API client displays the server error toast.
@@ -285,8 +283,8 @@ const Projects = () => {
             </button>
             <button
               type="button"
-              onClick={() => void handleDeleteProject(project)}
-              disabled={deletingProjectId === project.id}
+              onClick={() => setProjectToDelete(project)}
+              disabled={deletingProjectId !== null}
               className="inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
             >
               <FaTrashAlt aria-hidden="true" />
@@ -320,9 +318,9 @@ const Projects = () => {
                     role="menuitem"
                     onClick={() => {
                       close();
-                      void handleDeleteProject(project);
+                      setProjectToDelete(project);
                     }}
-                    disabled={deletingProjectId === project.id}
+                    disabled={deletingProjectId !== null}
                     className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <FaTrashAlt aria-hidden="true" />
@@ -420,6 +418,35 @@ const Projects = () => {
           />
         )}
       </SectionCard>
+      <Modal
+        isOpen={projectToDelete !== null}
+        title="Delete project"
+        onClose={() => {
+          if (deletingProjectId === null) setProjectToDelete(null);
+        }}
+        footer={(
+          <>
+            <Button
+              variant="ghost"
+              disabled={deletingProjectId !== null}
+              onClick={() => setProjectToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deletingProjectId !== null}
+              onClick={() => void handleDeleteProject()}
+            >
+              {deletingProjectId !== null ? "Deleting…" : "Delete project"}
+            </Button>
+          </>
+        )}
+      >
+        <p className="text-sm text-gray-600">
+          Delete <span className="font-semibold text-gray-950">{projectToDelete?.name}</span>? This action cannot be undone.
+        </p>
+      </Modal>
     </div>
   );
 };

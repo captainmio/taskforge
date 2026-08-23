@@ -1,5 +1,7 @@
-import pino, { type LoggerOptions, type TransportTargetOptions } from "pino";
+import pino, { type LoggerOptions } from "pino";
+import { dirname } from "node:path";
 import { env } from "./env.js";
+import { UserLogStream } from "./userLogStream.js";
 
 const loggerOptions: LoggerOptions = {
   // Automated tests intentionally suppress request logs so their output stays
@@ -34,29 +36,15 @@ const createLogTransport = () => {
   // already provides durable stdout retention.
   if (env.NODE_ENV === "test" || !env.LOG_FILE_ENABLED) return undefined;
 
-  const targets: TransportTargetOptions[] = [
+  return pino.multistream([
+    { stream: process.stdout },
     {
-      target: "pino/file",
-      options: { destination: 1 },
+      stream: new UserLogStream({
+        baseDirectory: dirname(env.LOG_FILE_PATH),
+        retentionCount: env.LOG_FILE_RETENTION_COUNT,
+      }),
     },
-    {
-      target: "pino-roll",
-      options: {
-        file: env.LOG_FILE_PATH,
-        frequency: "daily",
-        size: env.LOG_FILE_MAX_SIZE,
-        dateFormat: "yyyy-MM-dd",
-        mkdir: true,
-        // Keep a bounded history so diagnostic logs remain available without
-        // allowing the application to consume disk space indefinitely.
-        limit: { count: env.LOG_FILE_RETENTION_COUNT },
-      },
-    },
-  ];
-
-  // Both destinations run in Pino's worker thread. Requests only enqueue the
-  // structured record instead of waiting for terminal and file I/O to finish.
-  return pino.transport({ targets });
+  ]);
 };
 
 const transport = createLogTransport();
