@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createProjectSchema } from "../../../src/validations/project.validation.js";
+import {
+  createProjectSchema,
+  projectListSchema,
+} from "../../../src/validations/project.validation.js";
 
 const validProject = {
   projectName: "Website Redesign",
@@ -60,4 +63,19 @@ describe("createProjectSchema", () => {
 
     expect(result.success).toBe(false);
   });
+});
+
+describe("projectListSchema", () => {
+  it("accepts a positive workspace ID", () => {
+    expect(projectListSchema.safeParse({ params: { workspaceId: "42" } }).success)
+      .toBe(true);
+  });
+
+  it.each(["0", "-1", "invalid", "9007199254740992"])(
+    "rejects an invalid workspace ID of %s",
+    (workspaceId) => {
+      expect(projectListSchema.safeParse({ params: { workspaceId } }).success)
+        .toBe(false);
+    },
+  );
 });

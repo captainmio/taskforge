@@ -15,3 +15,28 @@ Before planning or implementing a user instruction, analyze it and report the **
 
 * If the confidence level percentage is 94% or below, ask the questions needed to clarify the instruction and improve understanding. Do not begin planning or implementation until the confidence level percentage reaches 95% or higher.
 * If the confidence level percentage is 95% or higher, proceed with planning or reporting the proposed plan so the user understands the intended work before implementation.
+
+## Investigation Scope
+
+* Do not scan `node_modules`, `.venv`, `dist`, `build`, `logs/archive`, or generated files.
+* Inspect only the files needed for the reported bug.
+* Do not paste complete file contents unless the user asks.
+* Summarize findings before opening additional files.
+* Compact current findings into a short handoff note containing only facts needed to continue. Remove dead ends and repeated details.
+
+## Response Style
+
+* Be concise.
+* Do not provide long explanations.
+* Show only the patch and the reason.
+* Do not restate the complete plan unless it has changed.
+
+## Analysis Helpers
+
+Use the project-local helpers when they provide the needed context with less output than manually inspecting the repository:
+
+* `./scripts/repo-summary.ps1` - Compact repository structure, package, and Git context for an unfamiliar task.
+* `./scripts/scan-errors.ps1 -Area frontend|backend|all` - Run non-writing TypeScript error scans for the requested application area.
+* `./scripts/recent-changes.ps1` - Compact uncommitted-change and recent-commit context before modifying related files.
+
+Read and report a helper's concise findings before opening further files. Do not use a helper when its output is unrelated to the current task.

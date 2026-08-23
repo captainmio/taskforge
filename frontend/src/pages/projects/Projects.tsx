@@ -23,6 +23,7 @@ import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
 import Textbox from "../../components/ui/Textbox";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
+import { getProjects } from "../../services/projects";
 import { getWorkspaceOverview } from "../../services/workspaces";
 import { ProjectListTab, type ProjectListTab as ProjectListTabValue } from "../../types/project";
 import { canCreateWorkspaceProjects } from "../../types/roles";
@@ -101,15 +102,29 @@ const Projects = () => {
       setIsLoading(true);
 
       try {
-        const response = await getWorkspaceOverview(id);
-        if (!isActive || !response.success) return;
+        const [projectsResult, overviewResult] = await Promise.allSettled([
+          getProjects(id),
+          getWorkspaceOverview(id),
+        ]);
+        if (!isActive) return;
 
-        const currentMember = response.data.members.find(
-          (member) => member.id === currentUser.id,
-        );
-        setCanCreateProjects(canCreateWorkspaceProjects(currentMember?.role));
-        setProjects(response.data.projects ?? []);
+        if (projectsResult.status === "fulfilled" && projectsResult.value.success) {
+          setProjects(projectsResult.value.data);
+        } else {
+          setProjects([]);
+        }
+
+        if (overviewResult.status === "fulfilled" && overviewResult.value.success) {
+          const currentMember = overviewResult.value.data.members.find(
+            (member) => member.id === currentUser.id,
+          );
+          setCanCreateProjects(canCreateWorkspaceProjects(currentMember?.role));
+        } else {
+          setCanCreateProjects(false);
+        }
       } catch {
+        // Promise.allSettled handles request failures above. This fallback keeps
+        // the page in a safe empty state for unexpected processing failures.
         if (isActive) {
           setCanCreateProjects(false);
           setProjects([]);
