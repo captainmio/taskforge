@@ -34,3 +34,20 @@ export const createProjectRecord = async (data: CreateProjectData) =>
       createdAt: true,
     },
   });
+
+export const findProjectsByWorkspace = async (workspaceId: number) =>
+  prisma.project.findMany({
+    where: { workspaceId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      icon: true,
+      status: true,
+      startDate: true,
+      dueDate: true,
+      defaultView: true,
+      createdAt: true,
+    },
+  });

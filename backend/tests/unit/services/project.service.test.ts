@@ -1,19 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
+import {
+  deleteCachedProjectList,
+  getCachedProjectList,
+  setCachedProjectList,
+} from "../../../src/cache/project-list.cache.js";
 import { ProjectCreationForbiddenError } from "../../../src/errors/project.errors.js";
 import {
   ProjectStatus,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
-import { createProjectRecord } from "../../../src/repositories/project.repository.js";
-import { createProject } from "../../../src/services/project.service.js";
+import {
+  createProjectRecord,
+  findProjectsByWorkspace,
+} from "../../../src/repositories/project.repository.js";
+import {
+  createProject,
+  getProjects,
+} from "../../../src/services/project.service.js";
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
   createProjectRecord: vi.fn(),
+  findProjectsByWorkspace: vi.fn(),
 }));
 
 vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
   deleteCachedWorkspaceOverview: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/project-list.cache.js", () => ({
+  deleteCachedProjectList: vi.fn(),
+  getCachedProjectList: vi.fn(),
+  setCachedProjectList: vi.fn(),
 }));
 
 const input = {
@@ -29,6 +47,7 @@ const input = {
 describe("createProject", () => {
   beforeEach(() => {
     vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
   });
 
   it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
@@ -51,6 +70,7 @@ describe("createProject", () => {
         defaultView: "board",
       });
       expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
     },
   );
 
@@ -67,6 +87,7 @@ describe("createProject", () => {
       expect.objectContaining({ startDate: null, dueDate: null }),
     );
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
   });
 
   it("rejects a member before writing a project", async () => {
@@ -75,5 +96,48 @@ describe("createProject", () => {
     ).rejects.toBeInstanceOf(ProjectCreationForbiddenError);
     expect(createProjectRecord).not.toHaveBeenCalled();
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
+  });
+});
+
+describe("getProjects", () => {
+  const cachedProjects = [{
+    id: 25,
+    name: "Website Redesign",
+    description: "Refresh the marketing site.",
+    icon: "desktop" as const,
+    status: ProjectStatus.planning,
+    startDate: "2026-09-01T00:00:00.000Z",
+    dueDate: "2026-10-01T00:00:00.000Z",
+    defaultView: "board" as const,
+    createdAt: "2026-08-22T00:00:00.000Z",
+  }];
+
+  beforeEach(() => {
+    vi.mocked(getCachedProjectList).mockResolvedValue(null);
+    vi.mocked(setCachedProjectList).mockResolvedValue(undefined);
+  });
+
+  it("returns a cached project list without reading PostgreSQL", async () => {
+    vi.mocked(getCachedProjectList).mockResolvedValueOnce(cachedProjects);
+
+    await expect(getProjects(10)).resolves.toEqual(cachedProjects);
+    expect(findProjectsByWorkspace).not.toHaveBeenCalled();
+    expect(setCachedProjectList).not.toHaveBeenCalled();
+  });
+
+  it("loads, normalizes, and caches projects after a cache miss", async () => {
+    vi.mocked(findProjectsByWorkspace).mockResolvedValueOnce([
+      {
+        ...cachedProjects[0],
+        startDate: new Date("2026-09-01T00:00:00.000Z"),
+        dueDate: new Date("2026-10-01T00:00:00.000Z"),
+        createdAt: new Date("2026-08-22T00:00:00.000Z"),
+      },
+    ] as never);
+
+    await expect(getProjects(10)).resolves.toEqual(cachedProjects);
+    expect(findProjectsByWorkspace).toHaveBeenCalledWith(10);
+    expect(setCachedProjectList).toHaveBeenCalledWith(10, cachedProjects);
   });
 });

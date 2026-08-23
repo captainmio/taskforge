@@ -1,10 +1,19 @@
+import {
+  deleteCachedProjectList,
+  getCachedProjectList,
+  setCachedProjectList,
+  type ProjectListItem,
+} from "../cache/project-list.cache.js";
 import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
 import { ProjectCreationForbiddenError } from "../errors/project.errors.js";
 import {
   ProjectStatus,
   WorkspaceRole,
 } from "../generated/prisma/enums.js";
-import { createProjectRecord } from "../repositories/project.repository.js";
+import {
+  createProjectRecord,
+  findProjectsByWorkspace,
+} from "../repositories/project.repository.js";
 import type { CreateProjectBody } from "../validations/project.validation.js";
 
 const projectStatusByInput = {
@@ -41,7 +50,28 @@ export const createProject = async (
 
   // The overview now contains projects. Clear its cache only after PostgreSQL
   // has committed the new record so the next read contains the new project.
-  await deleteCachedWorkspaceOverview(workspaceId);
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedProjectList(workspaceId),
+  ]);
 
   return project;
+};
+
+export const getProjects = async (
+  workspaceId: number,
+): Promise<ProjectListItem[]> => {
+  const cachedProjects = await getCachedProjectList(workspaceId);
+  if (cachedProjects) return cachedProjects;
+
+  const projects = await findProjectsByWorkspace(workspaceId);
+  const result: ProjectListItem[] = projects.map((project) => ({
+    ...project,
+    startDate: project.startDate?.toISOString() ?? null,
+    dueDate: project.dueDate?.toISOString() ?? null,
+    createdAt: project.createdAt.toISOString(),
+  }));
+
+  await setCachedProjectList(workspaceId, result);
+  return result;
 };

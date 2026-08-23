@@ -1,10 +1,14 @@
 import type { Response } from "express";
 import { ProjectCreationForbiddenError } from "../errors/project.errors.js";
-import { createProject as createProjectService } from "../services/project.service.js";
+import {
+  createProject as createProjectService,
+  getProjects as getProjectsService,
+} from "../services/project.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
   CreateProjectBody,
   CreateProjectParams,
+  ProjectListParams,
 } from "../validations/project.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 
@@ -64,6 +68,34 @@ export const createProject = async (
         ...logContext,
       },
       "[FEATURE] Unable to create project",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const getProjects = async (
+  req: AuthenticatedRequest<unknown, ProjectListParams>,
+  res: Response,
+) => {
+  try {
+    const projects = await getProjectsService(Number(req.params.workspaceId));
+
+    return res
+      .status(200)
+      .json(createSuccessResponse("Projects retrieved", projects));
+  } catch (error) {
+    req.log.error(
+      {
+        logType: "feature",
+        event: "project.list_failed",
+        err: error,
+        workspaceId: Number(req.params.workspaceId),
+        actorUserId: req.user.id,
+      },
+      "[FEATURE] Unable to retrieve projects",
     );
     return res.status(500).json({
       success: false,
