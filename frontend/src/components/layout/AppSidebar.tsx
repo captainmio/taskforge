@@ -57,8 +57,8 @@ const AppSidebar = ({
 
       <nav className="mt-5 space-y-1 px-4" aria-label="Primary navigation">
         <NavItem to="." icon={<FaHome />} label="Worskpace Overview" end />
-        <NavItem icon={<FaFolder />} label="Projects" disabled />
-        <NavItem icon={<FaUsers />} label="Members" disabled />
+        <NavItem to="projects" icon={<FaFolder />} label="Projects" />
+        <NavItem to="members" icon={<FaUsers />} label="Members" />
         <NavItem icon={<FaCog />} label="Settings" disabled />
       </nav>
 

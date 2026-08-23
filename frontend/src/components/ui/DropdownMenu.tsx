@@ -6,6 +6,7 @@ interface DropdownMenuProps {
   align?: "left" | "right";
   containerClassName?: string;
   triggerClassName?: string;
+  menuClassName?: string;
 }
 
 const DropdownMenu = ({
@@ -14,6 +15,7 @@ const DropdownMenu = ({
   align = "right",
   containerClassName = "",
   triggerClassName = "",
+  menuClassName = "w-64",
 }: DropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +52,7 @@ const DropdownMenu = ({
       {isOpen ? (
         <div
           role="menu"
-          className={`absolute z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-2 shadow-xl ${align === "right" ? "right-0" : "left-0"}`}
+          className={`absolute z-50 mt-2 rounded-xl border border-gray-200 bg-white p-2 shadow-xl ${menuClassName} ${align === "right" ? "right-0" : "left-0"}`}
         >
           {typeof children === "function"
             ? children(() => setIsOpen(false))
