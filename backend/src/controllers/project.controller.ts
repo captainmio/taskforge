@@ -86,12 +86,25 @@ export const getProjects = async (
   req: AuthenticatedRequest<unknown, ProjectListParams>,
   res: Response,
 ) => {
+  const currentUserRole = req.workspaceMembership?.role;
+  if (!currentUserRole) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
   try {
     const projects = await getProjectsService(Number(req.params.workspaceId));
 
     return res
       .status(200)
-      .json(createSuccessResponse("Projects retrieved", projects));
+      .json(createSuccessResponse("Projects retrieved", {
+        // Project lists are shared safely through Redis. Add the requester role
+        // after the cache lookup so permission data is never reused across users.
+        projects,
+        currentUserRole,
+      }));
   } catch (error) {
     req.log.error(
       {

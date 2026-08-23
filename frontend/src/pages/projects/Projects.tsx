@@ -23,9 +23,7 @@ import DropdownMenu from "../../components/ui/DropdownMenu";
 import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
 import Textbox from "../../components/ui/Textbox";
-import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { deleteProject, getProjects } from "../../services/projects";
-import { getWorkspaceOverview } from "../../services/workspaces";
 import { ProjectListTab, type ProjectListTab as ProjectListTabValue } from "../../types/project";
 import { canCreateWorkspaceProjects } from "../../types/roles";
 import type { WorkspaceProject } from "../../types/workspace";
@@ -85,7 +83,6 @@ const getDemoProjectDetails = (projectId: number) => {
 const Projects = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuthenticatedSession();
   const [canCreateProjects, setCanCreateProjects] = useState(false);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,29 +101,14 @@ const Projects = () => {
       setIsLoading(true);
 
       try {
-        const [projectsResult, overviewResult] = await Promise.allSettled([
-          getProjects(id),
-          getWorkspaceOverview(id),
-        ]);
-        if (!isActive) return;
+        const response = await getProjects(id);
+        if (!isActive || !response.success) return;
 
-        if (projectsResult.status === "fulfilled" && projectsResult.value.success) {
-          setProjects(projectsResult.value.data);
-        } else {
-          setProjects([]);
-        }
-
-        if (overviewResult.status === "fulfilled" && overviewResult.value.success) {
-          const currentMember = overviewResult.value.data.members.find(
-            (member) => member.id === currentUser.id,
-          );
-          setCanCreateProjects(canCreateWorkspaceProjects(currentMember?.role));
-        } else {
-          setCanCreateProjects(false);
-        }
+        setProjects(response.data.projects);
+        setCanCreateProjects(
+          canCreateWorkspaceProjects(response.data.currentUserRole),
+        );
       } catch {
-        // Promise.allSettled handles request failures above. This fallback keeps
-        // the page in a safe empty state for unexpected processing failures.
         if (isActive) {
           setCanCreateProjects(false);
           setProjects([]);
@@ -141,7 +123,7 @@ const Projects = () => {
     return () => {
       isActive = false;
     };
-  }, [currentUser.id, id]);
+  }, [id]);
 
   const handleDeleteProject = async (project: WorkspaceProject) => {
     if (!id || deletingProjectId !== null) return;

@@ -53,7 +53,10 @@ describe("GET /api/workspaces/:workspaceId/projects", () => {
     expect(response.body).toEqual({
       success: true,
       message: "Projects retrieved",
-      data: projects,
+      data: {
+        projects,
+        currentUserRole: "MEMBER",
+      },
     });
     expect(findWorkspaceMembership).toHaveBeenCalledWith(42, 7);
     expect(getProjects).toHaveBeenCalledWith(42);
