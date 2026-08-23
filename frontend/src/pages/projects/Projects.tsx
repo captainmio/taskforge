@@ -9,6 +9,7 @@ import {
   FaTrashAlt,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "react-toastify";
 import AppHeader from "../../components/layout/AppHeader";
 import { projectIconOptions } from "../../components/projects/projectIconOptions";
 import ProjectStatusBadge from "../../components/projects/ProjectStatusBadge";
@@ -23,7 +24,7 @@ import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
 import Textbox from "../../components/ui/Textbox";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
-import { getProjects } from "../../services/projects";
+import { deleteProject, getProjects } from "../../services/projects";
 import { getWorkspaceOverview } from "../../services/workspaces";
 import { ProjectListTab, type ProjectListTab as ProjectListTabValue } from "../../types/project";
 import { canCreateWorkspaceProjects } from "../../types/roles";
@@ -88,6 +89,7 @@ const Projects = () => {
   const [canCreateProjects, setCanCreateProjects] = useState(false);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectListTabValue>(
     ProjectListTab.ALL,
@@ -140,6 +142,28 @@ const Projects = () => {
       isActive = false;
     };
   }, [currentUser.id, id]);
+
+  const handleDeleteProject = async (project: WorkspaceProject) => {
+    if (!id || deletingProjectId !== null) return;
+
+    const isConfirmed = window.confirm(
+      `Delete "${project.name}"? This action cannot be undone.`,
+    );
+    if (!isConfirmed) return;
+
+    setDeletingProjectId(project.id);
+    try {
+      const response = await deleteProject(id, project.id);
+      setProjects((currentProjects) =>
+        currentProjects.filter(({ id: projectId }) => projectId !== response.data.id),
+      );
+      toast.success(response.message);
+    } catch {
+      // The shared API client displays the server error toast.
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
 
   const filteredProjects = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -264,42 +288,67 @@ const Projects = () => {
       id: "actions",
       header: "Actions",
       hideHeader: true,
-      className: "md:w-16",
+      mobileFullWidth: true,
+      className: "lg:w-16",
       cell: (project) => (
-        <div className="flex justify-end">
-          <DropdownMenu
-            menuClassName="w-36"
-            triggerClassName="flex size-9 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-            trigger={() => (
-              <>
-                <FaEllipsisV aria-hidden="true" />
-                <span className="sr-only">Actions for {project.name}</span>
-              </>
-            )}
-          >
-            {(close) => (
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={close}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <FaEdit aria-hidden="true" />
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={close}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"
-                >
-                  <FaTrashAlt aria-hidden="true" />
-                  Delete
-                </button>
-              </div>
-            )}
-          </DropdownMenu>
+        <div className="flex w-full justify-end">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end lg:hidden">
+            <button
+              type="button"
+              className="inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 md:w-auto"
+            >
+              <FaEdit aria-hidden="true" />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDeleteProject(project)}
+              disabled={deletingProjectId === project.id}
+              className="inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+            >
+              <FaTrashAlt aria-hidden="true" />
+              {deletingProjectId === project.id ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+          <div className="hidden lg:block">
+            <DropdownMenu
+              menuClassName="w-36"
+              triggerClassName="flex size-9 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              trigger={() => (
+                <>
+                  <FaEllipsisV aria-hidden="true" />
+                  <span className="sr-only">Actions for {project.name}</span>
+                </>
+              )}
+            >
+              {(close) => (
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={close}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <FaEdit aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      close();
+                      void handleDeleteProject(project);
+                    }}
+                    disabled={deletingProjectId === project.id}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <FaTrashAlt aria-hidden="true" />
+                    {deletingProjectId === project.id ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              )}
+            </DropdownMenu>
+          </div>
         </div>
       ),
     });

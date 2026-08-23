@@ -27,6 +27,10 @@ export interface CreatedProject {
   id: number;
 }
 
+export interface DeletedProject {
+  id: number;
+}
+
 export const createProject = async (
   workspaceId: string,
   payload: CreateProjectPayload,
@@ -43,6 +47,16 @@ export const getProjects = async (
 ): Promise<ApiSuccessResponse<WorkspaceProject[]>> => {
   const response = await apiClient.get<ApiSuccessResponse<WorkspaceProject[]>>(
     `/workspaces/${workspaceId}/projects`,
+  );
+  return response.data;
+};
+
+export const deleteProject = async (
+  workspaceId: string,
+  projectId: number,
+): Promise<ApiSuccessResponse<DeletedProject>> => {
+  const response = await apiClient.delete<ApiSuccessResponse<DeletedProject>>(
+    `/workspaces/${workspaceId}/projects/${projectId}`,
   );
   return response.data;
 };

@@ -14,6 +14,7 @@ export interface DataTableColumn<T> {
   cell: (row: T) => ReactNode;
   sortable?: boolean;
   hideHeader?: boolean;
+  mobileFullWidth?: boolean;
   className?: string;
 }
 
@@ -91,7 +92,7 @@ const DataTable = <T,>({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200">
+      <div className="overflow-auto rounded-xl border border-gray-200">
         <table aria-label={ariaLabel} className="block w-full md:table">
           <thead className="hidden bg-emerald-50/70 md:table-header-group">
             <tr>
@@ -141,7 +142,9 @@ const DataTable = <T,>({
                         {column.header}
                       </span>
                     ) : null}
-                    <div className="min-w-0 md:w-full">{column.cell(row)}</div>
+                    <div className={`min-w-0 ${column.mobileFullWidth ? "w-full" : "md:w-full"}`}>
+                      {column.cell(row)}
+                    </div>
                   </td>
                 ))}
               </tr>
