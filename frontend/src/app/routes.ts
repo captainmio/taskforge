@@ -11,6 +11,7 @@ import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 import InviteMembers from "../pages/workspaces/InviteMembers";
 import WorkspaceOverview from "../pages/workspaces/WorkspaceOverview";
 import WorkspaceMembers from "../pages/workspaces/WorkspaceMembers";
+import ProjectTasks from "../pages/projects/ProjectTasks";
 
 export const router = createBrowserRouter([
   {
@@ -64,6 +65,10 @@ export const router = createBrowserRouter([
           {
             path: "projects/:projectId/edit",
             Component: EditProject,
+          },
+          {
+            path: "projects/:projectId/tasks",
+            Component: ProjectTasks,
           },
         ],
       },

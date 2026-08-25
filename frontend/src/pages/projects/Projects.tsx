@@ -26,7 +26,10 @@ import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
 import Textbox from "../../components/ui/Textbox";
 import { deleteProject, getProjects } from "../../services/projects";
-import { ProjectListTab, type ProjectListTab as ProjectListTabValue } from "../../types/project";
+import {
+  ProjectListTab,
+  type ProjectListTab as ProjectListTabValue,
+} from "../../types/project";
 import { canCreateWorkspaceProjects } from "../../types/roles";
 import type { WorkspaceProject } from "../../types/workspace";
 
@@ -64,7 +67,10 @@ const demoProjectMembers: readonly AvatarGroupMember[][] = [
   ],
 ];
 
-const demoProjectTaskCounts: ReadonlyArray<{ completed: number; total: number }> = [
+const demoProjectTaskCounts: ReadonlyArray<{
+  completed: number;
+  total: number;
+}> = [
   { completed: 8, total: 10 },
   { completed: 12, total: 24 },
   { completed: 5, total: 8 },
@@ -88,8 +94,11 @@ const Projects = () => {
   const [canCreateProjects, setCanCreateProjects] = useState(false);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<WorkspaceProject | null>(null);
+  const [deletingProjectId, setDeletingProjectId] = useState<number | null>(
+    null,
+  );
+  const [projectToDelete, setProjectToDelete] =
+    useState<WorkspaceProject | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectListTabValue>(
     ProjectListTab.ALL,
@@ -135,7 +144,9 @@ const Projects = () => {
     try {
       const response = await deleteProject(id, projectToDelete.id);
       setProjects((currentProjects) =>
-        currentProjects.filter(({ id: projectId }) => projectId !== response.data.id),
+        currentProjects.filter(
+          ({ id: projectId }) => projectId !== response.data.id,
+        ),
       );
       setProjectToDelete(null);
       toast.success(response.message);
@@ -154,7 +165,8 @@ const Projects = () => {
         selectedTab === ProjectListTab.ALL ||
         (selectedTab === ProjectListTab.PLANNING &&
           project.status === "planning") ||
-        (selectedTab === ProjectListTab.ACTIVE && project.status === "active") ||
+        (selectedTab === ProjectListTab.ACTIVE &&
+          project.status === "active") ||
         (selectedTab === ProjectListTab.ON_HOLD &&
           project.status === "on_hold") ||
         (selectedTab === ProjectListTab.COMPLETED &&
@@ -188,14 +200,21 @@ const Projects = () => {
             >
               {iconOption?.icon ?? <FaFolder />}
             </span>
-            <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/workspace/${id}/projects/${project.id}/tasks`)
+              }
+              className="min-w-0 cursor-pointer text-left"
+              aria-label={`Open tasks for ${project.name}`}
+            >
               <p className="truncate text-sm font-semibold text-gray-950">
                 {project.name}
               </p>
               <p className="mt-0.5 truncate text-xs text-gray-500">
                 {project.description || "No description provided."}
               </p>
-            </div>
+            </button>
           </div>
         );
       },
@@ -276,7 +295,9 @@ const Projects = () => {
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end lg:hidden">
             <button
               type="button"
-              onClick={() => navigate(`/workspace/${id}/projects/${project.id}/edit`)}
+              onClick={() =>
+                navigate(`/workspace/${id}/projects/${project.id}/edit`)
+              }
               className="inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 md:w-auto"
             >
               <FaEdit aria-hidden="true" />
@@ -343,7 +364,7 @@ const Projects = () => {
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <AppHeader
         title="Projects"
-        secondaryAction={(
+        secondaryAction={
           <Button
             variant="outline"
             leadingIcon={<FaArrowLeft />}
@@ -351,15 +372,17 @@ const Projects = () => {
           >
             Back to Overview
           </Button>
-        )}
-        primaryAction={canCreateProjects ? (
-          <Button
-            leadingIcon={<FaPlus />}
-            onClick={() => navigate(`/workspace/${id}/projects/create`)}
-          >
-            Create project
-          </Button>
-        ) : undefined}
+        }
+        primaryAction={
+          canCreateProjects ? (
+            <Button
+              leadingIcon={<FaPlus />}
+              onClick={() => navigate(`/workspace/${id}/projects/create`)}
+            >
+              Create project
+            </Button>
+          ) : undefined
+        }
       />
 
       <SectionCard className="mt-7 border-emerald-100 shadow-sm">
@@ -381,9 +404,16 @@ const Projects = () => {
         </div>
 
         {isLoading ? (
-          <div className="space-y-3 py-4" role="status" aria-label="Loading projects">
+          <div
+            className="space-y-3 py-4"
+            role="status"
+            aria-label="Loading projects"
+          >
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="grid gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_8rem_8rem]">
+              <div
+                key={item}
+                className="grid gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_8rem_8rem]"
+              >
                 <div className="flex items-center gap-3">
                   <Skeleton className="size-9 shrink-0 rounded-lg" />
                   <div className="flex-1 space-y-2">
@@ -403,14 +433,16 @@ const Projects = () => {
             rows={filteredProjects}
             columns={projectColumns}
             getRowKey={(project) => project.id}
-            emptyState={(
+            emptyState={
               <div className="py-12 text-center">
                 <FaFolder
                   className="mx-auto size-7 text-gray-300"
                   aria-hidden="true"
                 />
                 <p className="mt-3 text-sm font-semibold text-gray-700">
-                  {projects.length === 0 ? "No projects yet" : "No projects found"}
+                  {projects.length === 0
+                    ? "No projects yet"
+                    : "No projects found"}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
                   {projects.length === 0
@@ -418,7 +450,7 @@ const Projects = () => {
                     : "Try changing the selected tab or search text."}
                 </p>
               </div>
-            )}
+            }
           />
         )}
       </SectionCard>
@@ -428,7 +460,7 @@ const Projects = () => {
         onClose={() => {
           if (deletingProjectId === null) setProjectToDelete(null);
         }}
-        footer={(
+        footer={
           <>
             <Button
               variant="ghost"
@@ -445,10 +477,14 @@ const Projects = () => {
               {deletingProjectId !== null ? "Deleting…" : "Delete project"}
             </Button>
           </>
-        )}
+        }
       >
         <p className="text-sm text-gray-600">
-          Delete <span className="font-semibold text-gray-950">{projectToDelete?.name}</span>? This action cannot be undone.
+          Delete{" "}
+          <span className="font-semibold text-gray-950">
+            {projectToDelete?.name}
+          </span>
+          ? This action cannot be undone.
         </p>
       </Modal>
     </div>
