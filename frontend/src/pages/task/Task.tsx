@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
+import type { DropResult } from "@hello-pangea/dnd";
 import { FaFilter, FaPlus, FaSearch } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
 import AccountMenu from "../../components/ui/AccountMenu";
@@ -113,10 +114,11 @@ const demoTasks: Task[] = [
   },
 ];
 
-const ProjectTasks = () => {
+const TaskPage = (): ReactElement => {
   const { id, projectId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthenticatedSession();
+  const [taskItems, setTaskItems] = useState(demoTasks);
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null | undefined>(
     undefined,
@@ -125,12 +127,12 @@ const ProjectTasks = () => {
   const [projectName, setProjectName] = useState("Tasks");
   const tasks = useMemo(
     () =>
-      demoTasks.filter(
+      taskItems.filter(
         (task) =>
           task.title.toLowerCase().includes(search.toLowerCase()) ||
           task.project.toLowerCase().includes(search.toLowerCase()),
       ),
-    [search],
+    [search, taskItems],
   );
   const isDialogOpen = selectedTask !== undefined;
 
@@ -154,6 +156,57 @@ const ProjectTasks = () => {
   const openNewTask = (status: TaskStatus = "todo") => {
     setNewTaskStatus(status);
     setSelectedTask(null);
+  };
+  const handleDragEnd = ({
+    source,
+    destination,
+    draggableId,
+  }: DropResult) => {
+    // Dropping outside a column does not change the task's position or status.
+    if (!destination) return;
+
+    // Avoid a state update when the card was dropped back in the same place.
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const destinationStatus = destination.droppableId as TaskStatus;
+    const taskId = Number(draggableId.replace("task-", ""));
+    const visibleDestinationTasks = tasks.filter(
+      (task) => task.status === destinationStatus && task.id !== taskId,
+    );
+    const taskAtDestination = visibleDestinationTasks[destination.index];
+
+    setTaskItems((currentTasks) => {
+      // The draggable ID tells us exactly which task moved, even when search is active.
+      const draggedTask = currentTasks.find((task) => task.id === taskId);
+      if (!draggedTask) return currentTasks;
+
+      // Work from a list without the dragged task so it cannot appear twice.
+      const reorderedTasks = currentTasks.filter((task) => task.id !== taskId);
+      const movedTask = { ...draggedTask, status: destinationStatus };
+
+      // Insert before the card currently at the drop position. If there is no card
+      // there, the user dropped at the end of the destination column.
+      let insertAt = taskAtDestination
+        ? reorderedTasks.findIndex((task) => task.id === taskAtDestination.id)
+        : reorderedTasks.length;
+
+      if (!taskAtDestination) {
+        for (let index = reorderedTasks.length - 1; index >= 0; index -= 1) {
+          if (reorderedTasks[index].status === destinationStatus) {
+            insertAt = index + 1;
+            break;
+          }
+        }
+      }
+
+      reorderedTasks.splice(insertAt, 0, movedTask);
+      return reorderedTasks;
+    });
   };
   const handleLogout = () => {
     logout()
@@ -224,10 +277,12 @@ const ProjectTasks = () => {
         </button>
       </div>
       <div className="mt-4 overflow-x-auto pb-2">
+
         <TaskBoard
           tasks={tasks}
           onTaskClick={(task) => setSelectedTask(task)}
           onAddTask={openNewTask}
+          onDragEnd={handleDragEnd}
         />
       </div>
       {isDialogOpen ? (
@@ -241,4 +296,4 @@ const ProjectTasks = () => {
   );
 };
 
-export default ProjectTasks;
+export default TaskPage;
