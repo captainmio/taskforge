@@ -18,7 +18,7 @@ const api: string = import.meta.env.VITE_API_URL;
 export const apiClient = axios.create({
   baseURL: api,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" }
+  headers: { "Content-Type": "application/json" },
 });
 
 apiClient.interceptors.response.use(
@@ -37,7 +37,7 @@ apiClient.interceptors.response.use(
       toast.error(error.response.data?.error ?? "Something went wrong.");
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

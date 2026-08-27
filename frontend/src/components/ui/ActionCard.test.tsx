@@ -12,10 +12,12 @@ describe("ActionCard", () => {
         title="Create your first project"
         description="Organize your work into projects."
         onClick={handleClick}
-      />
+      />,
     );
 
-    const button = screen.getByRole("button", { name: /Create your first project/ });
+    const button = screen.getByRole("button", {
+      name: /Create your first project/,
+    });
     expect(button).toHaveAttribute("type", "button");
     expect(screen.getByText("Organize your work into projects.")).toBeVisible();
 
@@ -33,7 +35,7 @@ describe("ActionCard", () => {
         description="Update workspace details."
         disabled
         onClick={handleClick}
-      />
+      />,
     );
 
     const button = screen.getByRole("button", { name: /Workspace settings/ });

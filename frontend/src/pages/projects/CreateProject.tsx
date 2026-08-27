@@ -14,16 +14,32 @@ import { getWorkspaceOverview } from "../../services/workspaces";
 import { canCreateWorkspaceProjects } from "../../types/roles";
 
 const CreateProjectSkeleton = () => (
-  <div className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 lg:px-8 lg:py-8" role="status" aria-label="Loading create project form">
+  <div
+    className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    role="status"
+    aria-label="Loading create project form"
+  >
     <div className="flex items-start justify-between gap-4">
-      <div className="space-y-3"><Skeleton className="h-8 w-52" /><Skeleton className="h-4 w-72" /></div>
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-52" />
+        <Skeleton className="h-4 w-72" />
+      </div>
       <Skeleton className="h-10 w-40" />
     </div>
     <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
       <Skeleton className="h-6 w-40" />
-      <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
-      <div className="space-y-2"><Skeleton className="h-4 w-28" /><Skeleton className="h-28 w-full" /></div>
-      <div className="flex justify-end gap-3"><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-36" /></div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+      <div className="flex justify-end gap-3">
+        <Skeleton className="h-10 w-20" />
+        <Skeleton className="h-10 w-36" />
+      </div>
     </section>
   </div>
 );
@@ -89,7 +105,7 @@ const CreateProject = () => {
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <AppHeader
         title="Create Project"
-        secondaryAction={(
+        secondaryAction={
           <Button
             variant="outline"
             leadingIcon={<FaArrowLeft />}
@@ -97,7 +113,7 @@ const CreateProject = () => {
           >
             Back to Projects
           </Button>
-        )}
+        }
       />
       <ProjectForm
         onCancel={() => navigate(`/workspace/${id}/projects`)}

@@ -60,9 +60,7 @@ describe("generateWorkspaceInviteLink", () => {
     await expect(generateWorkspaceInviteLink("42")).resolves.toEqual(
       apiResponse,
     );
-    expect(mocks.post).toHaveBeenCalledWith(
-      "/workspaces/42/invitation-link",
-    );
+    expect(mocks.post).toHaveBeenCalledWith("/workspaces/42/invitation-link");
   });
 });
 

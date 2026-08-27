@@ -15,7 +15,9 @@ const WorkspaceLivePreview = () => {
   return (
     <WorkspacePreviewPanel
       name={workspaceName || "Your workspace name"}
-      description={description || "Your workspace description will appear here."}
+      description={
+        description || "Your workspace description will appear here."
+      }
       icon={icon}
       invitedMemberCount={invitedMemberCount}
     />

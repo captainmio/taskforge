@@ -34,7 +34,8 @@ vi.mock("react-toastify", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -45,7 +46,10 @@ const renderPage = () =>
   render(
     <MemoryRouter initialEntries={["/workspace/workspace-42/projects/create"]}>
       <Routes>
-        <Route path="/workspace/:id/projects/create" element={<CreateProject />} />
+        <Route
+          path="/workspace/:id/projects/create"
+          element={<CreateProject />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -83,13 +87,24 @@ describe("Create Project page", () => {
   it.each(["OWNER", "ADMIN"] as const)(
     "renders the project form for a workspace %s",
     async (role) => {
-      mocks.getWorkspaceOverview.mockResolvedValueOnce(workspaceOverviewFor(role));
-    renderPage();
+      mocks.getWorkspaceOverview.mockResolvedValueOnce(
+        workspaceOverviewFor(role),
+      );
+      renderPage();
 
-      expect(await screen.findByRole("heading", { name: "Create Project", level: 1 })).toBeVisible();
-      expect(screen.getByRole("button", { name: "Back to Projects" })).toBeVisible();
+      expect(
+        await screen.findByRole("heading", {
+          name: "Create Project",
+          level: 1,
+        }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Back to Projects" }),
+      ).toBeVisible();
       expect(screen.getByLabelText(/Project Name/)).toBeVisible();
-      expect(screen.getByRole("button", { name: "Create Project" })).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Create Project" }),
+      ).toBeVisible();
     },
   );
 
@@ -101,8 +116,14 @@ describe("Create Project page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to Projects" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(mocks.navigate).toHaveBeenNthCalledWith(1, "/workspace/workspace-42/projects");
-    expect(mocks.navigate).toHaveBeenNthCalledWith(2, "/workspace/workspace-42/projects");
+    expect(mocks.navigate).toHaveBeenNthCalledWith(
+      1,
+      "/workspace/workspace-42/projects",
+    );
+    expect(mocks.navigate).toHaveBeenNthCalledWith(
+      2,
+      "/workspace/workspace-42/projects",
+    );
   });
 
   it("submits the project to the current workspace and returns to its project list", async () => {
@@ -146,11 +167,15 @@ describe("Create Project page", () => {
       });
     });
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Project created");
-    expect(mocks.navigate).toHaveBeenCalledWith("/workspace/workspace-42/projects");
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      "/workspace/workspace-42/projects",
+    );
   });
 
   it("redirects a member away from the create-project page", async () => {
-    mocks.getWorkspaceOverview.mockResolvedValueOnce(workspaceOverviewFor("MEMBER"));
+    mocks.getWorkspaceOverview.mockResolvedValueOnce(
+      workspaceOverviewFor("MEMBER"),
+    );
     renderPage();
 
     await waitFor(() => {
@@ -159,7 +184,9 @@ describe("Create Project page", () => {
         { replace: true },
       );
     });
-    expect(screen.queryByRole("heading", { name: "Create Project", level: 1 })).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: "Create Project", level: 1 }),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "Create Project" })).toBeNull();
   });
 });

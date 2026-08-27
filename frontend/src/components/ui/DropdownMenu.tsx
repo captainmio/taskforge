@@ -84,19 +84,21 @@ const DropdownMenu = ({
       >
         {trigger(isOpen)}
       </button>
-      {isOpen && menuPosition ? createPortal(
-        <div
-          ref={menuRef}
-          role="menu"
-          style={menuPosition}
-          className={`fixed z-50 rounded-xl border border-gray-200 bg-white p-2 shadow-xl ${menuClassName}`}
-        >
-          {typeof children === "function"
-            ? children(() => setIsOpen(false))
-            : children}
-        </div>,
-        document.body,
-      ) : null}
+      {isOpen && menuPosition
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              style={menuPosition}
+              className={`fixed z-50 rounded-xl border border-gray-200 bg-white p-2 shadow-xl ${menuClassName}`}
+            >
+              {typeof children === "function"
+                ? children(() => setIsOpen(false))
+                : children}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 };

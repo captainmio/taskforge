@@ -13,17 +13,31 @@ import { canCreateWorkspaceProjects } from "../../types/roles";
 import type { WorkspaceProject } from "../../types/workspace";
 
 const EditProjectSkeleton = () => (
-  <div className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 lg:px-8 lg:py-8" role="status" aria-label="Loading edit project form">
+  <div
+    className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    role="status"
+    aria-label="Loading edit project form"
+  >
     <div className="flex items-start justify-between gap-4">
-      <div className="space-y-3"><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-72" /></div>
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
       <Skeleton className="h-10 w-40" />
     </div>
     <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
       <Skeleton className="h-6 w-40" />
       <Skeleton className="h-10 w-full" />
       <Skeleton className="h-28 w-full" />
-      <div className="grid gap-5 md:grid-cols-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-10 w-full" />)}</div>
-      <div className="flex justify-end gap-3"><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-32" /></div>
+      <div className="grid gap-5 md:grid-cols-3">
+        {[1, 2, 3].map((item) => (
+          <Skeleton key={item} className="h-10 w-full" />
+        ))}
+      </div>
+      <div className="flex justify-end gap-3">
+        <Skeleton className="h-10 w-20" />
+        <Skeleton className="h-10 w-32" />
+      </div>
     </div>
   </div>
 );
@@ -78,7 +92,9 @@ const EditProject = () => {
     };
   }, [id, navigate, projectId]);
 
-  const handleUpdateProject = async (values: ProjectFormValues): Promise<void> => {
+  const handleUpdateProject = async (
+    values: ProjectFormValues,
+  ): Promise<void> => {
     if (!project) return;
 
     const response = await updateProject(id, project.id, values);
@@ -92,7 +108,7 @@ const EditProject = () => {
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <AppHeader
         title="Edit Project"
-        secondaryAction={(
+        secondaryAction={
           <Button
             variant="outline"
             leadingIcon={<FaArrowLeft />}
@@ -100,7 +116,7 @@ const EditProject = () => {
           >
             Back to Projects
           </Button>
-        )}
+        }
       />
       <ProjectForm
         defaultValues={toFormValues(project)}

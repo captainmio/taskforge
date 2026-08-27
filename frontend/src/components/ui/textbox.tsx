@@ -3,7 +3,7 @@ import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 // Extending the native input props lets callers pass attributes such as
 // type, name, placeholder, disabled, and onChange without redefining them.
 interface TextboxProps extends InputHTMLAttributes<HTMLInputElement> {
-    icon?: ReactNode;
+  icon?: ReactNode;
 }
 
 const Textbox = forwardRef<HTMLInputElement, TextboxProps>(
@@ -34,7 +34,7 @@ const Textbox = forwardRef<HTMLInputElement, TextboxProps>(
         />
       </div>
     );
-  }
+  },
 );
 
 // Helps React DevTools show a useful name for this forwardRef component.

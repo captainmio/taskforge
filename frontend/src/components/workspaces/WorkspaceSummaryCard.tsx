@@ -27,7 +27,9 @@ const WorkspaceSummaryCard = ({
           {iconOption.icon}
         </span>
         <div className="min-w-0">
-          <h4 className="truncate font-semibold text-gray-900">{name || "Untitled workspace"}</h4>
+          <h4 className="truncate font-semibold text-gray-900">
+            {name || "Untitled workspace"}
+          </h4>
           <p className="mt-1 truncate text-sm text-gray-500">
             {description || "No description provided."}
           </p>
@@ -36,8 +38,7 @@ const WorkspaceSummaryCard = ({
 
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
         <span className="flex items-center gap-2">
-          <FaFolder className="size-3.5" aria-hidden="true" />
-          0 Projects
+          <FaFolder className="size-3.5" aria-hidden="true" />0 Projects
         </span>
         <span className="flex items-center gap-2">
           <FaUsers className="size-3.5" aria-hidden="true" />

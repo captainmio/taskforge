@@ -14,8 +14,12 @@ const WorkspaceNextActions = ({
 }: WorkspaceNextActionsProps) => {
   return (
     <div>
-      <h2 className="text-base font-semibold text-gray-900">What&apos;s next?</h2>
-      <p className="mt-1 text-sm text-gray-500">Here are some things you can do to get started.</p>
+      <h2 className="text-base font-semibold text-gray-900">
+        What&apos;s next?
+      </h2>
+      <p className="mt-1 text-sm text-gray-500">
+        Here are some things you can do to get started.
+      </p>
 
       <div className="mt-6 space-y-4">
         <ActionCard

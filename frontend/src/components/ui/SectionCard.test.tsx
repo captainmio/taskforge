@@ -5,7 +5,10 @@ import SectionCard from "./SectionCard";
 describe("SectionCard", () => {
   it("renders a themed title, action, and additional left body padding", () => {
     render(
-      <SectionCard title="Project details" action={<a href="/projects">View projects</a>}>
+      <SectionCard
+        title="Project details"
+        action={<a href="/projects">View projects</a>}
+      >
         <p>Project form fields</p>
       </SectionCard>,
     );
@@ -16,7 +19,9 @@ describe("SectionCard", () => {
     expect(heading).toHaveClass("text-green-800");
     expect(heading.closest("header")).toHaveClass("bg-emerald-100/70");
     expect(screen.getByRole("link", { name: "View projects" })).toBeVisible();
-    expect(screen.getByText("Project form fields").parentElement).toHaveClass("pl-6");
+    expect(screen.getByText("Project form fields").parentElement).toHaveClass(
+      "pl-6",
+    );
     expect(region).toHaveAttribute("aria-labelledby", heading.id);
   });
 

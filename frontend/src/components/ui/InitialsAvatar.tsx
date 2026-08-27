@@ -34,7 +34,10 @@ const InitialsAvatar = ({
   className = "",
 }: InitialsAvatarProps) => {
   // A stable character sum keeps the same person on the same color across renders.
-  const colorIndex = [...value].reduce((total, character) => total + character.charCodeAt(0), 0);
+  const colorIndex = [...value].reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
   const colorClass = colorClasses[colorIndex % colorClasses.length];
 
   return (

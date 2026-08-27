@@ -18,7 +18,9 @@ const WorkspacePreviewPanel = ({
 }: WorkspacePreviewPanelProps) => {
   return (
     <div>
-      <h2 className="text-base font-semibold text-gray-900">Workspace preview</h2>
+      <h2 className="text-base font-semibold text-gray-900">
+        Workspace preview
+      </h2>
       <p className="mt-1 text-sm text-gray-500">
         This is how your workspace will appear to your team.
       </p>
@@ -33,7 +35,10 @@ const WorkspacePreviewPanel = ({
       </div>
 
       <section className="mt-10" aria-labelledby="workspace-next-heading">
-        <h3 id="workspace-next-heading" className="text-sm font-semibold text-gray-900">
+        <h3
+          id="workspace-next-heading"
+          className="text-sm font-semibold text-gray-900"
+        >
           What&apos;s next?
         </h3>
         <div className="mt-5 space-y-6">

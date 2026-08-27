@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Projects from "./Projects";
@@ -26,7 +32,8 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -42,17 +49,19 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
-const projects = [{
-  id: 25,
-  name: "Website Redesign",
-  description: "Refresh the marketing site.",
-  icon: "desktop" as const,
-  status: "planning" as const,
-  startDate: "2026-09-01T00:00:00.000Z",
-  dueDate: "2026-10-01T00:00:00.000Z",
-  defaultView: "board" as const,
-  createdAt: "2026-08-22T00:00:00.000Z",
-}];
+const projects = [
+  {
+    id: 25,
+    name: "Website Redesign",
+    description: "Refresh the marketing site.",
+    icon: "desktop" as const,
+    status: "planning" as const,
+    startDate: "2026-09-01T00:00:00.000Z",
+    dueDate: "2026-10-01T00:00:00.000Z",
+    defaultView: "board" as const,
+    createdAt: "2026-08-22T00:00:00.000Z",
+  },
+];
 
 const projectListFor = (currentUserRole: "OWNER" | "ADMIN" | "MEMBER") => ({
   success: true as const,
@@ -74,10 +83,14 @@ describe("Projects page", () => {
       mocks.getProjects.mockResolvedValue(projectListFor(role));
       renderPage();
 
-      const createButton = await screen.findByRole("button", { name: "Create project" });
+      const createButton = await screen.findByRole("button", {
+        name: "Create project",
+      });
       fireEvent.click(createButton);
 
-      expect(mocks.navigate).toHaveBeenCalledWith("/workspace/workspace-42/projects/create");
+      expect(mocks.navigate).toHaveBeenCalledWith(
+        "/workspace/workspace-42/projects/create",
+      );
     },
   );
 
@@ -100,8 +113,9 @@ describe("Projects page", () => {
     renderPage();
 
     expect(await screen.findByText("Website Redesign")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Actions for Website Redesign" }))
-      .toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Actions for Website Redesign" }),
+    ).toBeVisible();
   });
 
   it("shows the empty state when the project-list request fails", async () => {
@@ -115,10 +129,16 @@ describe("Projects page", () => {
     mocks.getProjects.mockResolvedValue(projectListFor("OWNER"));
     renderPage();
 
-    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Actions for Website Redesign",
+      }),
+    );
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
-    expect(screen.getByRole("dialog", { name: "Delete project" })).toBeVisible();
+    expect(
+      screen.getByRole("dialog", { name: "Delete project" }),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.queryByRole("dialog", { name: "Delete project" })).toBeNull();
@@ -134,7 +154,11 @@ describe("Projects page", () => {
     });
     renderPage();
 
-    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Actions for Website Redesign",
+      }),
+    );
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
 
@@ -151,14 +175,22 @@ describe("Projects page", () => {
     mocks.deleteProject.mockReturnValue(new Promise(() => undefined));
     renderPage();
 
-    fireEvent.click(await screen.findByRole("button", { name: "Actions for Website Redesign" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Actions for Website Redesign",
+      }),
+    );
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
 
     await waitFor(() => {
       const modal = screen.getByRole("dialog", { name: "Delete project" });
-      expect(within(modal).getByRole("button", { name: "Deleting…" })).toBeDisabled();
-      expect(within(modal).getByRole("button", { name: "Cancel" })).toBeDisabled();
+      expect(
+        within(modal).getByRole("button", { name: "Deleting…" }),
+      ).toBeDisabled();
+      expect(
+        within(modal).getByRole("button", { name: "Cancel" }),
+      ).toBeDisabled();
     });
     expect(mocks.deleteProject).toHaveBeenCalledTimes(1);
   });

@@ -12,7 +12,7 @@ interface CreateWorkspaceResponse {
 }
 
 export const createWorkspace = async (
-  payload: CreateWorkspacePayload
+  payload: CreateWorkspacePayload,
 ): Promise<CreateWorkspaceResponse> => {
   // Workspace creation currently returns a message without the global `data`
   // field, so its response is intentionally typed separately.

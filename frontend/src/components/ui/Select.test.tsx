@@ -39,15 +39,20 @@ describe("Select", () => {
     render(
       <>
         <label htmlFor="view">Default View</label>
-        <Select id="view" leadingIcon={<span data-testid="select-icon">Icon</span>}>
+        <Select
+          id="view"
+          leadingIcon={<span data-testid="select-icon">Icon</span>}
+        >
           <option value="list">List View</option>
         </Select>
       </>,
     );
 
-    expect(screen.getByRole("combobox", { name: "Default View" })).toHaveAccessibleName(
-      "Default View",
-    );
-    expect(screen.getByTestId("select-icon").closest('[aria-hidden="true"]')).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Default View" }),
+    ).toHaveAccessibleName("Default View");
+    expect(
+      screen.getByTestId("select-icon").closest('[aria-hidden="true"]'),
+    ).toBeInTheDocument();
   });
 });

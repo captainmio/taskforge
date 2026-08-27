@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import InviteMembers from "./InviteMembers";
@@ -52,9 +58,8 @@ vi.mock("react-toastify", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>(
-    "react-router",
-  );
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -159,7 +164,9 @@ describe("Invite members page", () => {
     await addInvitation(" MEMBER@Example.COM ", "ADMIN");
 
     expect(screen.getByText("member@example.com")).toBeVisible();
-    expect(screen.getByLabelText("Role for member@example.com: Admin")).toBeVisible();
+    expect(
+      screen.getByLabelText("Role for member@example.com: Admin"),
+    ).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Email address"), {
       target: { value: "MEMBER@example.com" },
@@ -167,7 +174,9 @@ describe("Invite members page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     expect(
-      await screen.findByText("This email address is already in the invitation list."),
+      await screen.findByText(
+        "This email address is already in the invitation list.",
+      ),
     ).toBeVisible();
     expect(screen.getAllByText("member@example.com")).toHaveLength(1);
   });

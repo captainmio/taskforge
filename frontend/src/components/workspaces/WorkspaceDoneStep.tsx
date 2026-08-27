@@ -60,7 +60,9 @@ const WorkspaceDoneStep = ({
           type="button"
           onClick={onCreateProject}
           disabled={!onCreateProject}
-          title={!onCreateProject ? "Project creation is coming soon" : undefined}
+          title={
+            !onCreateProject ? "Project creation is coming soon" : undefined
+          }
           className="w-full cursor-pointer rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Create your first project
@@ -70,7 +72,11 @@ const WorkspaceDoneStep = ({
           type="button"
           onClick={onInviteMembers}
           disabled={!onInviteMembers}
-          title={!onInviteMembers ? "Available after workspace details are returned" : undefined}
+          title={
+            !onInviteMembers
+              ? "Available after workspace details are returned"
+              : undefined
+          }
           className="mx-auto block cursor-pointer text-sm text-gray-500 underline underline-offset-4 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Invite more members

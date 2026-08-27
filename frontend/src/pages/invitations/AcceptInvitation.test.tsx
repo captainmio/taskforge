@@ -41,9 +41,7 @@ describe("Accept invitation page", () => {
   it("uses the shared-link endpoint when the URL has type=link", async () => {
     renderPage("/invitations/accept?token=shared-token&type=link");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Accept invitation" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Accept invitation" }));
 
     expect(
       await screen.findByRole("heading", { name: "Invitation accepted" }),
@@ -58,9 +56,7 @@ describe("Accept invitation page", () => {
   it("keeps email invitations on the existing acceptance endpoint", async () => {
     renderPage("/invitations/accept?token=email-token");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Accept invitation" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Accept invitation" }));
 
     expect(
       await screen.findByRole("heading", { name: "Invitation accepted" }),
@@ -76,9 +72,7 @@ describe("Accept invitation page", () => {
     });
     renderPage("/invitations/accept?token=shared-token&type=link");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Accept invitation" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Accept invitation" }));
 
     expect(
       await screen.findByText(
@@ -107,9 +101,7 @@ describe("Accept invitation page", () => {
   it("does not call either endpoint when the token is missing", () => {
     renderPage("/invitations/accept?type=link");
 
-    expect(
-      screen.getByText(/verification token is missing/i),
-    ).toBeVisible();
+    expect(screen.getByText(/verification token is missing/i)).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "Accept invitation" }),
     ).not.toBeInTheDocument();

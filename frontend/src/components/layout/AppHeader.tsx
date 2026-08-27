@@ -41,7 +41,11 @@ const AppHeader = ({
       <div className="order-1 flex w-full items-center justify-end gap-2 sm:order-2 sm:w-auto sm:shrink-0">
         {secondaryAction}
         {primaryAction}
-        <AccountMenu name={userName} email={user.email} onLogout={handleLogout} />
+        <AccountMenu
+          name={userName}
+          email={user.email}
+          onLogout={handleLogout}
+        />
       </div>
     </header>
   );

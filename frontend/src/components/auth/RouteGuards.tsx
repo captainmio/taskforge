@@ -24,7 +24,8 @@ const RouteLoading = () => (
 
 export const ProtectedRoute = () => {
   const [session, setSession] = useState<MeResponse | null>(null);
-  const [authenticationFailed, setAuthenticationFailed] = useState<boolean>(false);
+  const [authenticationFailed, setAuthenticationFailed] =
+    useState<boolean>(false);
 
   useEffect(() => {
     getCurrentUser()
@@ -48,5 +49,9 @@ export const GuestRoute = () => {
   }, []);
 
   if (destination === "loading") return null;
-  return destination === "guest" ? <Outlet /> : <Navigate to={destination} replace />;
+  return destination === "guest" ? (
+    <Outlet />
+  ) : (
+    <Navigate to={destination} replace />
+  );
 };

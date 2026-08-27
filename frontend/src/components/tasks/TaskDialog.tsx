@@ -3,12 +3,24 @@ import debounce from "lodash/debounce";
 import { FaCalendarAlt, FaCircle } from "react-icons/fa";
 import Button from "../ui/Button";
 import Select from "../ui/Select";
-import TaskAssigneeMultiSelect, { type TaskAssignee } from "./TaskAssigneeMultiSelect";
+import TaskAssigneeMultiSelect, {
+  type TaskAssignee,
+} from "./TaskAssigneeMultiSelect";
 import TaskHistory from "./TaskHistory";
 import TimeEstimateField from "./TimeEstimateField";
-import { createTask, updateTask, type CreateTaskPayload, type UpdateTaskPayload } from "../../services/tasks";
+import {
+  createTask,
+  updateTask,
+  type CreateTaskPayload,
+  type UpdateTaskPayload,
+} from "../../services/tasks";
 import { getWorkspaceMembers } from "../../services/workspaces";
-import { priorityPresentation, type Task, type TaskPriority, type TaskStatus } from "./taskTypes";
+import {
+  priorityPresentation,
+  type Task,
+  type TaskPriority,
+  type TaskStatus,
+} from "./taskTypes";
 
 interface TaskDialogProps {
   task: Task | null;
@@ -20,15 +32,31 @@ interface TaskDialogProps {
   onTaskUpdated: (taskId: number, updates: Partial<Task>) => void;
 }
 
-const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTaskCreated, onTaskUpdated }: TaskDialogProps) => {
+const TaskDialog = ({
+  task,
+  initialStatus,
+  workspaceId,
+  projectId,
+  onClose,
+  onTaskCreated,
+  onTaskUpdated,
+}: TaskDialogProps) => {
   const [title, setTitle] = useState<string>(task?.title ?? "");
-  const [description, setDescription] = useState<string>(task?.description ?? "");
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? initialStatus);
-  const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "medium");
+  const [description, setDescription] = useState<string>(
+    task?.description ?? "",
+  );
+  const [status, setStatus] = useState<TaskStatus>(
+    task?.status ?? initialStatus,
+  );
+  const [priority, setPriority] = useState<TaskPriority>(
+    task?.priority ?? "medium",
+  );
   const [members, setMembers] = useState<TaskAssignee[]>([]);
   const [assignees, setAssignees] = useState<TaskAssignee[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState<boolean>(true);
-  const [timeEstimate, setTimeEstimate] = useState<string>(task?.timeEstimate ?? "");
+  const [timeEstimate, setTimeEstimate] = useState<string>(
+    task?.timeEstimate ?? "",
+  );
   const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? "");
   const [createdTaskId, setCreatedTaskId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
@@ -38,9 +66,10 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
   useEffect(() => {
     let isActive = true;
 
-    if (!workspaceId) return () => {
-      isActive = false;
-    };
+    if (!workspaceId)
+      return () => {
+        isActive = false;
+      };
 
     const loadMembers = async () => {
       try {
@@ -58,10 +87,11 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
         setAssignees((currentAssignees) =>
           currentAssignees.length > 0
             ? currentAssignees
-            : workspaceMembers.filter((member) =>
-                task?.assignees?.some(
-                  (assignee) => String(assignee.id) === member.id,
-                ) ?? false,
+            : workspaceMembers.filter(
+                (member) =>
+                  task?.assignees?.some(
+                    (assignee) => String(assignee.id) === member.id,
+                  ) ?? false,
               ),
         );
       } catch {
@@ -80,14 +110,21 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
 
   const getTaskPayload = useCallback(
     (): CreateTaskPayload => ({
-      title: title.trim(), description, status, priority,
+      title: title.trim(),
+      description,
+      status,
+      priority,
       assigneeIds: assignees.map((assignee) => assignee.id),
-      dueDate: dueDate || null, timeEstimate: timeEstimate || null,
+      dueDate: dueDate || null,
+      timeEstimate: timeEstimate || null,
     }),
     [assignees, description, dueDate, priority, status, timeEstimate, title],
   );
 
-  const persistChanges = async (payload: UpdateTaskPayload, boardUpdates: Partial<Task> = {}) => {
+  const persistChanges = async (
+    payload: UpdateTaskPayload,
+    boardUpdates: Partial<Task> = {},
+  ) => {
     if (!taskId || !workspaceId || !Number.isSafeInteger(projectId)) return;
     try {
       await updateTask(workspaceId, projectId, taskId, payload);
@@ -98,7 +135,14 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
   };
 
   const createDraftTask = useCallback(async () => {
-    if (taskId || creationStarted.current || !title.trim() || !workspaceId || !Number.isSafeInteger(projectId)) return;
+    if (
+      taskId ||
+      creationStarted.current ||
+      !title.trim() ||
+      !workspaceId ||
+      !Number.isSafeInteger(projectId)
+    )
+      return;
 
     // A draft stays only in the browser until its title is meaningful. This avoids
     // blank records while removing the need for a separate Create button.
@@ -108,10 +152,18 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
       const payload = getTaskPayload();
       const response = await createTask(workspaceId, projectId, payload);
       const createdTask: Task = {
-        id: response.data.id, title: payload.title, description: payload.description,
+        id: response.data.id,
+        title: payload.title,
+        description: payload.description,
         assignee: assignees.map((assignee) => assignee.name).join(", "),
-        assignees: assignees.map((assignee) => ({ id: assignee.id, name: assignee.name })),
-        dueDate, timeEstimate, priority, status,
+        assignees: assignees.map((assignee) => ({
+          id: assignee.id,
+          name: assignee.name,
+        })),
+        dueDate,
+        timeEstimate,
+        priority,
+        status,
       };
       setCreatedTaskId(createdTask.id);
       onTaskCreated(createdTask);
@@ -121,7 +173,19 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
     } finally {
       setIsCreating(false);
     }
-  }, [assignees, dueDate, getTaskPayload, priority, projectId, status, taskId, timeEstimate, title, workspaceId, onTaskCreated]);
+  }, [
+    assignees,
+    dueDate,
+    getTaskPayload,
+    priority,
+    projectId,
+    status,
+    taskId,
+    timeEstimate,
+    title,
+    workspaceId,
+    onTaskCreated,
+  ]);
 
   useEffect(() => {
     if (taskId || !title.trim()) return;
@@ -150,13 +214,38 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close task dialog" className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px]" onClick={onClose} />
-      <section role="dialog" aria-modal="true" aria-labelledby="task-dialog-title" aria-busy={isCreating} className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl">
+      <button
+        type="button"
+        aria-label="Close task dialog"
+        className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-dialog-title"
+        aria-busy={isCreating}
+        className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      >
         <header className="flex shrink-0 items-start justify-between border-b border-gray-100 px-6 py-5">
           <div className="min-w-0 flex-1">
-            <h2 id="task-dialog-title" className="sr-only">Task details</h2>
+            <h2 id="task-dialog-title" className="sr-only">
+              Task details
+            </h2>
             <div className="rounded-md px-2 py-1 transition-colors hover:bg-slate-100 focus-within:bg-slate-100 focus-within:ring-2 focus-within:ring-site-green">
-              <input value={title} onChange={(event) => setTitle(event.target.value)} onBlur={() => taskId ? void persistChanges({ title }, { title }) : void createDraftTask()} aria-label="Task title" placeholder="Untitled task" disabled={isCreating} className="w-full cursor-text border-0 bg-transparent p-0 text-xl font-bold text-gray-950 outline-none placeholder:text-gray-400" />
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onBlur={() =>
+                  taskId
+                    ? void persistChanges({ title }, { title })
+                    : void createDraftTask()
+                }
+                aria-label="Task title"
+                placeholder="Untitled task"
+                disabled={isCreating}
+                className="w-full cursor-text border-0 bg-transparent p-0 text-xl font-bold text-gray-950 outline-none placeholder:text-gray-400"
+              />
             </div>
           </div>
           <button
@@ -170,32 +259,105 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
         </header>
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
           <fieldset disabled={isCreating} className="space-y-4 border-0 p-6">
-            <TaskAssigneeMultiSelect members={members} value={assignees} onChange={persistAssignees} disabled={isLoadingMembers} />
-            <label className="block text-xs font-semibold text-gray-700">Description
-              <textarea rows={6} value={description} onChange={(event) => setDescription(event.target.value)} onBlur={() => void persistChanges({ description }, { description })} className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900" />
+            <TaskAssigneeMultiSelect
+              members={members}
+              value={assignees}
+              onChange={persistAssignees}
+              disabled={isLoadingMembers}
+            />
+            <label className="block text-xs font-semibold text-gray-700">
+              Description
+              <textarea
+                rows={6}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                onBlur={() =>
+                  void persistChanges({ description }, { description })
+                }
+                className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900"
+              />
             </label>
             <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-xs font-semibold text-gray-700">Status
-                <select value={status} onChange={(event) => { const nextStatus = event.target.value as TaskStatus; setStatus(nextStatus); void persistChanges({ status: nextStatus }, { status: nextStatus }); }} className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm">
-                  <option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="in_review">In Review</option><option value="done">Done</option>
+              <label className="text-xs font-semibold text-gray-700">
+                Status
+                <select
+                  value={status}
+                  onChange={(event) => {
+                    const nextStatus = event.target.value as TaskStatus;
+                    setStatus(nextStatus);
+                    void persistChanges(
+                      { status: nextStatus },
+                      { status: nextStatus },
+                    );
+                  }}
+                  className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
+                >
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="in_review">In Review</option>
+                  <option value="done">Done</option>
                 </select>
               </label>
-              <label className="text-xs font-semibold text-gray-700">Priority
-                <Select value={priority} onChange={(event) => { const nextPriority = event.target.value as TaskPriority; setPriority(nextPriority); void persistChanges({ priority: nextPriority }, { priority: nextPriority }); }} leadingIcon={<FaCircle className={priorityPresentation[priority].iconClassName} />} className="mt-1.5">
-                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+              <label className="text-xs font-semibold text-gray-700">
+                Priority
+                <Select
+                  value={priority}
+                  onChange={(event) => {
+                    const nextPriority = event.target.value as TaskPriority;
+                    setPriority(nextPriority);
+                    void persistChanges(
+                      { priority: nextPriority },
+                      { priority: nextPriority },
+                    );
+                  }}
+                  leadingIcon={
+                    <FaCircle
+                      className={priorityPresentation[priority].iconClassName}
+                    />
+                  }
+                  className="mt-1.5"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
                 </Select>
               </label>
-              <label className="text-xs font-semibold text-gray-700">Due date
-                <div className="relative mt-1.5"><FaCalendarAlt className="pointer-events-none absolute left-3 top-3 text-gray-400" />
-                  <input value={dueDate} onChange={(event) => setDueDate(event.target.value)} onBlur={() => void persistChanges({ dueDate: dueDate || null }, { dueDate })} className="h-10 w-full rounded-lg border border-gray-200 py-2 pl-9 pr-2 text-sm" />
+              <label className="text-xs font-semibold text-gray-700">
+                Due date
+                <div className="relative mt-1.5">
+                  <FaCalendarAlt className="pointer-events-none absolute left-3 top-3 text-gray-400" />
+                  <input
+                    value={dueDate}
+                    onChange={(event) => setDueDate(event.target.value)}
+                    onBlur={() =>
+                      void persistChanges(
+                        { dueDate: dueDate || null },
+                        { dueDate },
+                      )
+                    }
+                    className="h-10 w-full rounded-lg border border-gray-200 py-2 pl-9 pr-2 text-sm"
+                  />
                 </div>
               </label>
             </div>
-            <TimeEstimateField value={timeEstimate} onChange={setTimeEstimate} onBlur={() => void persistChanges({ timeEstimate: timeEstimate || null }, { timeEstimate })} />
+            <TimeEstimateField
+              value={timeEstimate}
+              onChange={setTimeEstimate}
+              onBlur={() =>
+                void persistChanges(
+                  { timeEstimate: timeEstimate || null },
+                  { timeEstimate },
+                )
+              }
+            />
           </fieldset>
           <TaskHistory />
         </div>
-        <footer className="flex shrink-0 justify-end border-t border-gray-100 bg-slate-50 px-6 py-4"><Button variant="ghost" onClick={onClose}>Cancel</Button></footer>
+        <footer className="flex shrink-0 justify-end border-t border-gray-100 bg-slate-50 px-6 py-4">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </footer>
       </section>
     </div>
   );

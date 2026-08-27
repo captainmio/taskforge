@@ -1,8 +1,4 @@
-import {
-  forwardRef,
-  type ReactNode,
-  type SelectHTMLAttributes,
-} from "react";
+import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
 import { FaChevronDown } from "react-icons/fa";
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {

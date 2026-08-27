@@ -19,7 +19,7 @@ describe("Textarea", () => {
           maxLength={500}
           onChange={handleChange}
         />
-      </>
+      </>,
     );
 
     const textarea = screen.getByLabelText("Description");
@@ -43,7 +43,7 @@ describe("Textarea", () => {
           height={120}
           resizable={false}
         />
-      </>
+      </>,
     );
 
     const textarea = screen.getByLabelText("Notes");
@@ -51,7 +51,7 @@ describe("Textarea", () => {
     expect(textarea).toHaveStyle({ height: "120px" });
     expect(textarea).toHaveClass("resize-none");
     expect(
-      screen.getByTestId("textarea-icon").closest('[aria-hidden="true"]')
+      screen.getByTestId("textarea-icon").closest('[aria-hidden="true"]'),
     ).toBeInTheDocument();
   });
 });

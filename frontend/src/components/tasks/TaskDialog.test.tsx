@@ -31,14 +31,16 @@ describe("TaskDialog", () => {
     mocks.getWorkspaceMembers.mockResolvedValue({
       success: true,
       data: {
-        members: [{
-          id: 7,
-          firstname: "Alex",
-          lastname: "Member",
-          email: "alex@example.com",
-          role: "MEMBER",
-          joinedAt: "2026-08-27T00:00:00.000Z",
-        }],
+        members: [
+          {
+            id: 7,
+            firstname: "Alex",
+            lastname: "Member",
+            email: "alex@example.com",
+            role: "MEMBER",
+            joinedAt: "2026-08-27T00:00:00.000Z",
+          },
+        ],
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });

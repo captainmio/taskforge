@@ -14,15 +14,8 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
-    {
-      className = "",
-      icon,
-      resizable = true,
-      height,
-      style,
-      ...textareaProps
-    },
-    ref
+    { className = "", icon, resizable = true, height, style, ...textareaProps },
+    ref,
   ) => {
     // The icon variant adds left padding so entered text stays clear of the icon.
     const spacingClassName = icon ? "pl-10 pr-3" : "px-3";
@@ -51,7 +44,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
       </div>
     );
-  }
+  },
 );
 
 // Helps React DevTools show a useful name for this forwardRef component.

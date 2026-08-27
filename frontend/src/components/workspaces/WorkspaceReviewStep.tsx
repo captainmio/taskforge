@@ -44,7 +44,10 @@ const WorkspaceReviewStep = ({
       </p>
 
       <div className="mt-6 space-y-4">
-        <SectionCard title="Workspace details" action={<EditAction onClick={onEditDetails} />}>
+        <SectionCard
+          title="Workspace details"
+          action={<EditAction onClick={onEditDetails} />}
+        >
           <WorkspaceSummaryCard
             name={workspaceName}
             description={description}

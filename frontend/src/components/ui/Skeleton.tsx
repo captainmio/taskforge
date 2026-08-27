@@ -3,7 +3,10 @@ interface SkeletonProps {
 }
 
 const Skeleton = ({ className = "" }: SkeletonProps) => (
-  <div aria-hidden="true" className={`shimmer rounded-md bg-gray-200 ${className}`} />
+  <div
+    aria-hidden="true"
+    className={`shimmer rounded-md bg-gray-200 ${className}`}
+  />
 );
 
 export default Skeleton;

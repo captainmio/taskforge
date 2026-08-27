@@ -29,7 +29,10 @@ const PaginationControls = ({
       aria-label={`${itemLabel} pagination`}
     >
       <p className="text-xs text-gray-500">
-        Showing <strong className="text-gray-700">{firstItem}-{lastItem}</strong>{" "}
+        Showing{" "}
+        <strong className="text-gray-700">
+          {firstItem}-{lastItem}
+        </strong>{" "}
         of <strong className="text-gray-700">{totalItems}</strong> {itemLabel}
       </p>
 
@@ -53,7 +56,9 @@ const PaginationControls = ({
           onClick={() => onPageChange(page + 1)}
         >
           Next
-          <span aria-hidden="true"><FaChevronRight /></span>
+          <span aria-hidden="true">
+            <FaChevronRight />
+          </span>
         </Button>
       </div>
     </nav>

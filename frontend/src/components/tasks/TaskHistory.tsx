@@ -36,12 +36,26 @@ const TaskHistory = () => (
     <h3 className="text-sm font-bold text-gray-950">Task History</h3>
     <p className="mt-1 text-xs text-gray-500">Changes to this task.</p>
     <ol className="mt-6 space-y-6">
-      {historyItems.map(({ icon: Icon, iconClassName, description, user, time }) => (
-        <li key={`${user}-${time}`} className="relative flex gap-3">
-          <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${iconClassName}`}><Icon className="size-3" aria-hidden="true" /></span>
-          <div className="min-w-0 text-xs leading-5 text-gray-600"><p><span className="font-semibold text-gray-800">{user}</span> {description}</p><time className="mt-1 block text-[11px] text-gray-400">{time}</time></div>
-        </li>
-      ))}
+      {historyItems.map(
+        ({ icon: Icon, iconClassName, description, user, time }) => (
+          <li key={`${user}-${time}`} className="relative flex gap-3">
+            <span
+              className={`flex size-7 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
+            >
+              <Icon className="size-3" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 text-xs leading-5 text-gray-600">
+              <p>
+                <span className="font-semibold text-gray-800">{user}</span>{" "}
+                {description}
+              </p>
+              <time className="mt-1 block text-[11px] text-gray-400">
+                {time}
+              </time>
+            </div>
+          </li>
+        ),
+      )}
     </ol>
   </aside>
 );

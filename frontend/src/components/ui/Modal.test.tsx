@@ -67,7 +67,9 @@ describe("Modal", () => {
       </>,
     );
 
-    expect(screen.getAllByRole("button", { name: "Close modal" })[1]).toHaveFocus();
+    expect(
+      screen.getAllByRole("button", { name: "Close modal" })[1],
+    ).toHaveFocus();
     expect(document.body.style.overflow).toBe("hidden");
 
     rerender(

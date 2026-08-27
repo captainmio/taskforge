@@ -91,7 +91,10 @@ describe("route guards", () => {
           <Route element={<GuestRoute />}>
             <Route index element={<p>Guest page</p>} />
           </Route>
-          <Route path="/create-workspace" element={<p>Create workspace page</p>} />
+          <Route
+            path="/create-workspace"
+            element={<p>Create workspace page</p>}
+          />
         </Routes>
       </MemoryRouter>,
     );

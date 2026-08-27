@@ -31,15 +31,18 @@ describe("API response errors", () => {
   it.each([
     "/workspaces/invitations/accept",
     "/workspaces/invitation-links/accept",
-  ])("does not show a global toast for expected acceptance errors from %s", async (url) => {
-    const error = {
-      config: { url },
-      response: { data: { error: "Authentication required" }, status: 401 },
-    };
+  ])(
+    "does not show a global toast for expected acceptance errors from %s",
+    async (url) => {
+      const error = {
+        config: { url },
+        response: { data: { error: "Authentication required" }, status: 401 },
+      };
 
-    await expect(rejectResponse(error)).rejects.toBe(error);
-    expect(mocks.showError).not.toHaveBeenCalled();
-  });
+      await expect(rejectResponse(error)).rejects.toBe(error);
+      expect(mocks.showError).not.toHaveBeenCalled();
+    },
+  );
 
   it("shows the backend error for other failed API requests", async () => {
     const error = {

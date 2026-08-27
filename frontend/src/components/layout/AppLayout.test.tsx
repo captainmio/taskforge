@@ -32,7 +32,9 @@ describe("AppLayout", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
     expect(screen.getAllByText("Navigation content")).toHaveLength(2);
 
-    const closeButtons = screen.getAllByRole("button", { name: "Close navigation" });
+    const closeButtons = screen.getAllByRole("button", {
+      name: "Close navigation",
+    });
     fireEvent.click(closeButtons[closeButtons.length - 1]);
 
     expect(screen.getAllByText("Navigation content")).toHaveLength(1);
@@ -44,11 +46,11 @@ describe("AppLayout", () => {
         <Routes>
           <Route
             path="/workspace/:id"
-            element={(
+            element={
               <AppLayout>
                 <h1>Page content</h1>
               </AppLayout>
-            )}
+            }
           />
         </Routes>
       </MemoryRouter>,

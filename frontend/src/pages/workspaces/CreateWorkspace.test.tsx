@@ -14,7 +14,8 @@ vi.mock("../../services/workspaces", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -26,7 +27,7 @@ const renderPage = () =>
   render(
     <MemoryRouter>
       <CreateWorkspace />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 const goToInviteStep = async () => {
@@ -37,7 +38,9 @@ const goToInviteStep = async () => {
     target: { value: "  Builds the product.  " },
   });
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
-  expect(await screen.findByRole("heading", { name: "Invite members" })).toBeVisible();
+  expect(
+    await screen.findByRole("heading", { name: "Invite members" }),
+  ).toBeVisible();
 };
 
 describe("Create workspace page", () => {
@@ -57,9 +60,11 @@ describe("Create workspace page", () => {
     expect(error).toBeVisible();
     expect(screen.getByLabelText(/Workspace Name/)).toHaveAttribute(
       "aria-describedby",
-      "workspace-name-error"
+      "workspace-name-error",
     );
-    expect(screen.getByRole("heading", { name: "Workspace details" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Workspace details" }),
+    ).toBeVisible();
   });
 
   it("submits a normalized request and shows the completed step", async () => {
@@ -73,7 +78,9 @@ describe("Create workspace page", () => {
       target: { value: "ADMIN" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByRole("heading", { name: "Review your workspace" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Review your workspace" }),
+    ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Create workspace" }));
 
@@ -86,8 +93,12 @@ describe("Create workspace page", () => {
       });
     });
     expect(await screen.findByText("Your workspace is ready!")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Create your first project" })).toBeDisabled();
-    expect(screen.getAllByRole("button", { name: "Invite more members" })[0]).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Create your first project" }),
+    ).toBeDisabled();
+    expect(
+      screen.getAllByRole("button", { name: "Invite more members" })[0],
+    ).toBeDisabled();
   });
 
   it("returns to the relevant step when the API rejects an invite field", async () => {
@@ -114,10 +125,16 @@ describe("Create workspace page", () => {
       target: { value: "MEMBER" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Create workspace" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Create workspace" }),
+    );
 
-    expect(await screen.findByText("This member is already invited.")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Invite members" })).toBeVisible();
+    expect(
+      await screen.findByText("This member is already invited."),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Invite members" }),
+    ).toBeVisible();
   });
 
   it("cancels workspace creation by returning to the dashboard", () => {

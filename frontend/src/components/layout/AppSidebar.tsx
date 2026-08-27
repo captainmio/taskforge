@@ -1,10 +1,4 @@
-import {
-  FaCog,
-  FaFolder,
-  FaHome,
-  FaSignOutAlt,
-  FaUsers,
-} from "react-icons/fa";
+import { FaCog, FaFolder, FaHome, FaSignOutAlt, FaUsers } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import { getInitials } from "../../utils/getInitials";
 import type { JoinedWorkspace } from "../../services/auth";

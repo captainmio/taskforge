@@ -33,15 +33,21 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return { ...actual, useNavigate: () => mocks.navigate };
 });
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/workspace/workspace-42/projects/25/tasks"]}>
+    <MemoryRouter
+      initialEntries={["/workspace/workspace-42/projects/25/tasks"]}
+    >
       <Routes>
-        <Route path="/workspace/:id/projects/:projectId/tasks" element={<TaskPage />} />
+        <Route
+          path="/workspace/:id/projects/:projectId/tasks"
+          element={<TaskPage />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -105,20 +111,28 @@ describe("Task page", () => {
   it("loads the project name for the current workspace and project", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Website Redesign" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Website Redesign" }),
+    ).toBeVisible();
     expect(mocks.getProjectById).toHaveBeenCalledWith("workspace-42", 25);
   });
 
   it("filters board cards by task title", async () => {
     renderPage();
 
-    expect(await screen.findByRole("button", { name: /Implement login flow/ })).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: /Implement login flow/ }),
+    ).toBeVisible();
     fireEvent.change(screen.getByRole("textbox", { name: "Search tasks" }), {
       target: { value: "database schema" },
     });
 
-    expect(screen.queryByRole("button", { name: /Implement login flow/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /Review database schema/ })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Implement login flow/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Review database schema/ }),
+    ).toBeVisible();
   });
 
   it("opens and closes a new task dialog", () => {
@@ -135,9 +149,13 @@ describe("Task page", () => {
   it("opens an existing task with its details ready to edit", async () => {
     renderPage();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Create wireframes/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Create wireframes/ }),
+    );
 
-    expect(screen.getByRole("textbox", { name: "Task title" })).toHaveValue("Create wireframes");
+    expect(screen.getByRole("textbox", { name: "Task title" })).toHaveValue(
+      "Create wireframes",
+    );
     expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
   });
 

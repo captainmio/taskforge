@@ -1,10 +1,10 @@
-import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import Textbox from './Textbox';
+import { createRef } from "react";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import Textbox from "./Textbox";
 
-describe('Textbox', () => {
-  it('forwards native input properties and its ref', () => {
+describe("Textbox", () => {
+  it("forwards native input properties and its ref", () => {
     const inputRef = createRef<HTMLInputElement>();
 
     render(
@@ -21,15 +21,15 @@ describe('Textbox', () => {
       </>,
     );
 
-    const input = screen.getByLabelText('Email');
-    expect(input).toHaveAttribute('type', 'email');
-    expect(input).toHaveAttribute('autocomplete', 'email');
-    expect(input).toHaveAttribute('placeholder', 'name@example.com');
+    const input = screen.getByLabelText("Email");
+    expect(input).toHaveAttribute("type", "email");
+    expect(input).toHaveAttribute("autocomplete", "email");
+    expect(input).toHaveAttribute("placeholder", "name@example.com");
     expect(input).toBeDisabled();
     expect(inputRef.current).toBe(input);
   });
 
-  it('renders a decorative icon without changing the accessible name', () => {
+  it("renders a decorative icon without changing the accessible name", () => {
     render(
       <>
         <label htmlFor="name">Name</label>
@@ -37,7 +37,9 @@ describe('Textbox', () => {
       </>,
     );
 
-    expect(screen.getByLabelText('Name')).toHaveAccessibleName('Name');
-    expect(screen.getByTestId('field-icon').closest('[aria-hidden="true"]')).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveAccessibleName("Name");
+    expect(
+      screen.getByTestId("field-icon").closest('[aria-hidden="true"]'),
+    ).toBeInTheDocument();
   });
 });

@@ -7,7 +7,11 @@ describe("ContextSwitcher", () => {
     const handleClick = vi.fn();
 
     render(
-      <ContextSwitcher name="TaskForge Dev" initials="TD" onClick={handleClick} />,
+      <ContextSwitcher
+        name="TaskForge Dev"
+        initials="TD"
+        onClick={handleClick}
+      />,
     );
 
     const switcher = screen.getByRole("button", { name: /TaskForge Dev/ });
@@ -38,9 +42,7 @@ describe("ContextSwitcher", () => {
     expect(
       screen.getByRole("menuitem", { name: /Engineering.*Current/ }),
     ).toHaveAttribute("aria-current", "page");
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: /Product Design/ }),
-    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Product Design/ }));
 
     expect(handleWorkspaceChange).toHaveBeenCalledWith(84);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();

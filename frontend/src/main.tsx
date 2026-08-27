@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
 import { router } from "./app/routes";
-import { Bounce, ToastContainer } from 'react-toastify';
+import { Bounce, ToastContainer } from "react-toastify";
 import "./index.css";
 
 const rootElement: HTMLElement | null = document.getElementById("root");
@@ -14,7 +14,7 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <RouterProvider router={router} />
-    <ToastContainer 
+    <ToastContainer
       position="top-right"
       autoClose={5000}
       hideProgressBar={false}
@@ -27,5 +27,5 @@ createRoot(rootElement).render(
       theme="colored"
       transition={Bounce}
     />
-  </StrictMode>
+  </StrictMode>,
 );

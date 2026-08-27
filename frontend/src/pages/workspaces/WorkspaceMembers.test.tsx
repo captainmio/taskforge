@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceMember } from "../../types/workspace";
@@ -36,9 +43,8 @@ vi.mock("react-toastify", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>(
-    "react-router",
-  );
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -144,7 +150,9 @@ describe("Workspace members page", () => {
   });
 
   it("searches member details and filters the loaded page by role", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const consoleLog = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined);
     await renderPage();
 
     fireEvent.change(screen.getByLabelText("Search members"), {
@@ -196,8 +204,12 @@ describe("Workspace members page", () => {
     mocks.getWorkspaceMembers.mockResolvedValue(memberListResponse("MEMBER"));
     await renderPage();
 
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove" }),
+    ).not.toBeInTheDocument();
   });
 
   it("prevents an admin from editing their own role while allowing edits to other members", async () => {
@@ -232,11 +244,17 @@ describe("Workspace members page", () => {
     const editDialog = openZoeRoleEditor();
     const roleSelect = within(editDialog).getByLabelText("Workspace role");
 
-    expect(within(roleSelect).queryByRole("option", { name: "Owner" })).toBeNull();
-    expect(within(editDialog).getByRole("button", { name: "Update Role" })).toBeDisabled();
+    expect(
+      within(roleSelect).queryByRole("option", { name: "Owner" }),
+    ).toBeNull();
+    expect(
+      within(editDialog).getByRole("button", { name: "Update Role" }),
+    ).toBeDisabled();
 
     fireEvent.change(roleSelect, { target: { value: "MEMBER" } });
-    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+    fireEvent.click(
+      within(editDialog).getByRole("button", { name: "Update Role" }),
+    );
 
     await waitFor(() => {
       expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledWith("42", 2, {
@@ -270,13 +288,19 @@ describe("Workspace members page", () => {
     const roleSelect = within(editDialog).getByLabelText("Workspace role");
 
     fireEvent.change(roleSelect, { target: { value: "MEMBER" } });
-    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+    fireEvent.click(
+      within(editDialog).getByRole("button", { name: "Update Role" }),
+    );
 
     expect(
-      await within(editDialog).findByRole("button", { name: "Updating Role..." }),
+      await within(editDialog).findByRole("button", {
+        name: "Updating Role...",
+      }),
     ).toBeDisabled();
     expect(roleSelect).toBeDisabled();
-    expect(within(editDialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(
+      within(editDialog).getByRole("button", { name: "Cancel" }),
+    ).toBeDisabled();
 
     await act(async () => {
       finishUpdate?.({
@@ -297,7 +321,9 @@ describe("Workspace members page", () => {
       target: { value: "MEMBER" },
     });
 
-    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+    fireEvent.click(
+      within(editDialog).getByRole("button", { name: "Update Role" }),
+    );
 
     await waitFor(() => {
       expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledTimes(1);
@@ -308,7 +334,9 @@ describe("Workspace members page", () => {
     expect(editDialog).toBeVisible();
     expect(mocks.showSuccess).not.toHaveBeenCalled();
 
-    fireEvent.click(within(editDialog).getByRole("button", { name: "Update Role" }));
+    fireEvent.click(
+      within(editDialog).getByRole("button", { name: "Update Role" }),
+    );
     await waitFor(() => {
       expect(mocks.updateWorkspaceMemberRole).toHaveBeenCalledTimes(2);
       expect(mocks.showSuccess).toHaveBeenCalledWith(

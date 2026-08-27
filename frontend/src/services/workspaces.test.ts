@@ -76,9 +76,8 @@ describe("updateWorkspaceMemberRole", () => {
         joinedAt: "2026-08-20T00:00:00.000Z",
       },
     });
-    expect(mocks.patch).toHaveBeenCalledWith(
-      "/workspaces/42/members/8",
-      { role: "ADMIN" },
-    );
+    expect(mocks.patch).toHaveBeenCalledWith("/workspaces/42/members/8", {
+      role: "ADMIN",
+    });
   });
 });

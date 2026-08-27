@@ -7,7 +7,12 @@ interface SectionCardProps {
   className?: string;
 }
 
-const SectionCard = ({ title = "", action, children, className = "" }: SectionCardProps) => {
+const SectionCard = ({
+  title = "",
+  action,
+  children,
+  className = "",
+}: SectionCardProps) => {
   const titleId = useId();
 
   return (

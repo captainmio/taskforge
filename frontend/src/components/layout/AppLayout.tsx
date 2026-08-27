@@ -15,9 +15,9 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
   const session = useAuthenticatedSession();
   const { id: workspaceId } = useParams();
   const workspaces = session?.workspaces ?? [];
-  const activeWorkspace = workspaces.find(
-    (workspace) => workspace.id === Number(workspaceId),
-  ) ?? workspaces[0];
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === Number(workspaceId)) ??
+    workspaces[0];
   const sidebarContent = sidebar ?? (
     <AppSidebar
       workspaceName={activeWorkspace?.name ?? "No workspace"}
@@ -45,8 +45,11 @@ const AppLayout = ({ sidebar, children }: AppLayoutProps) => {
           <FaBars aria-hidden="true" />
         </button>
         <div className="ml-3 w-full flex items-center">
-
-          <img className="size-9 shrink-0" src="/project-icon-tasks.svg" alt="TaskForge" />
+          <img
+            className="size-9 shrink-0"
+            src="/project-icon-tasks.svg"
+            alt="TaskForge"
+          />
           <span className="ml-2 font-bold text-gray-950">TaskForge</span>
         </div>
       </div>

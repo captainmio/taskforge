@@ -67,9 +67,8 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>(
-    "react-router",
-  );
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -120,7 +119,9 @@ describe("Workspace overview", () => {
   });
 
   it("links the members preview to the complete member list", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const consoleLog = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined);
     render(
       <MemoryRouter>
         <WorkspaceOverview />

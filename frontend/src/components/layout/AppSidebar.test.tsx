@@ -1,10 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import {
-  MemoryRouter,
-  Route,
-  Routes,
-  useLocation,
-} from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { describe, expect, it } from "vitest";
 import AppSidebar from "./AppSidebar";
 
@@ -17,13 +12,13 @@ describe("AppSidebar", () => {
         <Routes>
           <Route
             path="/workspace/:id"
-            element={(
+            element={
               <AppSidebar
                 workspaceName="Engineering"
                 workspaces={[{ id: 42, name: "Engineering" }]}
                 currentWorkspaceId={42}
               />
-            )}
+            }
           />
         </Routes>
       </MemoryRouter>,
@@ -45,7 +40,7 @@ describe("AppSidebar", () => {
         <Routes>
           <Route
             path="/workspace/:id"
-            element={(
+            element={
               <>
                 <AppSidebar
                   workspaceName="Engineering"
@@ -57,7 +52,7 @@ describe("AppSidebar", () => {
                 />
                 <CurrentLocation />
               </>
-            )}
+            }
           />
         </Routes>
       </MemoryRouter>,

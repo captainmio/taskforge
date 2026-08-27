@@ -22,7 +22,10 @@ const Steps = ({ steps, currentStep }: StepsProps) => {
         const isCompleted = step.id < currentStep;
 
         return (
-          <li key={step.id} className="relative flex flex-col items-center text-center">
+          <li
+            key={step.id}
+            className="relative flex flex-col items-center text-center"
+          >
             {/* The connector begins after one circle and ends before the next one. */}
             {index < steps.length - 1 && (
               <span
@@ -41,7 +44,11 @@ const Steps = ({ steps, currentStep }: StepsProps) => {
                   : "border-gray-400 bg-white text-gray-500"
               }`}
             >
-              {isCompleted ? <FaCheck className="size-3" aria-hidden="true" /> : step.id}
+              {isCompleted ? (
+                <FaCheck className="size-3" aria-hidden="true" />
+              ) : (
+                step.id
+              )}
             </span>
 
             <span

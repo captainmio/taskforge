@@ -38,7 +38,11 @@ const columns: DataTableColumn<Row>[] = [
   },
 ];
 
-const SortableTable = ({ onSort }: { onSort?: (sort: DataTableSort) => void }) => {
+const SortableTable = ({
+  onSort,
+}: {
+  onSort?: (sort: DataTableSort) => void;
+}) => {
   const [sort, setSort] = useState<DataTableSort | null>(null);
 
   return (
@@ -62,13 +66,15 @@ describe("DataTable", () => {
     render(<SortableTable />);
 
     const table = screen.getByRole("table", { name: "Test members" });
-    expect(within(table).getByRole("columnheader", { name: "Member" })).toHaveAttribute(
-      "aria-sort",
-      "none",
-    );
-    expect(within(table).getByRole("columnheader", { name: "Joined at" })).toBeVisible();
     expect(
-      within(table).getByRole("columnheader", { name: "Actions" }).firstElementChild,
+      within(table).getByRole("columnheader", { name: "Member" }),
+    ).toHaveAttribute("aria-sort", "none");
+    expect(
+      within(table).getByRole("columnheader", { name: "Joined at" }),
+    ).toBeVisible();
+    expect(
+      within(table).getByRole("columnheader", { name: "Actions" })
+        .firstElementChild,
     ).toHaveClass("sr-only");
     expect(within(table).getByText("Ada")).toBeVisible();
     expect(within(table).getByText("Grace")).toBeVisible();

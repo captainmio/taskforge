@@ -12,15 +12,14 @@ import { getProjectTasks, type ProjectTask } from "../../services/tasks";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { logout } from "../../services/auth";
 
-const toBoardTask = (
-  task: ProjectTask,
-): Task => ({
+const toBoardTask = (task: ProjectTask): Task => ({
   id: task.id,
   title: task.title,
   description: task.description,
-  assignee: task.assignees
-    .map((assignee) => `${assignee.firstname} ${assignee.lastname}`.trim())
-    .join(", ") || "Unassigned",
+  assignee:
+    task.assignees
+      .map((assignee) => `${assignee.firstname} ${assignee.lastname}`.trim())
+      .join(", ") || "Unassigned",
   assignees: task.assignees.map((assignee) => ({
     id: assignee.id,
     name: `${assignee.firstname} ${assignee.lastname}`.trim(),
@@ -67,13 +66,12 @@ const TaskPage = (): ReactElement => {
       getProjectTasks(id, Number(projectId)),
     ])
       .then(([projectResponse, taskResponse]) => {
-        if (!isActive || !projectResponse.success || !taskResponse.success) return;
+        if (!isActive || !projectResponse.success || !taskResponse.success)
+          return;
 
         const { project } = projectResponse.data;
         setProjectName(project.name);
-        setTaskItems(
-          taskResponse.data.tasks.map(toBoardTask),
-        );
+        setTaskItems(taskResponse.data.tasks.map(toBoardTask));
       })
       .catch(() => {
         if (!isActive) return;
@@ -93,11 +91,7 @@ const TaskPage = (): ReactElement => {
     setNewTaskStatus(status);
     setSelectedTask(null);
   };
-  const handleDragEnd = ({
-    source,
-    destination,
-    draggableId,
-  }: DropResult) => {
+  const handleDragEnd = ({ source, destination, draggableId }: DropResult) => {
     // Dropping outside a column does not change the task's position or status.
     if (!destination) return;
 

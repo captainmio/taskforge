@@ -11,13 +11,16 @@ describe("ProjectForm", () => {
   it("renders the project fields and validates the required project name", async () => {
     const { onSubmit } = renderForm();
 
-    expect(screen.getByRole("heading", { name: "Project details" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Project settings" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Project details" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Project settings" }),
+    ).toBeVisible();
     expect(screen.getByLabelText("Description")).toHaveClass("resize-none");
-    expect(screen.getByRole("button", { name: "Data project" })).toHaveAttribute(
-      "title",
-      "Data project",
-    );
+    expect(
+      screen.getByRole("button", { name: "Data project" }),
+    ).toHaveAttribute("title", "Data project");
 
     fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
 
@@ -35,10 +38,18 @@ describe("ProjectForm", () => {
       target: { value: "Refresh the customer website." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Design project" }));
-    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "active" } });
-    fireEvent.change(screen.getByLabelText(/Start Date/), { target: { value: "2026-09-01" } });
-    fireEvent.change(screen.getByLabelText(/Due Date/), { target: { value: "2026-09-30" } });
-    fireEvent.change(screen.getByLabelText("Default View"), { target: { value: "board" } });
+    fireEvent.change(screen.getByLabelText("Status"), {
+      target: { value: "active" },
+    });
+    fireEvent.change(screen.getByLabelText(/Start Date/), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.change(screen.getByLabelText(/Due Date/), {
+      target: { value: "2026-09-30" },
+    });
+    fireEvent.change(screen.getByLabelText("Default View"), {
+      target: { value: "board" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
 
     await waitFor(() => {
@@ -81,15 +92,26 @@ describe("ProjectForm", () => {
     fireEvent.change(screen.getByLabelText(/Project Name/), {
       target: { value: "Release planning" },
     });
-    fireEvent.change(screen.getByLabelText(/Start Date/), { target: { value: "2026-11-20" } });
-    fireEvent.change(screen.getByLabelText(/Due Date/), { target: { value: "2026-11-10" } });
+    fireEvent.change(screen.getByLabelText(/Start Date/), {
+      target: { value: "2026-11-20" },
+    });
+    fireEvent.change(screen.getByLabelText(/Due Date/), {
+      target: { value: "2026-11-10" },
+    });
 
-    const form = screen.getByRole("button", { name: "Create Project" }).closest("form");
-    if (!form) throw new Error("Expected the Create Project button to be inside a form.");
+    const form = screen
+      .getByRole("button", { name: "Create Project" })
+      .closest("form");
+    if (!form)
+      throw new Error(
+        "Expected the Create Project button to be inside a form.",
+      );
     fireEvent.submit(form);
 
     expect(
-      await screen.findByText("Due date cannot be earlier than the start date."),
+      await screen.findByText(
+        "Due date cannot be earlier than the start date.",
+      ),
     ).toBeVisible();
   });
 

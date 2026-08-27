@@ -74,7 +74,9 @@ export const updateTask = async (
   taskId: number,
   payload: UpdateTaskPayload,
 ): Promise<ApiSuccessResponse<TaskMutationResult>> => {
-  const response = await apiClient.patch<ApiSuccessResponse<TaskMutationResult>>(
+  const response = await apiClient.patch<
+    ApiSuccessResponse<TaskMutationResult>
+  >(
     `/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`,
     payload,
   );

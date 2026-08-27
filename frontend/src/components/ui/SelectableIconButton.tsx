@@ -2,8 +2,10 @@ import { FaCheck } from "react-icons/fa";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 // Native button attributes remain available alongside the selection-specific props.
-interface SelectableIconButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface SelectableIconButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
   icon: ReactNode;
   label: string;
   selected?: boolean;

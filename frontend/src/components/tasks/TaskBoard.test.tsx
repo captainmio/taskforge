@@ -27,12 +27,16 @@ const tasks: Task[] = [
 describe("TaskBoard", () => {
   it("places tasks in their status columns and selects the clicked task", () => {
     const onTaskClick = vi.fn();
-    render(<TaskBoard tasks={tasks} onTaskClick={onTaskClick} onAddTask={vi.fn()} />);
+    render(
+      <TaskBoard tasks={tasks} onTaskClick={onTaskClick} onAddTask={vi.fn()} />,
+    );
 
     expect(screen.getByText("Plan release")).toBeVisible();
     expect(screen.getByText("Ship release")).toBeVisible();
     expect(screen.getByText("To Do").parentElement).toHaveTextContent("1");
-    expect(screen.getByText("In Progress").parentElement).toHaveTextContent("0");
+    expect(screen.getByText("In Progress").parentElement).toHaveTextContent(
+      "0",
+    );
     expect(screen.getByText("In Review").parentElement).toHaveTextContent("0");
     expect(screen.getByText("Done").parentElement).toHaveTextContent("1");
 
@@ -42,11 +46,17 @@ describe("TaskBoard", () => {
 
   it("starts a new task with the status of its column", () => {
     const onAddTask = vi.fn();
-    render(<TaskBoard tasks={tasks} onTaskClick={vi.fn()} onAddTask={onAddTask} />);
+    render(
+      <TaskBoard tasks={tasks} onTaskClick={vi.fn()} onAddTask={onAddTask} />,
+    );
 
     const inReviewColumn = screen.getByText("In Review").closest("section");
     expect(inReviewColumn).not.toBeNull();
-    fireEvent.click(within(inReviewColumn as HTMLElement).getByRole("button", { name: "Add task" }));
+    fireEvent.click(
+      within(inReviewColumn as HTMLElement).getByRole("button", {
+        name: "Add task",
+      }),
+    );
 
     expect(onAddTask).toHaveBeenCalledWith("in_review");
   });

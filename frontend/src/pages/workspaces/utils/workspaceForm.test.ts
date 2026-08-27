@@ -12,7 +12,7 @@ describe("workspace form utilities", () => {
       getCompleteWorkspaceInvites([
         { email: " DEV@Example.COM ", role: WorkspaceRole.ADMIN },
         { email: "", role: "" },
-      ])
+      ]),
     ).toEqual([{ email: "dev@example.com", role: WorkspaceRole.ADMIN }]);
   });
 
@@ -22,8 +22,10 @@ describe("workspace form utilities", () => {
         workspaceName: "  Product Team  ",
         description: "  Product delivery workspace.  ",
         icon: WorkspaceIcon.TEAM,
-        invites: [{ email: " MEMBER@Example.com ", role: WorkspaceRole.MEMBER }],
-      })
+        invites: [
+          { email: " MEMBER@Example.com ", role: WorkspaceRole.MEMBER },
+        ],
+      }),
     ).toEqual({
       workspaceName: "Product Team",
       description: "Product delivery workspace.",

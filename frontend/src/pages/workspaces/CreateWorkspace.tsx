@@ -37,17 +37,21 @@ const CreateWorkspace = () => {
     shouldUnregister: false,
   });
 
-  const currentStepIndex = workspaceSteps.findIndex((step) => step.id === currentStep);
+  const currentStepIndex = workspaceSteps.findIndex(
+    (step) => step.id === currentStep,
+  );
 
   // Dynamic invite paths ensure every visible email and role field is validated.
   const getCurrentStepFields = (): FieldPath<WorkspaceFormValues>[] => {
     if (currentStep === 1) return ["workspaceName", "description"];
 
     if (currentStep === 2) {
-      return formMethods.getValues("invites").flatMap((_, index) => [
-        `invites.${index}.email` as const,
-        `invites.${index}.role` as const,
-      ]);
+      return formMethods
+        .getValues("invites")
+        .flatMap((_, index) => [
+          `invites.${index}.email` as const,
+          `invites.${index}.role` as const,
+        ]);
     }
 
     return [];
@@ -87,7 +91,10 @@ const CreateWorkspace = () => {
         await createWorkspaceRequest(createWorkspacePayload(values));
         advanceToNextStep();
       } catch (error: unknown) {
-        const errorFields = applyApiValidationErrors(error, formMethods.setError);
+        const errorFields = applyApiValidationErrors(
+          error,
+          formMethods.setError,
+        );
 
         if (errorFields.some((field) => field.startsWith("invites."))) {
           goToStep(2);
@@ -102,7 +109,9 @@ const CreateWorkspace = () => {
     <FormProvider {...formMethods}>
       <main className="min-h-screen bg-slate-50 px-4 py-8 text-gray-900 sm:px-6 lg:py-10">
         <header className="mx-auto max-w-3xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Create Your Workspace</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Create Your Workspace
+          </h1>
           <p className="mt-2 text-sm text-gray-500 sm:text-base">
             Set up your workspace to get started with managing your projects.
           </p>

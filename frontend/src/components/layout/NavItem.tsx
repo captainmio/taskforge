@@ -11,14 +11,23 @@ interface NavItemProps {
 
 const itemContent = (icon: ReactNode, label: string) => (
   <>
-    <span className="flex size-5 items-center justify-center [&>svg]:size-4" aria-hidden="true">
+    <span
+      className="flex size-5 items-center justify-center [&>svg]:size-4"
+      aria-hidden="true"
+    >
       {icon}
     </span>
     {label}
   </>
 );
 
-const NavItem = ({ to, icon, label, end = false, disabled = false }: NavItemProps) => {
+const NavItem = ({
+  to,
+  icon,
+  label,
+  end = false,
+  disabled = false,
+}: NavItemProps) => {
   if (disabled || !to) {
     return (
       <span

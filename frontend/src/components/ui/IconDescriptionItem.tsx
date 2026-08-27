@@ -26,12 +26,16 @@ const IconDescriptionItem = ({
         {icon}
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
-        <h4 className="truncate text-sm font-semibold text-gray-900">{title}</h4>
+        <h4 className="truncate text-sm font-semibold text-gray-900">
+          {title}
+        </h4>
         {description ? (
           <p className="mt-1 text-xs leading-5 text-gray-500">{description}</p>
         ) : null}
       </div>
-      {trailing ? <span className="shrink-0 text-gray-400">{trailing}</span> : null}
+      {trailing ? (
+        <span className="shrink-0 text-gray-400">{trailing}</span>
+      ) : null}
     </div>
   );
 };

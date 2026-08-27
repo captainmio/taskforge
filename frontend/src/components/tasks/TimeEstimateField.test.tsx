@@ -27,6 +27,8 @@ describe("TimeEstimateField", () => {
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "tomorrow" } });
 
-    expect(screen.getByText("Use days and hours, for example: 1d 4h.")).toBeVisible();
+    expect(
+      screen.getByText("Use days and hours, for example: 1d 4h."),
+    ).toBeVisible();
   });
 });

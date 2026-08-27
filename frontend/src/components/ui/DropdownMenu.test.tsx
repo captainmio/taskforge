@@ -5,7 +5,11 @@ import DropdownMenu from "./DropdownMenu";
 const renderMenu = () =>
   render(
     <div>
-      <DropdownMenu trigger={(isOpen) => <span>{isOpen ? "Close options" : "Open options"}</span>}>
+      <DropdownMenu
+        trigger={(isOpen) => (
+          <span>{isOpen ? "Close options" : "Open options"}</span>
+        )}
+      >
         <button type="button" role="menuitem">
           Menu action
         </button>
@@ -23,10 +27,9 @@ describe("DropdownMenu", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
-    expect(screen.getByRole("button", { name: "Close options" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: "Close options" }),
+    ).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Close options" }));

@@ -40,10 +40,11 @@ vi.mock("../../components/tasks/TaskBoard", () => ({
 }));
 
 vi.mock("../../services/projects", () => ({
-  getProjectById: () => Promise.resolve({
-    success: true,
-    data: { project: { name: "Task project" } },
-  }),
+  getProjectById: () =>
+    Promise.resolve({
+      success: true,
+      data: { project: { name: "Task project" } },
+    }),
 }));
 
 vi.mock("../../services/tasks", () => ({
@@ -56,15 +57,24 @@ vi.mock("../../services/auth", () => ({ logout: vi.fn() }));
 
 vi.mock("../../hooks/useAuthenticatedSession", () => ({
   useAuthenticatedSession: () => ({
-    user: { firstname: "Rustem", lastname: "Jordan", email: "rustem@example.com" },
+    user: {
+      firstname: "Rustem",
+      lastname: "Jordan",
+      email: "rustem@example.com",
+    },
   }),
 }));
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/workspace/workspace-42/projects/25/tasks"]}>
+    <MemoryRouter
+      initialEntries={["/workspace/workspace-42/projects/25/tasks"]}
+    >
       <Routes>
-        <Route path="/workspace/:id/projects/:projectId/tasks" element={<TaskPage />} />
+        <Route
+          path="/workspace/:id/projects/:projectId/tasks"
+          element={<TaskPage />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -74,18 +84,20 @@ describe("Task page drag and drop", () => {
     mocks.getProjectTasks.mockResolvedValue({
       success: true,
       data: {
-        tasks: [{
-          id: 1,
-          title: "Move task",
-          description: "",
-          status: "todo",
-          priority: "medium",
-          dueDate: null,
-          timeEstimate: null,
-          createdAt: "2026-08-27T00:00:00.000Z",
-          updatedAt: "2026-08-27T00:00:00.000Z",
-          assignees: [],
-        }],
+        tasks: [
+          {
+            id: 1,
+            title: "Move task",
+            description: "",
+            status: "todo",
+            priority: "medium",
+            dueDate: null,
+            timeEstimate: null,
+            createdAt: "2026-08-27T00:00:00.000Z",
+            updatedAt: "2026-08-27T00:00:00.000Z",
+            assignees: [],
+          },
+        ],
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });

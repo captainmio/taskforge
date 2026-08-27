@@ -5,8 +5,7 @@ export const WorkspaceRole = {
 } as const;
 
 // Derive the union "ADMIN" | "MEMBER" from the values above.
-export type WorkspaceRole =
-  (typeof WorkspaceRole)[keyof typeof WorkspaceRole];
+export type WorkspaceRole = (typeof WorkspaceRole)[keyof typeof WorkspaceRole];
 
 // Membership records can include the owner, while forms and role updates must
 // continue using WorkspaceRole so they can only submit ADMIN or MEMBER.

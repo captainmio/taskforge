@@ -1,8 +1,5 @@
 import { Controller, useFormContext } from "react-hook-form";
-import {
-  FaAlignLeft,
-  FaBuilding,
-} from "react-icons/fa";
+import { FaAlignLeft, FaBuilding } from "react-icons/fa";
 import type { WorkspaceFormValues } from "../../types/workspace";
 import SelectableIconButton from "../ui/SelectableIconButton";
 import Textarea from "../ui/Textarea";
@@ -15,7 +12,10 @@ interface WorkspaceDetailsStepProps {
   onCancel: () => void;
 }
 
-const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProps) => {
+const WorkspaceDetailsStep = ({
+  onContinue,
+  onCancel,
+}: WorkspaceDetailsStepProps) => {
   const {
     register,
     control,
@@ -25,7 +25,9 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
   return (
     <>
       <h2 className="text-2xl font-bold">Workspace details</h2>
-      <p className="mt-1 text-sm text-gray-500">Add some basic information about your workspace.</p>
+      <p className="mt-1 text-sm text-gray-500">
+        Add some basic information about your workspace.
+      </p>
 
       <form
         className="mt-7 space-y-6"
@@ -35,7 +37,10 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
         }}
       >
         <div>
-          <label htmlFor="workspace-name" className="mb-2 block text-sm font-semibold">
+          <label
+            htmlFor="workspace-name"
+            className="mb-2 block text-sm font-semibold"
+          >
             Workspace Name <span className="text-red-500">*</span>
           </label>
           <Textbox
@@ -43,10 +48,15 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
             icon={<FaBuilding />}
             placeholder="e.g. Acme Development Team"
             aria-invalid={Boolean(errors.workspaceName)}
-            aria-describedby={errors.workspaceName ? "workspace-name-error" : "workspace-name-help"}
+            aria-describedby={
+              errors.workspaceName
+                ? "workspace-name-error"
+                : "workspace-name-help"
+            }
             {...register("workspaceName", {
               required: "Workspace name is required.",
-              validate: (value) => value.trim().length > 0 || "Workspace name is required.",
+              validate: (value) =>
+                value.trim().length > 0 || "Workspace name is required.",
               maxLength: {
                 value: 100,
                 message: "Workspace name must be 100 characters or fewer.",
@@ -54,17 +64,27 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
             })}
           />
           {errors.workspaceName ? (
-            <p id="workspace-name-error" className="mt-2 text-xs text-red-500" role="alert">
+            <p
+              id="workspace-name-error"
+              className="mt-2 text-xs text-red-500"
+              role="alert"
+            >
               {errors.workspaceName.message}
             </p>
           ) : (
-            <p id="workspace-name-help" className="mt-2 text-xs text-gray-500">This will be the name of your workspace.</p>
+            <p id="workspace-name-help" className="mt-2 text-xs text-gray-500">
+              This will be the name of your workspace.
+            </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="workspace-description" className="mb-2 block text-sm font-semibold">
-            Description <span className="font-normal text-gray-500">(optional)</span>
+          <label
+            htmlFor="workspace-description"
+            className="mb-2 block text-sm font-semibold"
+          >
+            Description{" "}
+            <span className="font-normal text-gray-500">(optional)</span>
           </label>
           <Textarea
             id="workspace-description"
@@ -73,7 +93,11 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
             height={112}
             resizable={false}
             aria-invalid={Boolean(errors.description)}
-            aria-describedby={errors.description ? "workspace-description-error" : "workspace-description-help"}
+            aria-describedby={
+              errors.description
+                ? "workspace-description-error"
+                : "workspace-description-help"
+            }
             {...register("description", {
               maxLength: {
                 value: 500,
@@ -82,18 +106,28 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
             })}
           />
           {errors.description ? (
-            <p id="workspace-description-error" className="mt-2 text-xs text-red-500" role="alert">
+            <p
+              id="workspace-description-error"
+              className="mt-2 text-xs text-red-500"
+              role="alert"
+            >
               {errors.description.message}
             </p>
           ) : (
-            <p id="workspace-description-help" className="mt-2 text-xs text-gray-500">
-              A short description to help your team understand the purpose of this workspace.
+            <p
+              id="workspace-description-help"
+              className="mt-2 text-xs text-gray-500"
+            >
+              A short description to help your team understand the purpose of
+              this workspace.
             </p>
           )}
         </div>
 
         <fieldset>
-          <legend className="mb-3 text-sm font-semibold">Workspace Icon (optional)</legend>
+          <legend className="mb-3 text-sm font-semibold">
+            Workspace Icon (optional)
+          </legend>
           <Controller
             name="icon"
             control={control}
@@ -112,7 +146,9 @@ const WorkspaceDetailsStep = ({ onContinue, onCancel }: WorkspaceDetailsStepProp
               </div>
             )}
           />
-          <p className="mt-3 text-xs text-gray-500">You can change this anytime in settings.</p>
+          <p className="mt-3 text-xs text-gray-500">
+            You can change this anytime in settings.
+          </p>
         </fieldset>
 
         <StepNavigation isFirstStep isLastStep={false} submitNext />

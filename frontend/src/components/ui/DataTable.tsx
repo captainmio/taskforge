@@ -142,7 +142,9 @@ const DataTable = <T,>({
                         {column.header}
                       </span>
                     ) : null}
-                    <div className={`min-w-0 ${column.mobileFullWidth ? "w-full" : "md:w-full"}`}>
+                    <div
+                      className={`min-w-0 ${column.mobileFullWidth ? "w-full" : "md:w-full"}`}
+                    >
                       {column.cell(row)}
                     </div>
                   </td>

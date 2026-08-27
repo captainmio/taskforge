@@ -1,8 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { FaChevronRight } from "react-icons/fa";
 
-interface ActionCardProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface ActionCardProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
   icon: ReactNode;
   title: string;
   description: string;
@@ -32,10 +34,17 @@ const ActionCard = ({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-gray-900">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span>
+        <span className="block text-sm font-semibold text-gray-900">
+          {title}
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-gray-500">
+          {description}
+        </span>
       </span>
-      <FaChevronRight className="size-3 shrink-0 text-gray-400" aria-hidden="true" />
+      <FaChevronRight
+        className="size-3 shrink-0 text-gray-400"
+        aria-hidden="true"
+      />
     </button>
   );
 };

@@ -20,7 +20,9 @@ const switcherContent = (name: string, initials: string, isOpen = false) => (
     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-site-green text-xs font-bold text-white">
       {initials}
     </span>
-    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">{name}</span>
+    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
+      {name}
+    </span>
     <FaChevronDown
       className={`size-2.5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
       aria-hidden="true"
@@ -53,34 +55,40 @@ const ContextSwitcher = ({
     >
       {(close) => (
         <div className="space-y-1">
-          {workspaces.length > 0 ? workspaces.map((workspace) => {
-            const isCurrent = workspace.id === currentWorkspaceId;
+          {workspaces.length > 0 ? (
+            workspaces.map((workspace) => {
+              const isCurrent = workspace.id === currentWorkspaceId;
 
-            return (
-              <button
-                key={workspace.id}
-                type="button"
-                role="menuitem"
-                aria-current={isCurrent ? "page" : undefined}
-                onClick={() => {
-                  onWorkspaceChange(workspace.id);
-                  close();
-                }}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${isCurrent ? "bg-green-50 font-semibold text-green-800" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-site-green text-[10px] font-bold text-white">
-                  {getInitials(workspace.name)}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
-                {isCurrent ? (
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-site-green">
-                    Current
+              return (
+                <button
+                  key={workspace.id}
+                  type="button"
+                  role="menuitem"
+                  aria-current={isCurrent ? "page" : undefined}
+                  onClick={() => {
+                    onWorkspaceChange(workspace.id);
+                    close();
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${isCurrent ? "bg-green-50 font-semibold text-green-800" : "text-gray-700 hover:bg-gray-50"}`}
+                >
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-site-green text-[10px] font-bold text-white">
+                    {getInitials(workspace.name)}
                   </span>
-                ) : null}
-              </button>
-            );
-          }) : (
-            <p className="px-3 py-2 text-sm text-gray-500">No joined workspaces</p>
+                  <span className="min-w-0 flex-1 truncate">
+                    {workspace.name}
+                  </span>
+                  {isCurrent ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-site-green">
+                      Current
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <p className="px-3 py-2 text-sm text-gray-500">
+              No joined workspaces
+            </p>
           )}
         </div>
       )}

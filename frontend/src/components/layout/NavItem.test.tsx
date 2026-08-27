@@ -7,7 +7,12 @@ describe("NavItem", () => {
   it("marks the link active when its destination matches the current route", () => {
     render(
       <MemoryRouter initialEntries={["/workspace/7"]}>
-        <NavItem to="/workspace/7" icon={<span>Icon</span>} label="Overview" end />
+        <NavItem
+          to="/workspace/7"
+          icon={<span>Icon</span>}
+          label="Overview"
+          end
+        />
       </MemoryRouter>,
     );
 
@@ -19,11 +24,20 @@ describe("NavItem", () => {
   it("renders a non-navigable item when disabled", () => {
     render(
       <MemoryRouter>
-        <NavItem to="/members" icon={<span>Icon</span>} label="Members" disabled />
+        <NavItem
+          to="/members"
+          icon={<span>Icon</span>}
+          label="Members"
+          disabled
+        />
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("link", { name: /Members/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Members").closest("[aria-disabled='true']")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Members/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Members").closest("[aria-disabled='true']"),
+    ).toBeInTheDocument();
   });
 });

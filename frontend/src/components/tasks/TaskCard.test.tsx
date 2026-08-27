@@ -52,15 +52,13 @@ describe("TaskCard", () => {
   it("shows the full description from the info control when the preview is long", () => {
     const description = "A".repeat(141);
     render(
-      <TaskCard
-        task={{ ...task, description }}
-        index={0}
-        onClick={vi.fn()}
-      />,
+      <TaskCard task={{ ...task, description }} index={0} onClick={vi.fn()} />,
     );
 
     expect(screen.getByText(`${"A".repeat(140)}…`)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Show full task description" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show full task description" }),
+    );
 
     expect(screen.getByRole("tooltip")).toHaveTextContent(description);
   });
@@ -74,13 +72,21 @@ describe("TaskCard", () => {
     ];
     const { rerender } = render(
       <TaskCard
-        task={{ ...task, assignee: assignees.map(({ name }) => name).join(", "), assignees }}
+        task={{
+          ...task,
+          assignee: assignees.map(({ name }) => name).join(", "),
+          assignees,
+        }}
         index={0}
         onClick={vi.fn()}
       />,
     );
 
-    expect(screen.getByLabelText(`Assignees: ${task.assignee.replace("Rustam Jordan", assignees.map(({ name }) => name).join(", "))}`)).toBeVisible();
+    expect(
+      screen.getByLabelText(
+        `Assignees: ${task.assignee.replace("Rustam Jordan", assignees.map(({ name }) => name).join(", "))}`,
+      ),
+    ).toBeVisible();
     expect(screen.getByLabelText("1 more members")).toBeVisible();
 
     rerender(

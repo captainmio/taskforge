@@ -8,8 +8,7 @@ export const WorkspaceIcon = {
   GOALS: "goals",
 } as const;
 
-export type WorkspaceIcon =
-  (typeof WorkspaceIcon)[keyof typeof WorkspaceIcon];
+export type WorkspaceIcon = (typeof WorkspaceIcon)[keyof typeof WorkspaceIcon];
 
 export interface WorkspaceInviteFormValues {
   email: string;

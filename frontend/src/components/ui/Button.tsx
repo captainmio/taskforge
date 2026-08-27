@@ -2,9 +2,12 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 const variants = {
   primary: "border-site-green bg-site-green text-white hover:bg-green-700",
-  outline: "border-green-200 bg-white text-green-700 hover:border-site-green hover:bg-green-50",
-  ghost: "border-transparent bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-  danger: "border-red-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50",
+  outline:
+    "border-green-200 bg-white text-green-700 hover:border-site-green hover:bg-green-50",
+  ghost:
+    "border-transparent bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+  danger:
+    "border-red-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50",
 } as const;
 
 const sizes = {

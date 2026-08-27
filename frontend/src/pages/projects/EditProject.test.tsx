@@ -31,7 +31,8 @@ vi.mock("react-toastify", () => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -60,7 +61,10 @@ const renderPage = () =>
   render(
     <MemoryRouter initialEntries={["/workspace/workspace-42/projects/25/edit"]}>
       <Routes>
-        <Route path="/workspace/:id/projects/:projectId/edit" element={<EditProject />} />
+        <Route
+          path="/workspace/:id/projects/:projectId/edit"
+          element={<EditProject />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -77,9 +81,15 @@ describe("Edit Project page", () => {
   it("loads and prefills the selected project for an owner", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Edit Project", level: 1 })).toBeVisible();
-    expect(screen.getByLabelText(/Project Name/)).toHaveValue("Website Redesign");
-    expect(screen.getByLabelText("Description")).toHaveValue("Refresh the marketing site.");
+    expect(
+      await screen.findByRole("heading", { name: "Edit Project", level: 1 }),
+    ).toBeVisible();
+    expect(screen.getByLabelText(/Project Name/)).toHaveValue(
+      "Website Redesign",
+    );
+    expect(screen.getByLabelText("Description")).toHaveValue(
+      "Refresh the marketing site.",
+    );
     expect(screen.getByLabelText("Status")).toHaveValue("on-hold");
     expect(screen.getByLabelText(/Start Date/)).toHaveValue("2026-09-01");
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
@@ -112,7 +122,9 @@ describe("Edit Project page", () => {
       });
     });
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Project updated");
-    expect(mocks.navigate).toHaveBeenCalledWith("/workspace/workspace-42/projects");
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      "/workspace/workspace-42/projects",
+    );
   });
 
   it("redirects members and missing projects to the project list", async () => {

@@ -13,7 +13,7 @@ describe("SelectableIconButton", () => {
         title="Team workspace"
         selected
         onClick={handleClick}
-      />
+      />,
     );
 
     const button = screen.getByRole("button", { name: "Team workspace" });
@@ -34,7 +34,7 @@ describe("SelectableIconButton", () => {
         label="Code workspace"
         disabled
         onClick={handleClick}
-      />
+      />,
     );
 
     const button = screen.getByRole("button", { name: "Code workspace" });

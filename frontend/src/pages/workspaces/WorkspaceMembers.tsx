@@ -93,7 +93,9 @@ const WorkspaceMembers = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<MemberRoleFilter>("ALL");
   const [sort, setSort] = useState<DataTableSort | null>(null);
-  const [memberToEdit, setMemberToEdit] = useState<WorkspaceMember | null>(null);
+  const [memberToEdit, setMemberToEdit] = useState<WorkspaceMember | null>(
+    null,
+  );
   const [selectedRole, setSelectedRole] = useState<WorkspaceRoleValue>(
     WorkspaceRole.MEMBER,
   );
@@ -296,7 +298,8 @@ const WorkspaceMembers = () => {
             <InitialsAvatar value={fullName} />
             <div className="min-w-0 text-right md:text-left">
               <p className="truncate text-sm font-semibold text-gray-950">
-                {fullName}{isCurrentUser ? " (You)" : ""}
+                {fullName}
+                {isCurrentUser ? " (You)" : ""}
               </p>
               <p className="mt-0.5 truncate text-xs text-gray-500">
                 {member.email}
@@ -361,7 +364,10 @@ const WorkspaceMembers = () => {
             </Button>
           </div>
         ) : (
-          <span className="block text-right text-gray-300" aria-label="No actions available">
+          <span
+            className="block text-right text-gray-300"
+            aria-label="No actions available"
+          >
             —
           </span>
         );
@@ -378,7 +384,7 @@ const WorkspaceMembers = () => {
       <AppHeader
         title="Member List"
         description="Find workspace members and review their access roles."
-        secondaryAction={(
+        secondaryAction={
           <Button
             variant="outline"
             leadingIcon={<FaArrowLeft />}
@@ -386,7 +392,7 @@ const WorkspaceMembers = () => {
           >
             Back to Overview
           </Button>
-        )}
+        }
       />
 
       <SectionCard
@@ -427,9 +433,16 @@ const WorkspaceMembers = () => {
         </div>
 
         {isLoading ? (
-          <div className="space-y-3 py-4" role="status" aria-label="Loading workspace members">
+          <div
+            className="space-y-3 py-4"
+            role="status"
+            aria-label="Loading workspace members"
+          >
             {[1, 2, 3, 4, 5].map((item) => (
-              <div key={item} className="grid items-center gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_9rem]">
+              <div
+                key={item}
+                className="grid items-center gap-3 rounded-lg border border-gray-100 p-4 md:grid-cols-[minmax(0,2fr)_8rem_9rem]"
+              >
                 <div className="flex items-center gap-3">
                   <Skeleton className="size-9 shrink-0 rounded-full" />
                   <div className="flex-1 space-y-2">
@@ -450,7 +463,7 @@ const WorkspaceMembers = () => {
             getRowKey={(member) => member.id}
             sort={sort}
             onSortChange={handleSortChange}
-            emptyState={(
+            emptyState={
               <div className="py-12 text-center">
                 <FaUsers
                   className="mx-auto size-7 text-gray-300"
@@ -467,7 +480,7 @@ const WorkspaceMembers = () => {
                     : "Try changing the search text or selected role."}
                 </p>
               </div>
-            )}
+            }
           />
         )}
 
@@ -486,7 +499,7 @@ const WorkspaceMembers = () => {
         isOpen={memberToEdit !== null}
         title="Update member role"
         onClose={closeRoleModal}
-        footer={(
+        footer={
           <>
             <Button
               variant="ghost"
@@ -506,11 +519,14 @@ const WorkspaceMembers = () => {
               {roleUpdateRequest.isLoading ? "Updating Role..." : "Update Role"}
             </Button>
           </>
-        )}
+        }
       >
         <p className="text-sm leading-6 text-gray-600">
-          Choose the role for <strong>{memberToEdit?.firstname} {memberToEdit?.lastname}</strong>.
-          The owner role cannot be assigned from this page.
+          Choose the role for{" "}
+          <strong>
+            {memberToEdit?.firstname} {memberToEdit?.lastname}
+          </strong>
+          . The owner role cannot be assigned from this page.
         </p>
         <label
           htmlFor="updated-member-role"
@@ -537,7 +553,7 @@ const WorkspaceMembers = () => {
         isOpen={memberToRemove !== null}
         title="Remove workspace member"
         onClose={closeRemoveModal}
-        footer={(
+        footer={
           <>
             <Button
               variant="ghost"
@@ -557,10 +573,14 @@ const WorkspaceMembers = () => {
                 : "Remove Member"}
             </Button>
           </>
-        )}
+        }
       >
         <p className="text-sm leading-6 text-gray-600">
-          Are you sure you want to remove <strong>{memberToRemove?.firstname} {memberToRemove?.lastname}</strong> from this workspace?
+          Are you sure you want to remove{" "}
+          <strong>
+            {memberToRemove?.firstname} {memberToRemove?.lastname}
+          </strong>{" "}
+          from this workspace?
         </p>
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
           They will lose access to workspace projects and tasks.
