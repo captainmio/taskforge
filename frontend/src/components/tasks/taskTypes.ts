@@ -25,9 +25,9 @@ export const priorityPresentation: Record<
 export interface Task {
   id: number;
   title: string;
-  project: string;
-  projectIcon: "desktop" | "mobile" | "code" | "marketing";
+  description?: string;
   assignee: string;
+  assignees?: Array<{ id: number | string; name: string }>;
   dueDate: string;
   priority: TaskPriority;
   status: TaskStatus;

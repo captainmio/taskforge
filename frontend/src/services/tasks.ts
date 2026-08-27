@@ -17,6 +17,45 @@ export interface TaskMutationResult {
   id: number;
 }
 
+export interface ProjectTask {
+  id: number;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+  timeEstimate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignees: Array<{
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+  }>;
+}
+
+export interface ProjectTaskListData {
+  tasks: ProjectTask[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const getProjectTasks = async (
+  workspaceId: string,
+  projectId: number,
+): Promise<ApiSuccessResponse<ProjectTaskListData>> => {
+  const response = await apiClient.get<ApiSuccessResponse<ProjectTaskListData>>(
+    `/workspaces/${workspaceId}/projects/${projectId}/tasks`,
+    { params: { page: 1, pageSize: 100 } },
+  );
+  return response.data;
+};
+
 export const createTask = async (
   workspaceId: string,
   projectId: number,

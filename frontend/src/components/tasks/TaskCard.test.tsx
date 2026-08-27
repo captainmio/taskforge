@@ -29,8 +29,7 @@ vi.mock("@hello-pangea/dnd", () => ({
 const task: Task = {
   id: 1,
   title: "Plan release",
-  project: "Website Redesign",
-  projectIcon: "desktop",
+  description: "Coordinate the release checklist.",
   assignee: "Rustam Jordan",
   dueDate: "Jun 30, 2024",
   priority: "high",

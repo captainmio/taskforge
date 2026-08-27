@@ -7,8 +7,7 @@ const tasks: Task[] = [
   {
     id: 1,
     title: "Plan release",
-    project: "Website Redesign",
-    projectIcon: "desktop",
+    description: "Coordinate the release checklist.",
     assignee: "Rustam Jordan",
     dueDate: "Jun 30, 2024",
     priority: "high",
@@ -17,8 +16,7 @@ const tasks: Task[] = [
   {
     id: 2,
     title: "Ship release",
-    project: "Website Redesign",
-    projectIcon: "desktop",
+    description: "Deploy the approved release.",
     assignee: "Alex Morgan",
     dueDate: "Jul 1, 2024",
     priority: "low",

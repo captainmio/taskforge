@@ -1,20 +1,14 @@
+import { useState } from "react";
 import {
   FaCalendarAlt,
   FaCheckCircle,
-  FaCode,
-  FaDesktop,
-  FaMobileAlt,
-  FaRocket,
+  FaInfoCircle,
 } from "react-icons/fa";
 import { Draggable } from "@hello-pangea/dnd";
+import AvatarGroup from "../ui/AvatarGroup";
 import { priorityPresentation, type Task } from "./taskTypes";
 
-const projectIcons = {
-  desktop: <FaDesktop />,
-  mobile: <FaMobileAlt />,
-  code: <FaCode />,
-  marketing: <FaRocket />,
-};
+const DESCRIPTION_PREVIEW_LENGTH: number = 140;
 
 interface TaskCardProps {
   task: Task;
@@ -22,19 +16,31 @@ interface TaskCardProps {
   onClick: (task: Task) => void;
 }
 
-const TaskCard = ({ task, index, onClick }: TaskCardProps) => (
-  <Draggable
+const TaskCard = ({ task, index, onClick }: TaskCardProps) => {
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState<boolean>(false);
+  const description: string = task.description?.trim() ?? "";
+  const isLongDescription: boolean = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const descriptionPreview: string = isLongDescription
+    ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}…`
+    : description;
+
+  return (
+    <Draggable
     draggableId={`task-${task.id}`}
     index={index}
     disableInteractiveElementBlocking
   >
     {(provided) => (
-      <button
+      <div
         ref={provided.innerRef}
         {...provided.draggableProps}
         {...provided.dragHandleProps}
-        type="button"
+        role="button"
+        tabIndex={0}
         onClick={() => onClick(task)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") onClick(task);
+        }}
         className="w-full cursor-pointer active:cursor-grabbing rounded-xl border border-gray-200 bg-white p-3 text-left shadow-sm hover:border-emerald-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-green"
       >
         <div className="flex items-start gap-2">
@@ -48,19 +54,46 @@ const TaskCard = ({ task, index, onClick }: TaskCardProps) => (
             {task.title}
           </p>
         </div>
-        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-          <span className="text-emerald-600" aria-hidden="true">
-            {projectIcons[task.projectIcon]}
-          </span>
-          <span className="truncate">{task.project}</span>
-        </div>
+        {description ? (
+          <div className="relative mt-2 flex items-start gap-1.5 text-xs leading-5 text-gray-500">
+            <p className={isLongDescription ? "line-clamp-2 flex-1" : "flex-1"}>
+              {descriptionPreview}
+            </p>
+            {isLongDescription ? (
+              <button
+                type="button"
+                aria-label="Show full task description"
+                aria-expanded={isDescriptionOpen}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsDescriptionOpen((open) => !open);
+                }}
+                onMouseEnter={() => setIsDescriptionOpen(true)}
+                onMouseLeave={() => setIsDescriptionOpen(false)}
+                onFocus={() => setIsDescriptionOpen(true)}
+                onBlur={() => setIsDescriptionOpen(false)}
+                className="mt-0.5 shrink-0 cursor-pointer text-gray-400 hover:text-emerald-600 focus-visible:outline-2 focus-visible:outline-site-green"
+              >
+                <FaInfoCircle aria-hidden="true" />
+              </button>
+            ) : null}
+            {isDescriptionOpen ? (
+              <div
+                role="tooltip"
+                className="absolute right-0 top-6 z-20 w-64 rounded-lg bg-gray-950 p-3 text-xs leading-5 text-white shadow-lg sm:w-80"
+              >
+                {description}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-gray-500">
-          <span
-            className="flex size-6 items-center justify-center rounded-full bg-slate-800 text-[9px] font-bold text-white"
-            aria-label={task.assignee}
-          >
-            {task.assignee.slice(0, 2).toUpperCase()}
-          </span>
+          {task.assignees?.length ? (
+            <AvatarGroup
+              members={task.assignees}
+              label={`Assignees: ${task.assignee}`}
+            />
+          ) : null}
           <span className="flex items-center gap-1">
             <FaCalendarAlt aria-hidden="true" />
             {task.dueDate}
@@ -73,9 +106,10 @@ const TaskCard = ({ task, index, onClick }: TaskCardProps) => (
             {priorityPresentation[task.priority].label}
           </span>
         </div>
-      </button>
+      </div>
     )}
-  </Draggable>
-);
+    </Draggable>
+  );
+};
 
 export default TaskCard;

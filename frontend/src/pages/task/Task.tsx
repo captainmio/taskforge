@@ -8,129 +8,47 @@ import TaskBoard from "../../components/tasks/TaskBoard";
 import TaskDialog from "../../components/tasks/TaskDialog";
 import type { Task, TaskStatus } from "../../components/tasks/taskTypes";
 import { getProjectById } from "../../services/projects";
+import { getProjectTasks, type ProjectTask } from "../../services/tasks";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { logout } from "../../services/auth";
 
-const demoTasks: Task[] = [
-  {
-    id: 1,
-    title: "Implement login flow",
-    project: "Mobile App",
-    projectIcon: "mobile",
-    assignee: "Rustam Jordan",
-    dueDate: "Jun 15, 2024",
-    priority: "medium",
-    status: "todo",
-  },
-  {
-    id: 2,
-    title: "Create user registration",
-    project: "Mobile App",
-    projectIcon: "mobile",
-    assignee: "Rustam Jordan",
-    dueDate: "Jun 18, 2024",
-    priority: "low",
-    status: "todo",
-  },
-  {
-    id: 3,
-    title: "Set up analytics tracking",
-    project: "Marketing Campaign",
-    projectIcon: "marketing",
-    assignee: "Rustam Jordan",
-    dueDate: "May 20, 2024",
-    priority: "low",
-    status: "todo",
-  },
-  {
-    id: 4,
-    title: "Design new homepage",
-    project: "Website Redesign",
-    projectIcon: "desktop",
-    assignee: "Rustam Jordan",
-    dueDate: "Jun 30, 2024",
-    priority: "high",
-    status: "in_progress",
-  },
-  {
-    id: 5,
-    title: "Build dashboard UI",
-    project: "Website Redesign",
-    projectIcon: "desktop",
-    assignee: "Rustam Jordan",
-    dueDate: "Jun 28, 2024",
-    priority: "medium",
-    status: "in_progress",
-  },
-  {
-    id: 6,
-    title: "Fix responsive issues",
-    project: "Website Redesign",
-    projectIcon: "desktop",
-    assignee: "Rustam Jordan",
-    dueDate: "Jun 25, 2024",
-    priority: "low",
-    status: "in_progress",
-  },
-  {
-    id: 7,
-    title: "Create API documentation",
-    project: "Backend API",
-    projectIcon: "code",
-    assignee: "Rustam Jordan",
-    dueDate: "May 28, 2024",
-    priority: "medium",
-    status: "in_review",
-  },
-  {
-    id: 8,
-    title: "Review database schema",
-    project: "Backend API",
-    projectIcon: "code",
-    assignee: "Rustam Jordan",
-    dueDate: "May 27, 2024",
-    priority: "high",
-    status: "in_review",
-  },
-  {
-    id: 9,
-    title: "Project setup",
-    project: "Website Redesign",
-    projectIcon: "desktop",
-    assignee: "Rustam Jordan",
-    dueDate: "May 16, 2024",
-    priority: "low",
-    status: "done",
-  },
-  {
-    id: 10,
-    title: "Create wireframes",
-    project: "Website Redesign",
-    projectIcon: "desktop",
-    assignee: "Rustam Jordan",
-    dueDate: "May 18, 2024",
-    priority: "low",
-    status: "done",
-  },
-];
+const toBoardTask = (
+  task: ProjectTask,
+): Task => ({
+  id: task.id,
+  title: task.title,
+  description: task.description,
+  assignee: task.assignees
+    .map((assignee) => `${assignee.firstname} ${assignee.lastname}`.trim())
+    .join(", ") || "Unassigned",
+  assignees: task.assignees.map((assignee) => ({
+    id: assignee.id,
+    name: `${assignee.firstname} ${assignee.lastname}`.trim(),
+  })),
+  dueDate: task.dueDate ?? "No due date",
+  priority: task.priority,
+  status: task.status,
+});
 
 const TaskPage = (): ReactElement => {
   const { id, projectId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthenticatedSession();
-  const [taskItems, setTaskItems] = useState(demoTasks);
+  const [taskItems, setTaskItems] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(true);
+  const [taskLoadError, setTaskLoadError] = useState<boolean>(false);
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null | undefined>(
     undefined,
   );
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>("todo");
-  const [projectName, setProjectName] = useState("Tasks");
+  const [projectName, setProjectName] = useState<string>("Tasks");
   const tasks = useMemo(
     () =>
       taskItems.filter(
         (task) =>
           task.title.toLowerCase().includes(search.toLowerCase()) ||
-          task.project.toLowerCase().includes(search.toLowerCase()),
+          task.description?.toLowerCase().includes(search.toLowerCase()),
       ),
     [search, taskItems],
   );
@@ -141,12 +59,29 @@ const TaskPage = (): ReactElement => {
 
     if (!id || !projectId || !/^\d+$/.test(projectId)) return;
 
-    void getProjectById(id, Number(projectId))
-      .then((response) => {
-        if (isActive && response.success)
-          setProjectName(response.data.project.name);
+    // Load the current project board once. The backend bounds this request to
+    // 100 cards, preventing an unbounded board response for large projects.
+    void Promise.all([
+      getProjectById(id, Number(projectId)),
+      getProjectTasks(id, Number(projectId)),
+    ])
+      .then(([projectResponse, taskResponse]) => {
+        if (!isActive || !projectResponse.success || !taskResponse.success) return;
+
+        const { project } = projectResponse.data;
+        setProjectName(project.name);
+        setTaskItems(
+          taskResponse.data.tasks.map(toBoardTask),
+        );
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!isActive) return;
+        setTaskItems([]);
+        setTaskLoadError(true);
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingTasks(false);
+      });
 
     return () => {
       isActive = false;
@@ -277,7 +212,16 @@ const TaskPage = (): ReactElement => {
         </button>
       </div>
       <div className="mt-4 overflow-x-auto pb-2">
-
+        {isLoadingTasks ? (
+          <p className="mb-3 text-sm text-gray-500" role="status">
+            Loading tasks...
+          </p>
+        ) : null}
+        {taskLoadError ? (
+          <p className="mb-3 text-sm text-red-600" role="alert">
+            Unable to load tasks. Please try again.
+          </p>
+        ) : null}
         <TaskBoard
           tasks={tasks}
           onTaskClick={(task) => setSelectedTask(task)}
@@ -291,7 +235,6 @@ const TaskPage = (): ReactElement => {
           initialStatus={newTaskStatus}
           workspaceId={id ?? ""}
           projectId={Number(projectId)}
-          projectName={projectName}
           onClose={() => setSelectedTask(undefined)}
           onTaskCreated={(task) =>
             setTaskItems((currentTasks) => [task, ...currentTasks])

@@ -15,15 +15,14 @@ interface TaskDialogProps {
   initialStatus: TaskStatus;
   workspaceId: string;
   projectId: number;
-  projectName: string;
   onClose: () => void;
   onTaskCreated: (task: Task) => void;
   onTaskUpdated: (taskId: number, updates: Partial<Task>) => void;
 }
 
-const TaskDialog = ({ task, initialStatus, workspaceId, projectId, projectName, onClose, onTaskCreated, onTaskUpdated }: TaskDialogProps) => {
+const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTaskCreated, onTaskUpdated }: TaskDialogProps) => {
   const [title, setTitle] = useState<string>(task?.title ?? "");
-  const [description, setDescription] = useState<string>("");
+  const [description, setDescription] = useState<string>(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? initialStatus);
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "medium");
   const [members, setMembers] = useState<TaskAssignee[]>([]);
@@ -105,8 +104,9 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, projectName, 
       const payload = getTaskPayload();
       const response = await createTask(workspaceId, projectId, payload);
       const createdTask: Task = {
-        id: response.data.id, title: payload.title, project: projectName,
-        projectIcon: "desktop", assignee: assignees.map((assignee) => assignee.name).join(", "),
+        id: response.data.id, title: payload.title, description: payload.description,
+        assignee: assignees.map((assignee) => assignee.name).join(", "),
+        assignees: assignees.map((assignee) => ({ id: assignee.id, name: assignee.name })),
         dueDate, priority, status,
       };
       setCreatedTaskId(createdTask.id);
@@ -117,7 +117,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, projectName, 
     } finally {
       setIsCreating(false);
     }
-  }, [assignees, dueDate, getTaskPayload, priority, projectId, projectName, status, taskId, title, workspaceId, onTaskCreated]);
+  }, [assignees, dueDate, getTaskPayload, priority, projectId, status, taskId, title, workspaceId, onTaskCreated]);
 
   useEffect(() => {
     if (taskId || !title.trim()) return;
@@ -134,7 +134,13 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, projectName, 
     setAssignees(nextAssignees);
     void persistChanges(
       { assigneeIds: nextAssignees.map((assignee) => assignee.id) },
-      { assignee: nextAssignees.map((assignee) => assignee.name).join(", ") },
+      {
+        assignee: nextAssignees.map((assignee) => assignee.name).join(", "),
+        assignees: nextAssignees.map((assignee) => ({
+          id: assignee.id,
+          name: assignee.name,
+        })),
+      },
     );
   };
 
@@ -162,7 +168,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, projectName, 
           <fieldset disabled={isCreating} className="space-y-4 border-0 p-6">
             <TaskAssigneeMultiSelect members={members} value={assignees} onChange={persistAssignees} disabled={isLoadingMembers} />
             <label className="block text-xs font-semibold text-gray-700">Description
-              <textarea rows={6} value={description} onChange={(event) => setDescription(event.target.value)} onBlur={() => void persistChanges({ description })} className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900" />
+              <textarea rows={6} value={description} onChange={(event) => setDescription(event.target.value)} onBlur={() => void persistChanges({ description }, { description })} className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900" />
             </label>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="text-xs font-semibold text-gray-700">Status

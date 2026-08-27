@@ -1,7 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import TaskPage from "./Task";
+
+const mocks = vi.hoisted(() => ({ getProjectTasks: vi.fn() }));
 
 vi.mock("../../components/tasks/TaskBoard", () => ({
   default: ({
@@ -38,7 +40,16 @@ vi.mock("../../components/tasks/TaskBoard", () => ({
 }));
 
 vi.mock("../../services/projects", () => ({
-  getProjectById: () => Promise.resolve({ success: false }),
+  getProjectById: () => Promise.resolve({
+    success: true,
+    data: { project: { name: "Task project" } },
+  }),
+}));
+
+vi.mock("../../services/tasks", () => ({
+  createTask: vi.fn(),
+  getProjectTasks: mocks.getProjectTasks,
+  updateTask: vi.fn(),
 }));
 
 vi.mock("../../services/auth", () => ({ logout: vi.fn() }));
@@ -59,10 +70,31 @@ const renderPage = () =>
   );
 
 describe("Task page drag and drop", () => {
-  it("updates a task's status after it is dropped in another column", () => {
+  beforeEach(() => {
+    mocks.getProjectTasks.mockResolvedValue({
+      success: true,
+      data: {
+        tasks: [{
+          id: 1,
+          title: "Move task",
+          description: "",
+          status: "todo",
+          priority: "medium",
+          dueDate: null,
+          timeEstimate: null,
+          createdAt: "2026-08-27T00:00:00.000Z",
+          updatedAt: "2026-08-27T00:00:00.000Z",
+          assignees: [],
+        }],
+        pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+      },
+    });
+  });
+
+  it("updates a task's status after it is dropped in another column", async () => {
     renderPage();
 
-    expect(screen.getByTestId("task-1")).toHaveTextContent("todo");
+    expect(await screen.findByTestId("task-1")).toHaveTextContent("todo");
     fireEvent.click(screen.getByRole("button", { name: "Move first task" }));
 
     expect(screen.getByTestId("task-1")).toHaveTextContent("done");

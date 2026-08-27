@@ -21,3 +21,41 @@ export const createTaskRecord = async ({ assigneeIds, ...data }: CreateTaskData)
     },
     select: { id: true },
   });
+
+export const findTasksByProject = async (
+  projectId: number,
+  skip: number,
+  take: number,
+) => {
+  const where = { projectId };
+  const [tasks, total] = await prisma.$transaction([
+    prisma.task.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip,
+      take,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        timeEstimate: true,
+        createdAt: true,
+        updatedAt: true,
+        assignees: {
+          orderBy: { userId: "asc" },
+          select: {
+            user: {
+              select: { id: true, firstname: true, lastname: true, email: true },
+            },
+          },
+        },
+      },
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  return { tasks, total };
+};

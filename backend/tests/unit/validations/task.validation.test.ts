@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createTaskSchema } from "../../../src/validations/task.validation.js";
+import {
+  createTaskSchema,
+  projectTasksSchema,
+} from "../../../src/validations/task.validation.js";
 
 const validTask = {
   title: "Implement login flow",
@@ -32,6 +35,26 @@ describe("createTaskSchema", () => {
       createTaskSchema.safeParse({
         params: { workspaceId: "42", projectId: "25" },
         body: { ...validTask, ...body },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("projectTasksSchema", () => {
+  it("accepts valid pagination query values", () => {
+    const result = projectTasksSchema.safeParse({
+      params: { workspaceId: "42", projectId: "25" },
+      query: { page: "2", pageSize: "100" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a page size above the shared maximum", () => {
+    expect(
+      projectTasksSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25" },
+        query: { pageSize: "101" },
       }).success,
     ).toBe(false);
   });

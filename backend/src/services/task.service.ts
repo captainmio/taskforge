@@ -2,7 +2,10 @@ import { ProjectNotFoundError } from "../errors/project.errors.js";
 import { TaskAssigneeNotInWorkspaceError } from "../errors/task.errors.js";
 import { TaskPriority, TaskStatus } from "../generated/prisma/enums.js";
 import { findProjectByWorkspace } from "../repositories/project.repository.js";
-import { createTaskRecord } from "../repositories/task.repository.js";
+import {
+  createTaskRecord,
+  findTasksByProject,
+} from "../repositories/task.repository.js";
 import { countWorkspaceMembersByUserIds } from "../repositories/workspace.repository.js";
 import type { CreateTaskBody } from "../validations/task.validation.js";
 
@@ -48,4 +51,35 @@ export const createTask = async (
     timeEstimate: input.timeEstimate,
     assigneeIds,
   });
+};
+
+export const getProjectTasks = async (
+  workspaceId: number,
+  projectId: number,
+  page: number,
+  pageSize: number,
+) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+
+  const { tasks, total } = await findTasksByProject(
+    projectId,
+    (page - 1) * pageSize,
+    pageSize,
+  );
+
+  return {
+    tasks: tasks.map(({ assignees, createdAt, updatedAt, ...task }) => ({
+      ...task,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+      assignees: assignees.map(({ user }) => user),
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    },
+  };
 };
