@@ -289,7 +289,20 @@ const TaskPage = (): ReactElement => {
         <TaskDialog
           task={selectedTask ?? null}
           initialStatus={newTaskStatus}
+          workspaceId={id ?? ""}
+          projectId={Number(projectId)}
+          projectName={projectName}
           onClose={() => setSelectedTask(undefined)}
+          onTaskCreated={(task) =>
+            setTaskItems((currentTasks) => [task, ...currentTasks])
+          }
+          onTaskUpdated={(taskId, updates) =>
+            setTaskItems((currentTasks) =>
+              currentTasks.map((task) =>
+                task.id === taskId ? { ...task, ...updates } : task,
+              ),
+            )
+          }
         />
       ) : null}
     </div>

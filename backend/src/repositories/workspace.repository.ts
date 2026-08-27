@@ -312,6 +312,14 @@ export const findWorkspaceMembership = async (
     select: { role: true },
   });
 
+export const countWorkspaceMembersByUserIds = async (
+  workspaceId: number,
+  userIds: number[],
+) =>
+  prisma.workspaceMember.count({
+    where: { workspaceId, userId: { in: userIds } },
+  });
+
 export const findWorkspaceOverview = async (workspaceId: number) =>
   prisma.workspace.findUniqueOrThrow({
     where: { id: workspaceId },

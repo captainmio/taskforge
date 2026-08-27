@@ -191,7 +191,7 @@ describe("workspaceMembersSchema", () => {
   it("accepts positive pagination values up to the global maximum page size", () => {
     const result = workspaceMembersSchema.safeParse({
       params: { workspaceId: "42" },
-      query: { page: "2", pageSize: "20" },
+      query: { page: "2", pageSize: "100" },
     });
 
     expect(result.success).toBe(true);
@@ -204,7 +204,7 @@ describe("workspaceMembersSchema", () => {
     ["a non-numeric page", { page: "next" }],
     ["an unsafe page", { page: "9007199254740992" }],
     ["page size zero", { pageSize: "0" }],
-    ["a page size above 20", { pageSize: "21" }],
+    ["a page size above 100", { pageSize: "101" }],
   ])("rejects %s", (_, query) => {
     const result = workspaceMembersSchema.safeParse({
       params: { workspaceId: "42" },

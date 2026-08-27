@@ -18,6 +18,8 @@ model User {
   sentInvitations      WorkspaceInvitation[] @relation("InvitationSender")
   createdInviteLinks   WorkspaceInviteLink[]  @relation("InviteLinkCreator")
   createdProjects      Project[]              @relation("ProjectCreator")
+  createdTasks         Task[]                 @relation("TaskCreator")
+  taskAssignments      TaskAssignee[]
 }
 
 model Workspace {
@@ -54,10 +56,41 @@ model Project {
   deletedAt   DateTime?          @map("deleted_at")
   workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy   User               @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  tasks       Task[]
 
   @@index([workspaceId])
   @@index([workspaceId, deletedAt])
   @@index([createdById])
+}
+
+model Task {
+  id           Int          @id @default(autoincrement())
+  projectId    Int          @map("project_id")
+  createdById  Int          @map("created_by_id")
+  title        String       @db.VarChar(200)
+  description  String       @default("") @db.Text
+  status       TaskStatus   @default(todo)
+  priority     TaskPriority @default(medium)
+  dueDate      String?      @map("due_date") @db.VarChar(50)
+  timeEstimate String?      @map("time_estimate") @db.VarChar(50)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  assignees    TaskAssignee[]
+
+  @@index([projectId])
+  @@index([createdById])
+}
+
+model TaskAssignee {
+  taskId Int  @map("task_id")
+  userId Int  @map("user_id")
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@index([userId])
 }
 
 model WorkspaceInviteLink {
@@ -152,6 +185,19 @@ enum ProjectDefaultView {
   list
   board
   calendar
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  in_review
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
 }
 
 enum InvitationStatus {

@@ -4,6 +4,7 @@ import { FaClock, FaInfoCircle } from "react-icons/fa";
 interface TimeEstimateFieldProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
 }
 
 const parseTimeEstimate = (
@@ -34,7 +35,11 @@ const formatEstimate = ({
     .filter(Boolean)
     .join(" ");
 
-const TimeEstimateField = ({ value, onChange }: TimeEstimateFieldProps) => {
+const TimeEstimateField = ({
+  value,
+  onChange,
+  onBlur,
+}: TimeEstimateFieldProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const parsedEstimate = useMemo(() => parseTimeEstimate(value), [value]);
   const showFeedback = isFocused && value.trim().length > 0;
@@ -60,7 +65,10 @@ const TimeEstimateField = ({ value, onChange }: TimeEstimateFieldProps) => {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
           placeholder="e.g. 1d 4h"
           className="h-10 w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm text-gray-900 focus:border-site-green focus:outline-none focus:ring-1 focus:ring-site-green"
         />

@@ -17,10 +17,13 @@ import {
   projectListSchema,
   updateProjectSchema,
 } from "../validations/project.validation.js";
+import task from "./task.routes.js";
 
 // The parent router supplies :workspaceId. Merge it so validation,
 // membership lookup, and the controller all receive the same route parameter.
 const router = Router({ mergeParams: true });
+
+router.use("/:projectId/tasks", task);
 
 router.get(
   "/",

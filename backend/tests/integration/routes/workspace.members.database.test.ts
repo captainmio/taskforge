@@ -171,7 +171,7 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
     const { workspace, authCookie } = await createWorkspaceWithMembers(1);
 
     const response = await request(app)
-      .get(`/api/workspaces/${workspace.id}/members?pageSize=21`)
+      .get(`/api/workspaces/${workspace.id}/members?pageSize=101`)
       .set("Cookie", authCookie);
 
     expect(response.status).toBe(400);
