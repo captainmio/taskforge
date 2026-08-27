@@ -96,7 +96,7 @@ const TaskCard = ({ task, index, onClick }: TaskCardProps) => {
           ) : null}
           <span className="flex items-center gap-1">
             <FaCalendarAlt aria-hidden="true" />
-            {task.dueDate}
+            {task.dueDate || "No due date"}
           </span>
           <span className="flex items-center gap-1">
             <span

@@ -28,7 +28,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
   const [members, setMembers] = useState<TaskAssignee[]>([]);
   const [assignees, setAssignees] = useState<TaskAssignee[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState<boolean>(true);
-  const [timeEstimate, setTimeEstimate] = useState<string>("");
+  const [timeEstimate, setTimeEstimate] = useState<string>(task?.timeEstimate ?? "");
   const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? "");
   const [createdTaskId, setCreatedTaskId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
@@ -56,9 +56,13 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
         }));
         setMembers(workspaceMembers);
         setAssignees((currentAssignees) =>
-          currentAssignees.length > 0 || !task?.assignee
+          currentAssignees.length > 0
             ? currentAssignees
-            : workspaceMembers.filter((member) => member.name === task.assignee),
+            : workspaceMembers.filter((member) =>
+                task?.assignees?.some(
+                  (assignee) => String(assignee.id) === member.id,
+                ) ?? false,
+              ),
         );
       } catch {
         if (isActive) setMembers([]);
@@ -72,7 +76,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
     return () => {
       isActive = false;
     };
-  }, [task?.assignee, workspaceId]);
+  }, [task?.assignees, workspaceId]);
 
   const getTaskPayload = useCallback(
     (): CreateTaskPayload => ({
@@ -107,7 +111,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
         id: response.data.id, title: payload.title, description: payload.description,
         assignee: assignees.map((assignee) => assignee.name).join(", "),
         assignees: assignees.map((assignee) => ({ id: assignee.id, name: assignee.name })),
-        dueDate, priority, status,
+        dueDate, timeEstimate, priority, status,
       };
       setCreatedTaskId(createdTask.id);
       onTaskCreated(createdTask);
@@ -117,7 +121,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
     } finally {
       setIsCreating(false);
     }
-  }, [assignees, dueDate, getTaskPayload, priority, projectId, status, taskId, title, workspaceId, onTaskCreated]);
+  }, [assignees, dueDate, getTaskPayload, priority, projectId, status, taskId, timeEstimate, title, workspaceId, onTaskCreated]);
 
   useEffect(() => {
     if (taskId || !title.trim()) return;
@@ -187,7 +191,7 @@ const TaskDialog = ({ task, initialStatus, workspaceId, projectId, onClose, onTa
                 </div>
               </label>
             </div>
-            <TimeEstimateField value={timeEstimate} onChange={setTimeEstimate} onBlur={() => void persistChanges({ timeEstimate: timeEstimate || null })} />
+            <TimeEstimateField value={timeEstimate} onChange={setTimeEstimate} onBlur={() => void persistChanges({ timeEstimate: timeEstimate || null }, { timeEstimate })} />
           </fieldset>
           <TaskHistory />
         </div>

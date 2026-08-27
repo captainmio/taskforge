@@ -25,7 +25,8 @@ const toBoardTask = (
     id: assignee.id,
     name: `${assignee.firstname} ${assignee.lastname}`.trim(),
   })),
-  dueDate: task.dueDate ?? "No due date",
+  dueDate: task.dueDate ?? "",
+  timeEstimate: task.timeEstimate ?? "",
   priority: task.priority,
   status: task.status,
 });

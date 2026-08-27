@@ -29,6 +29,7 @@ export interface Task {
   assignee: string;
   assignees?: Array<{ id: number | string; name: string }>;
   dueDate: string;
+  timeEstimate?: string;
   priority: TaskPriority;
   status: TaskStatus;
 }
