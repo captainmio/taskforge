@@ -82,7 +82,7 @@ describe("Task page", () => {
             timeEstimate: null,
             createdAt: "2026-08-27T00:00:00.000Z",
             updatedAt: "2026-08-27T00:00:00.000Z",
-            assignees: [],
+            assignees: [{ id: 4, firstname: "Alex", lastname: "Morgan" }],
           },
           {
             id: 10,
@@ -90,7 +90,7 @@ describe("Task page", () => {
             description: "Prepare the first design wireframes.",
             status: "done",
             priority: "low",
-            dueDate: null,
+            dueDate: "2026-09-02",
             timeEstimate: null,
             createdAt: "2026-08-27T00:00:00.000Z",
             updatedAt: "2026-08-27T00:00:00.000Z",
@@ -102,7 +102,7 @@ describe("Task page", () => {
             description: "Review the database schema before implementation.",
             status: "in_review",
             priority: "high",
-            dueDate: null,
+            dueDate: "2026-09-02",
             timeEstimate: null,
             createdAt: "2026-08-27T00:00:00.000Z",
             updatedAt: "2026-08-27T00:00:00.000Z",
@@ -123,6 +123,15 @@ describe("Task page", () => {
     expect(mocks.getProjectById).toHaveBeenCalledWith("workspace-42", 25);
   });
 
+  it("shows a board-shaped loading skeleton until the first task request finishes", () => {
+    mocks.getProjectTasks.mockReturnValue(new Promise(() => undefined));
+    renderPage();
+
+    expect(
+      screen.getByRole("status", { name: "Loading task board" }),
+    ).toBeVisible();
+  });
+
   it("filters board cards by task title", async () => {
     renderPage();
 
@@ -141,15 +150,62 @@ describe("Task page", () => {
     ).toBeVisible();
   });
 
-  it("opens and closes a new task dialog", () => {
+  it("filters board cards by assignee name", async () => {
     renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
 
-    fireEvent.click(screen.getByRole("button", { name: "New Task" }));
-    expect(screen.getByRole("dialog", { name: "Task details" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Create task" })).toBeNull();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search tasks" }), {
+      target: { value: "Alex Morgan" },
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.queryByRole("dialog", { name: "Task details" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Implement login flow/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Review database schema/ }),
+    ).toBeNull();
+  });
+
+  it("combines assignee and priority filters and clears them", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Alex Morgan" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "medium" }));
+
+    expect(screen.getByRole("button", { name: "Filter (2)" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Implement login flow/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Review database schema/ }),
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(screen.getByRole("button", { name: "Filter" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Review database schema/ }),
+    ).toBeVisible();
+  });
+
+  it("does not hide completed tasks when a due-date filter is selected", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("radio", { name: "No due date" }));
+
+    expect(
+      screen.getByRole("button", { name: /Implement login flow/ }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Create wireframes/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Review database schema/ }),
+    ).toBeNull();
   });
 
   it("opens an existing task with its details ready to edit", async () => {
@@ -179,18 +235,20 @@ describe("Task page", () => {
     mocks.getProjectTasks.mockResolvedValueOnce({
       success: true,
       data: {
-        tasks: [{
-          id: 1,
-          title: "Implement secure login flow",
-          description: "Connect the sign-in form to authentication.",
-          status: "done",
-          priority: "high",
-          dueDate: null,
-          timeEstimate: null,
-          createdAt: "2026-08-27T00:00:00.000Z",
-          updatedAt: "2026-08-29T00:00:00.000Z",
-          assignees: [],
-        }],
+        tasks: [
+          {
+            id: 1,
+            title: "Implement secure login flow",
+            description: "Connect the sign-in form to authentication.",
+            status: "done",
+            priority: "high",
+            dueDate: null,
+            timeEstimate: null,
+            createdAt: "2026-08-27T00:00:00.000Z",
+            updatedAt: "2026-08-29T00:00:00.000Z",
+            assignees: [],
+          },
+        ],
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });
@@ -199,7 +257,9 @@ describe("Task page", () => {
     realtimeOptions?.onTaskUpdated();
 
     expect(
-      await screen.findByRole("button", { name: /Implement secure login flow/ }),
+      await screen.findByRole("button", {
+        name: /Implement secure login flow/,
+      }),
     ).toBeVisible();
   });
 
@@ -209,18 +269,20 @@ describe("Task page", () => {
     mocks.getProjectTasks.mockResolvedValueOnce({
       success: true,
       data: {
-        tasks: [{
-          id: 11,
-          title: "New real-time task",
-          description: "Created in another browser.",
-          status: "todo",
-          priority: "medium",
-          dueDate: null,
-          timeEstimate: null,
-          createdAt: "2026-08-29T00:00:00.000Z",
-          updatedAt: "2026-08-29T00:00:00.000Z",
-          assignees: [],
-        }],
+        tasks: [
+          {
+            id: 11,
+            title: "New real-time task",
+            description: "Created in another browser.",
+            status: "todo",
+            priority: "medium",
+            dueDate: null,
+            timeEstimate: null,
+            createdAt: "2026-08-29T00:00:00.000Z",
+            updatedAt: "2026-08-29T00:00:00.000Z",
+            assignees: [],
+          },
+        ],
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });

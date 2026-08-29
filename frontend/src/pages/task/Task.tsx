@@ -2,17 +2,23 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
 } from "react";
 import type { DropResult } from "@hello-pangea/dnd";
-import { FaFilter, FaPlus, FaSearch } from "react-icons/fa";
+import { FaFilter, FaSearch } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
 import AccountMenu from "../../components/ui/AccountMenu";
 import Button from "../../components/ui/Button";
+import Skeleton from "../../components/ui/Skeleton";
 import TaskBoard from "../../components/tasks/TaskBoard";
 import TaskDialog from "../../components/tasks/TaskDialog";
-import type { Task, TaskStatus } from "../../components/tasks/taskTypes";
+import type {
+  Task,
+  TaskPriority,
+  TaskStatus,
+} from "../../components/tasks/taskTypes";
 import { getProjectById } from "../../services/projects";
 import {
   getProjectTasks,
@@ -42,6 +48,92 @@ const toBoardTask = (task: ProjectTask): Task => ({
   position: task.position,
 });
 
+type DueDateFilter = "all" | "overdue" | "today" | "this_week" | "none";
+
+const dueDateFilterLabels: Record<DueDateFilter, string> = {
+  all: "Any due date",
+  overdue: "Overdue",
+  today: "Due today",
+  this_week: "Due this week",
+  none: "No due date",
+};
+
+const matchesDueDateFilter = (task: Task, filter: DueDateFilter): boolean => {
+  if (filter === "all") return true;
+  if (filter === "none") return !task.dueDate;
+  if (!task.dueDate) return false;
+
+  // Dates from the API can include a time; the board filters by their date part.
+  const dueDate = new Date(`${task.dueDate.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(dueDate.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (filter === "overdue") return dueDate < today;
+  if (filter === "today") return dueDate.getTime() === today.getTime();
+
+  const endOfWeek = new Date(today);
+  endOfWeek.setDate(today.getDate() + (7 - (today.getDay() || 7)));
+  return dueDate >= today && dueDate <= endOfWeek;
+};
+
+// This matches the board's overall shape while its first request is loading,
+// so the page does not jump from a plain message into the finished layout.
+const TaskPageSkeleton = (): ReactElement => (
+  <div
+    className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    role="status"
+    aria-label="Loading task board"
+  >
+    <header className="flex flex-col gap-5 border-b border-gray-200 pb-5 xl:flex-row xl:items-end">
+      <div className="order-2 space-y-2 xl:order-1">
+        <Skeleton className="h-8 w-44" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="order-3 flex gap-3 xl:order-2 xl:ml-auto">
+        <Skeleton className="h-11 flex-1 xl:w-60 xl:flex-none" />
+        <Skeleton className="h-11 w-20" />
+      </div>
+      <div className="order-1 flex justify-end gap-3 xl:order-3">
+        <Skeleton className="h-11 w-28" />
+        <Skeleton className="h-11 w-11 rounded-full" />
+      </div>
+    </header>
+    <div className="mt-5 flex gap-6 border-b border-gray-200 pb-3">
+      <Skeleton className="h-5 w-12" />
+      <Skeleton className="h-5 w-9" />
+      <Skeleton className="h-5 w-3" />
+      <Skeleton className="h-5 w-20" />
+    </div>
+    <div className="mt-4 overflow-x-auto pb-2">
+      <div className="grid min-w-[1024px] grid-cols-4 gap-4" aria-hidden="true">
+        {[0, 1, 2, 3].map((column) => (
+          <section
+            key={column}
+            className="rounded-xl border border-gray-200 bg-gray-50 p-3"
+          >
+            <Skeleton className="mb-3 h-5 w-24" />
+            <div className="space-y-3">
+              {[0, 1, 2].map((card) => (
+                <div
+                  key={card}
+                  className="rounded-lg border border-gray-200 bg-white p-3"
+                >
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="mt-3 h-3 w-full" />
+                  <Skeleton className="mt-2 h-3 w-2/3" />
+                  <Skeleton className="mt-4 h-6 w-20" />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const TaskPage = (): ReactElement => {
   const { id, projectId } = useParams();
   const navigate = useNavigate();
@@ -50,21 +142,87 @@ const TaskPage = (): ReactElement => {
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(true);
   const [taskLoadError, setTaskLoadError] = useState<boolean>(false);
   const [search, setSearch] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedPriorities, setSelectedPriorities] = useState<TaskPriority[]>(
+    [],
+  );
+  const [dueDateFilter, setDueDateFilter] = useState<DueDateFilter>("all");
   const [selectedTask, setSelectedTask] = useState<Task | null | undefined>(
     undefined,
   );
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>("todo");
   const [projectName, setProjectName] = useState<string>("Tasks");
-  const tasks = useMemo(
+  const filterPanelRef = useRef<HTMLDivElement>(null);
+  const assigneeOptions = useMemo(
     () =>
-      taskItems.filter(
-        (task) =>
-          task.title.toLowerCase().includes(search.toLowerCase()) ||
-          task.description?.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [search, taskItems],
+      [
+        ...new Set(
+          taskItems.flatMap((task) =>
+            (task.assignees ?? []).map((assignee) => assignee.name),
+          ),
+        ),
+      ].toSorted((first, second) => first.localeCompare(second)),
+    [taskItems],
   );
+  const tasks = useMemo(() => {
+    const searchTerm = search.trim().toLowerCase();
+
+    return taskItems.filter((task) => {
+      const matchesSearch =
+        !searchTerm ||
+        task.title.toLowerCase().includes(searchTerm) ||
+        task.assignee.toLowerCase().includes(searchTerm);
+      const taskAssignees =
+        task.assignees?.map((assignee) => assignee.name) ?? [];
+      const matchesAssignee =
+        selectedAssignees.length === 0 ||
+        (selectedAssignees.includes("Unassigned") &&
+          taskAssignees.length === 0) ||
+        taskAssignees.some((assignee) => selectedAssignees.includes(assignee));
+      const matchesPriority =
+        selectedPriorities.length === 0 ||
+        selectedPriorities.includes(task.priority);
+      // Completed tasks stay visible when filtering by date. A due date is
+      // only useful for identifying work that still needs attention.
+      const matchesDueDate =
+        task.status === "done" || matchesDueDateFilter(task, dueDateFilter);
+
+      return (
+        matchesSearch && matchesAssignee && matchesPriority && matchesDueDate
+      );
+    });
+  }, [dueDateFilter, search, selectedAssignees, selectedPriorities, taskItems]);
+  const activeFilterCount =
+    selectedAssignees.length +
+    selectedPriorities.length +
+    Number(dueDateFilter !== "all");
   const isDialogOpen = selectedTask !== undefined;
+
+  useEffect(() => {
+    if (!isFilterOpen) return;
+
+    // Close the small menu when the user clicks elsewhere, like a native menu.
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!filterPanelRef.current?.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [isFilterOpen]);
+
+  const toggleSelection = <T,>(items: T[], item: T): T[] =>
+    items.includes(item)
+      ? items.filter((value) => value !== item)
+      : [...items, item];
+
+  const clearFilters = () => {
+    setSelectedAssignees([]);
+    setSelectedPriorities([]);
+    setDueDateFilter("all");
+  };
 
   const refreshTasks = useCallback(async () => {
     if (!id || !projectId || !/^\d+$/.test(projectId)) return;
@@ -223,6 +381,8 @@ const TaskPage = (): ReactElement => {
       .catch(() => undefined);
   };
 
+  if (isLoadingTasks) return <TaskPageSkeleton />;
+
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <header className="flex flex-col gap-5 border-b border-gray-200 pb-5 xl:flex-row xl:items-end">
@@ -241,22 +401,123 @@ const TaskPage = (): ReactElement => {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search tasks..."
+              placeholder="Search task title or assignees"
               className="h-11 w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm xl:w-60"
             />
           </label>
-          <Button
-            variant="outline"
-            leadingIcon={<FaFilter />}
-            className="w-full sm:w-auto sm:shrink-0"
+          <div
+            ref={filterPanelRef}
+            className="relative w-full sm:w-auto sm:shrink-0"
           >
-            Filter
-          </Button>
+            <Button
+              variant="outline"
+              leadingIcon={<FaFilter />}
+              className="w-full"
+              aria-expanded={isFilterOpen}
+              aria-controls="task-filter-menu"
+              onClick={() => setIsFilterOpen((isOpen) => !isOpen)}
+            >
+              Filter{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </Button>
+            {isFilterOpen ? (
+              <div
+                id="task-filter-menu"
+                role="dialog"
+                aria-label="Filter tasks"
+                className="absolute right-0 z-10 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-semibold text-gray-900">
+                    Filter tasks
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={activeFilterCount === 0}
+                    onClick={clearFilters}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+                <fieldset className="mt-4">
+                  <legend className="text-sm font-medium text-gray-800">
+                    Assignee
+                  </legend>
+                  <div className="mt-2 max-h-32 space-y-2 overflow-y-auto pr-1">
+                    {["Unassigned", ...assigneeOptions].map((assignee) => (
+                      <label
+                        key={assignee}
+                        className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedAssignees.includes(assignee)}
+                          onChange={() =>
+                            setSelectedAssignees((currentAssignees) =>
+                              toggleSelection(currentAssignees, assignee),
+                            )
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-site-green focus:ring-site-green"
+                        />
+                        {assignee}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="mt-4 border-t border-gray-100 pt-4">
+                  <legend className="text-sm font-medium text-gray-800">
+                    Priority
+                  </legend>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                    {(["low", "medium", "high"] as const).map((priority) => (
+                      <label
+                        key={priority}
+                        className="flex cursor-pointer items-center gap-2 text-sm capitalize text-gray-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPriorities.includes(priority)}
+                          onChange={() =>
+                            setSelectedPriorities((currentPriorities) =>
+                              toggleSelection(currentPriorities, priority),
+                            )
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-site-green focus:ring-site-green"
+                        />
+                        {priority}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="mt-4 border-t border-gray-100 pt-4">
+                  <legend className="text-sm font-medium text-gray-800">
+                    Due date
+                  </legend>
+                  <div className="mt-2 space-y-2">
+                    {(Object.keys(dueDateFilterLabels) as DueDateFilter[]).map(
+                      (filter) => (
+                        <label
+                          key={filter}
+                          className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
+                        >
+                          <input
+                            type="radio"
+                            name="task-due-date-filter"
+                            checked={dueDateFilter === filter}
+                            onChange={() => setDueDateFilter(filter)}
+                            className="h-4 w-4 border-gray-300 text-site-green focus:ring-site-green"
+                          />
+                          {dueDateFilterLabels[filter]}
+                        </label>
+                      ),
+                    )}
+                  </div>
+                </fieldset>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="order-1 flex items-center justify-end gap-3 xl:order-3">
-          <Button leadingIcon={<FaPlus />} onClick={() => openNewTask()}>
-            New Task
-          </Button>
           <AccountMenu
             name={`${user.firstname} ${user.lastname}`}
             email={user.email}
@@ -286,11 +547,6 @@ const TaskPage = (): ReactElement => {
         </button>
       </div>
       <div className="mt-4 overflow-x-auto pb-2">
-        {isLoadingTasks ? (
-          <p className="mb-3 text-sm text-gray-500" role="status">
-            Loading tasks...
-          </p>
-        ) : null}
         {taskLoadError ? (
           <p className="mb-3 text-sm text-red-600" role="alert">
             Unable to load tasks. Please try again.

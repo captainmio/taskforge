@@ -37,13 +37,6 @@ const TaskColumn = ({
               {tasks.length}
             </span>
           </div>
-          <button
-            type="button"
-            aria-label={`Actions for ${label}`}
-            className="cursor-pointer p-1 text-gray-500 hover:text-gray-800"
-          >
-            <FaEllipsisV aria-hidden="true" />
-          </button>
         </header>
         <div className="space-y-2">
           {tasks.map((task, index) => (
