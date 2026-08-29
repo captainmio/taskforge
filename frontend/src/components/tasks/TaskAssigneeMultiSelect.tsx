@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { FaCheck, FaChevronDown, FaSearch, FaTimes } from "react-icons/fa";
+import InitialsAvatar from "../ui/InitialsAvatar";
 
 export interface TaskAssignee {
   id: string;
@@ -68,12 +69,12 @@ const TaskAssigneeMultiSelect = ({
             key={member.id}
             className="inline-flex items-center gap-1 rounded-md bg-emerald-50 py-1 pl-1.5 pr-1 text-xs font-medium text-emerald-800"
           >
-            <span
-              className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white"
-              aria-hidden="true"
-            >
-              {member.name.slice(0, 2).toUpperCase()}
-            </span>
+            <InitialsAvatar
+              value={member.name}
+              label={member.name}
+              size="sm"
+              className="size-4 text-[8px]"
+            />
             {member.name}
             <button
               type="button"
@@ -146,12 +147,12 @@ const TaskAssigneeMultiSelect = ({
                       onClick={() => toggleMember(member)}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-emerald-50"
                     >
-                      <span
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[9px] font-bold text-white"
-                        aria-hidden="true"
-                      >
-                        {member.name.slice(0, 2).toUpperCase()}
-                      </span>
+                      <InitialsAvatar
+                        value={member.name}
+                        label={member.name}
+                        size="sm"
+                        className="size-6 text-[9px]"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium text-gray-800">
                           {member.name}

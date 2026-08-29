@@ -1,13 +1,21 @@
 import { ProjectNotFoundError } from "../errors/project.errors.js";
-import { TaskAssigneeNotInWorkspaceError } from "../errors/task.errors.js";
+import {
+  TaskAssigneeNotInWorkspaceError,
+  TaskNotFoundError,
+} from "../errors/task.errors.js";
+import { Prisma } from "../generated/prisma/client.js";
 import { TaskPriority, TaskStatus } from "../generated/prisma/enums.js";
 import { findProjectByWorkspace } from "../repositories/project.repository.js";
 import {
   createTaskRecord,
   findTasksByProject,
+  updateTaskRecord,
 } from "../repositories/task.repository.js";
 import { countWorkspaceMembersByUserIds } from "../repositories/workspace.repository.js";
-import type { CreateTaskBody } from "../validations/task.validation.js";
+import type {
+  CreateTaskBody,
+  UpdateTaskBody,
+} from "../validations/task.validation.js";
 
 const taskStatusByInput = {
   todo: TaskStatus.todo,
@@ -82,4 +90,55 @@ export const getProjectTasks = async (
       totalPages: Math.ceil(total / pageSize),
     },
   };
+};
+
+export const updateTask = async (
+  workspaceId: number,
+  projectId: number,
+  taskId: number,
+  input: UpdateTaskBody,
+) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+
+  const assigneeIds = input.assigneeIds
+    ? [...new Set(input.assigneeIds)]
+    : undefined;
+  if (assigneeIds) {
+    const assignedMemberCount = await countWorkspaceMembersByUserIds(
+      workspaceId,
+      assigneeIds,
+    );
+    if (assignedMemberCount !== assigneeIds.length) {
+      throw new TaskAssigneeNotInWorkspaceError();
+    }
+  }
+
+  try {
+    const task = await updateTaskRecord(projectId, taskId, {
+      ...input,
+      ...(input.status === undefined
+        ? {}
+        : { status: taskStatusByInput[input.status] }),
+      ...(input.priority === undefined
+        ? {}
+        : { priority: taskPriorityByInput[input.priority] }),
+      assigneeIds,
+    });
+
+    return {
+      ...task,
+      createdAt: task.createdAt.toISOString(),
+      updatedAt: task.updatedAt.toISOString(),
+      assignees: task.assignees.map(({ user }) => user),
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new TaskNotFoundError();
+    }
+    throw error;
+  }
 };

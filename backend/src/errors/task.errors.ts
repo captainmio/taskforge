@@ -4,3 +4,10 @@ export class TaskAssigneeNotInWorkspaceError extends Error {
     this.name = "TaskAssigneeNotInWorkspaceError";
   }
 }
+
+export class TaskNotFoundError extends Error {
+  constructor() {
+    super("Task not found");
+    this.name = "TaskNotFoundError";
+  }
+}

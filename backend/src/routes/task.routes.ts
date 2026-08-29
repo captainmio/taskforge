@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createTask,
   getProjectTasks,
+  updateTask,
 } from "../controllers/task.controller.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
@@ -10,6 +11,7 @@ import { validate } from "../middlewares/validate.js";
 import {
   createTaskSchema,
   projectTasksSchema,
+  updateTaskSchema,
 } from "../validations/task.validation.js";
 
 const router = Router({ mergeParams: true });
@@ -28,6 +30,14 @@ router.post(
   validate(createTaskSchema),
   requireWorkspaceMembership,
   authenticatedHandler(createTask),
+);
+
+router.patch(
+  "/:taskId",
+  requireAuth,
+  validate(updateTaskSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(updateTask),
 );
 
 export default router;

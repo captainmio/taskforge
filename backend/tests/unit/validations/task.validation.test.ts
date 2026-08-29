@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTaskSchema,
   projectTasksSchema,
+  updateTaskSchema,
 } from "../../../src/validations/task.validation.js";
 
 const validTask = {
@@ -55,6 +56,36 @@ describe("projectTasksSchema", () => {
       projectTasksSchema.safeParse({
         params: { workspaceId: "42", projectId: "25" },
         query: { pageSize: "101" },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("updateTaskSchema", () => {
+  it("accepts a partial update and converts supplied assignee IDs to numbers", () => {
+    const result = updateTaskSchema.safeParse({
+      params: { workspaceId: "42", projectId: "25", taskId: "101" },
+      body: { assigneeIds: ["7", "12"] },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.body.assigneeIds).toEqual([7, 12]);
+  });
+
+  it("rejects an update without fields", () => {
+    expect(
+      updateTaskSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25", taskId: "101" },
+        body: {},
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an invalid task ID", () => {
+    expect(
+      updateTaskSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25", taskId: "0" },
+        body: { status: "done" },
       }).success,
     ).toBe(false);
   });

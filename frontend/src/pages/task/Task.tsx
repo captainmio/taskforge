@@ -8,7 +8,11 @@ import TaskBoard from "../../components/tasks/TaskBoard";
 import TaskDialog from "../../components/tasks/TaskDialog";
 import type { Task, TaskStatus } from "../../components/tasks/taskTypes";
 import { getProjectById } from "../../services/projects";
-import { getProjectTasks, type ProjectTask } from "../../services/tasks";
+import {
+  getProjectTasks,
+  updateTask,
+  type ProjectTask,
+} from "../../services/tasks";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { logout } from "../../services/auth";
 
@@ -109,6 +113,7 @@ const TaskPage = (): ReactElement => {
       (task) => task.status === destinationStatus && task.id !== taskId,
     );
     const taskAtDestination = visibleDestinationTasks[destination.index];
+    const previousStatus = taskItems.find((task) => task.id === taskId)?.status;
 
     setTaskItems((currentTasks) => {
       // The draggable ID tells us exactly which task moved, even when search is active.
@@ -136,6 +141,29 @@ const TaskPage = (): ReactElement => {
 
       reorderedTasks.splice(insertAt, 0, movedTask);
       return reorderedTasks;
+    });
+
+    if (
+      !previousStatus ||
+      previousStatus === destinationStatus ||
+      !id ||
+      !Number.isSafeInteger(Number(projectId))
+    ) {
+      return;
+    }
+
+    // A cross-column drop changes status immediately in the UI, then persists
+    // that status to the backend. Revert only this task if the request fails.
+    void Promise.resolve(
+      updateTask(id, Number(projectId), taskId, { status: destinationStatus }),
+    ).catch(() => {
+      setTaskItems((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId && previousStatus
+            ? { ...task, status: previousStatus }
+            : task,
+        ),
+      );
     });
   };
   const handleLogout = () => {

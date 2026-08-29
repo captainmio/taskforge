@@ -4,10 +4,14 @@ import {
   DEFAULT_PAGE_SIZE,
 } from "../config/pagination.js";
 import { ProjectNotFoundError } from "../errors/project.errors.js";
-import { TaskAssigneeNotInWorkspaceError } from "../errors/task.errors.js";
+import {
+  TaskAssigneeNotInWorkspaceError,
+  TaskNotFoundError,
+} from "../errors/task.errors.js";
 import {
   createTask as createTaskService,
   getProjectTasks as getProjectTasksService,
+  updateTask as updateTaskService,
 } from "../services/task.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import { createSuccessResponse } from "../utils/api-response.js";
@@ -16,6 +20,8 @@ import type {
   CreateTaskParams,
   ProjectTasksParams,
   ProjectTasksQuery,
+  UpdateTaskBody,
+  UpdateTaskParams,
 } from "../validations/task.validation.js";
 
 export const createTask = async (
@@ -104,6 +110,53 @@ export const getProjectTasks = async (
     req.log.error(
       { logType: "feature", event: "task.list_failed", err: error, ...logContext },
       "[FEATURE] Unable to retrieve project tasks",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
+export const updateTask = async (
+  req: AuthenticatedRequest<UpdateTaskBody, UpdateTaskParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const taskId = Number(req.params.taskId);
+  const logContext = { workspaceId, projectId, taskId, actorUserId: req.user.id };
+
+  if (!req.workspaceMembership) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const task = await updateTaskService(
+      workspaceId,
+      projectId,
+      taskId,
+      req.body,
+    );
+    req.log.info(
+      { logType: "feature", event: "task.updated", ...logContext },
+      "[FEATURE] Task updated",
+    );
+    return res.status(200).json(createSuccessResponse("Task updated", task));
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError || error instanceof TaskNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+    if (error instanceof TaskAssigneeNotInWorkspaceError) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    req.log.error(
+      { logType: "feature", event: "task.update_failed", err: error, ...logContext },
+      "[FEATURE] Unable to update task",
     );
     return res.status(500).json({
       success: false,

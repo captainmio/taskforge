@@ -26,19 +26,31 @@ const projectTaskParamsSchema = z.object({
   projectId: positiveIdSchema("Project ID"),
 });
 
+const taskUpdateParamsSchema = projectTaskParamsSchema.extend({
+  taskId: positiveIdSchema("Task ID"),
+});
+
+const taskBodySchema = z.object({
+  title: z.string().trim().min(1, "Task title is required").max(200),
+  description: z.string().trim().max(10_000),
+  status: z.enum(["todo", "in_progress", "in_review", "done"]),
+  priority: z.enum(["low", "medium", "high"]),
+  assigneeIds: z.array(assigneeIdSchema).max(100),
+  dueDate: z.string().trim().max(50).nullable(),
+  timeEstimate: z.string().trim().max(50).nullable(),
+});
+
 export const createTaskSchema = z.object({
   params: projectTaskParamsSchema,
-  body: z
-    .object({
-      title: z.string().trim().min(1, "Task title is required").max(200),
-      description: z.string().trim().max(10_000),
-      status: z.enum(["todo", "in_progress", "in_review", "done"]),
-      priority: z.enum(["low", "medium", "high"]),
-      assigneeIds: z.array(assigneeIdSchema).max(100),
-      dueDate: z.string().trim().max(50).nullable(),
-      timeEstimate: z.string().trim().max(50).nullable(),
-    })
-    .strict(),
+  body: taskBodySchema.strict(),
+});
+
+export const updateTaskSchema = z.object({
+  params: taskUpdateParamsSchema,
+  body: taskBodySchema.partial().strict().refine(
+    (body) => Object.keys(body).length > 0,
+    "Task update must include at least one field",
+  ),
 });
 
 export const projectTasksSchema = z.object({
@@ -56,5 +68,7 @@ export const projectTasksSchema = z.object({
 
 export type CreateTaskBody = z.infer<typeof createTaskSchema>["body"];
 export type CreateTaskParams = z.infer<typeof createTaskSchema>["params"];
+export type UpdateTaskBody = z.infer<typeof updateTaskSchema>["body"];
+export type UpdateTaskParams = z.infer<typeof updateTaskSchema>["params"];
 export type ProjectTasksParams = z.infer<typeof projectTasksSchema>["params"];
 export type ProjectTasksQuery = z.infer<typeof projectTasksSchema>["query"];
