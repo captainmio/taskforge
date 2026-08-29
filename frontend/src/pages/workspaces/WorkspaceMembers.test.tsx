@@ -104,7 +104,12 @@ const renderPage = async () => {
     </MemoryRouter>,
   );
 
-  await screen.findByRole("heading", { name: "Member List" });
+  await waitFor(() =>
+    expect(
+      within(screen.getByRole("table", { name: "Workspace members" }))
+        .getAllByRole("row"),
+    ).toHaveLength(members.length + 1),
+  );
 };
 
 const tableRows = () =>

@@ -22,9 +22,14 @@ const TaskBoard = ({
         <TaskColumn
           key={column.status}
           {...column}
-          tasks={tasks.filter(
-            (task: { status: string }) => task.status === column.status,
-          )}
+          tasks={tasks
+            .filter((task: { status: string }) => task.status === column.status)
+            .toSorted(
+              (first, second) =>
+                (first.position ?? Number.MAX_SAFE_INTEGER) -
+                  (second.position ?? Number.MAX_SAFE_INTEGER) ||
+                first.id - second.id,
+            )}
           onTaskClick={onTaskClick}
           onAddTask={onAddTask}
         />

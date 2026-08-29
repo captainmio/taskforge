@@ -32,6 +32,7 @@ const result = {
     title: "Implement task board",
     description: "Display project tasks in columns.",
     status: "todo",
+    position: 0,
     priority: "high",
     dueDate: null,
     timeEstimate: "4h",

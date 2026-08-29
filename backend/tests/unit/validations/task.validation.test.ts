@@ -89,4 +89,25 @@ describe("updateTaskSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("accepts a non-negative task position and rejects invalid positions", () => {
+    expect(
+      updateTaskSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25", taskId: "101" },
+        body: { position: 0 },
+      }).success,
+    ).toBe(true);
+    expect(
+      updateTaskSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25", taskId: "101" },
+        body: { position: -1 },
+      }).success,
+    ).toBe(false);
+    expect(
+      updateTaskSchema.safeParse({
+        params: { workspaceId: "42", projectId: "25", taskId: "101" },
+        body: { position: 1.5 },
+      }).success,
+    ).toBe(false);
+  });
 });

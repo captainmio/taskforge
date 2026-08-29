@@ -3,7 +3,10 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TaskPage from "./Task";
 
-const mocks = vi.hoisted(() => ({ getProjectTasks: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  getProjectTasks: vi.fn(),
+  updateTask: vi.fn(),
+}));
 
 vi.mock("../../components/tasks/TaskBoard", () => ({
   default: ({
@@ -50,7 +53,7 @@ vi.mock("../../services/projects", () => ({
 vi.mock("../../services/tasks", () => ({
   createTask: vi.fn(),
   getProjectTasks: mocks.getProjectTasks,
-  updateTask: vi.fn(),
+  updateTask: mocks.updateTask,
 }));
 
 vi.mock("../../services/auth", () => ({ logout: vi.fn() }));
@@ -101,14 +104,19 @@ describe("Task page drag and drop", () => {
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });
+    mocks.updateTask.mockResolvedValue({ success: true, data: { id: 1 } });
   });
 
-  it("updates a task's status after it is dropped in another column", async () => {
+  it("persists a task's destination status and position after a drop", async () => {
     renderPage();
 
     expect(await screen.findByTestId("task-1")).toHaveTextContent("todo");
     fireEvent.click(screen.getByRole("button", { name: "Move first task" }));
 
     expect(screen.getByTestId("task-1")).toHaveTextContent("done");
+    expect(mocks.updateTask).toHaveBeenCalledWith("workspace-42", 25, 1, {
+      status: "done",
+      position: 0,
+    });
   });
 });

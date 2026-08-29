@@ -39,6 +39,7 @@ const toBoardTask = (task: ProjectTask): Task => ({
   timeEstimate: task.timeEstimate ?? "",
   priority: task.priority,
   status: task.status,
+  position: task.position,
 });
 
 const TaskPage = (): ReactElement => {
@@ -81,14 +82,11 @@ const TaskPage = (): ReactElement => {
   useProjectTaskRealtime({
     workspaceId: id,
     projectId: Number(projectId),
-    onTaskUpdated: (updatedTask) => {
-      // The server sends the final saved task. Replacing our local copy keeps
-      // this board correct when another user edits the same task.
-      setTaskItems((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === updatedTask.id ? toBoardTask(updatedTask) : task,
-        ),
-      );
+    onTaskUpdated: () => {
+      // A moved card also changes its neighbours' positions. Reloading the
+      // normal list gives this board every changed position, not just the one
+      // card included in the socket event.
+      void refreshTasks();
     },
     onTaskCreated: refreshTasks,
   });
@@ -144,61 +142,79 @@ const TaskPage = (): ReactElement => {
 
     const destinationStatus = destination.droppableId as TaskStatus;
     const taskId = Number(draggableId.replace("task-", ""));
+    const draggedTask = taskItems.find((task) => task.id === taskId);
+    if (!draggedTask) return;
+
     const visibleDestinationTasks = tasks.filter(
       (task) => task.status === destinationStatus && task.id !== taskId,
     );
     const taskAtDestination = visibleDestinationTasks[destination.index];
-    const previousStatus = taskItems.find((task) => task.id === taskId)?.status;
+    const destinationTasks = taskItems
+      .filter((task) => task.status === destinationStatus && task.id !== taskId)
+      .toSorted(
+        (first, second) =>
+          (first.position ?? Number.MAX_SAFE_INTEGER) -
+            (second.position ?? Number.MAX_SAFE_INTEGER) ||
+          first.id - second.id,
+      );
+    const destinationPosition = taskAtDestination
+      ? destinationTasks.findIndex((task) => task.id === taskAtDestination.id)
+      : destinationTasks.length;
+    const previousTasks = taskItems;
 
     setTaskItems((currentTasks) => {
-      // The draggable ID tells us exactly which task moved, even when search is active.
-      const draggedTask = currentTasks.find((task) => task.id === taskId);
-      if (!draggedTask) return currentTasks;
+      const orderedColumn = (status: TaskStatus) =>
+        currentTasks
+          .filter((task) => task.status === status && task.id !== taskId)
+          .toSorted(
+            (first, second) =>
+              (first.position ?? Number.MAX_SAFE_INTEGER) -
+                (second.position ?? Number.MAX_SAFE_INTEGER) ||
+              first.id - second.id,
+          );
+      const sourceTasks = orderedColumn(draggedTask.status);
+      const nextDestinationTasks = orderedColumn(destinationStatus);
+      nextDestinationTasks.splice(destinationPosition, 0, {
+        ...draggedTask,
+        status: destinationStatus,
+      });
+      const changedPositions = new Map<number, number>();
 
-      // Work from a list without the dragged task so it cannot appear twice.
-      const reorderedTasks = currentTasks.filter((task) => task.id !== taskId);
-      const movedTask = { ...draggedTask, status: destinationStatus };
-
-      // Insert before the card currently at the drop position. If there is no card
-      // there, the user dropped at the end of the destination column.
-      let insertAt = taskAtDestination
-        ? reorderedTasks.findIndex((task) => task.id === taskAtDestination.id)
-        : reorderedTasks.length;
-
-      if (!taskAtDestination) {
-        for (let index = reorderedTasks.length - 1; index >= 0; index -= 1) {
-          if (reorderedTasks[index].status === destinationStatus) {
-            insertAt = index + 1;
-            break;
-          }
-        }
+      if (draggedTask.status !== destinationStatus) {
+        sourceTasks.forEach((task, position) => {
+          changedPositions.set(task.id, position);
+        });
       }
+      nextDestinationTasks.forEach((task, position) => {
+        changedPositions.set(task.id, position);
+      });
 
-      reorderedTasks.splice(insertAt, 0, movedTask);
-      return reorderedTasks;
+      return currentTasks.map((task) => {
+        const position = changedPositions.get(task.id);
+        if (task.id === taskId) {
+          return { ...task, status: destinationStatus, position };
+        }
+        return position === undefined ? task : { ...task, position };
+      });
     });
 
     if (
-      !previousStatus ||
-      previousStatus === destinationStatus ||
       !id ||
-      !Number.isSafeInteger(Number(projectId))
+      !Number.isSafeInteger(Number(projectId)) ||
+      !Number.isSafeInteger(taskId)
     ) {
       return;
     }
 
-    // A cross-column drop changes status immediately in the UI, then persists
-    // that status to the backend. Revert only this task if the request fails.
+    // Update the board immediately, then persist its status and exact place in
+    // that column. If saving fails, restore the complete previous board order.
     void Promise.resolve(
-      updateTask(id, Number(projectId), taskId, { status: destinationStatus }),
+      updateTask(id, Number(projectId), taskId, {
+        status: destinationStatus,
+        position: destinationPosition,
+      }),
     ).catch(() => {
-      setTaskItems((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === taskId && previousStatus
-            ? { ...task, status: previousStatus }
-            : task,
-        ),
-      );
+      setTaskItems(previousTasks);
     });
   };
   const handleLogout = () => {

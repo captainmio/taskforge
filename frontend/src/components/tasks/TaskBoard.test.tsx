@@ -60,4 +60,27 @@ describe("TaskBoard", () => {
 
     expect(onAddTask).toHaveBeenCalledWith("in_review");
   });
+
+  it("orders cards within a column by position", () => {
+    render(
+      <TaskBoard
+        tasks={[
+          { ...tasks[0], id: 3, title: "Third", position: 2 },
+          { ...tasks[0], id: 1, title: "First", position: 0 },
+          { ...tasks[0], id: 2, title: "Second", position: 1 },
+        ]}
+        onTaskClick={vi.fn()}
+        onAddTask={vi.fn()}
+      />,
+    );
+
+    const todoColumn = screen.getByText("To Do").closest("section");
+    expect(todoColumn).not.toBeNull();
+    const cardOrder = within(todoColumn as HTMLElement)
+      .getAllByRole("button")
+      .map((button) => button.textContent ?? "")
+      .filter((text) => /^(First|Second|Third)/.test(text))
+      .map((text) => text.match(/^(First|Second|Third)/)?.[0]);
+    expect(cardOrder).toEqual(["First", "Second", "Third"]);
+  });
 });

@@ -70,6 +70,7 @@ model Task {
   title        String       @db.VarChar(200)
   description  String       @default("") @db.Text
   status       TaskStatus   @default(todo)
+  position     Int          @default(0)
   priority     TaskPriority @default(medium)
   dueDate      String?      @map("due_date") @db.VarChar(50)
   timeEstimate String?      @map("time_estimate") @db.VarChar(50)
@@ -80,6 +81,7 @@ model Task {
   assignees    TaskAssignee[]
 
   @@index([projectId])
+  @@index([projectId, status, position])
   @@index([createdById])
 }
 

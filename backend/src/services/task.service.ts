@@ -125,6 +125,7 @@ export const updateTask = async (
         : { priority: taskPriorityByInput[input.priority] }),
       assigneeIds,
     });
+    if (!task) throw new TaskNotFoundError();
 
     return {
       ...task,

@@ -11,7 +11,9 @@ export interface CreateTaskPayload {
   timeEstimate: string | null;
 }
 
-export type UpdateTaskPayload = Partial<CreateTaskPayload>;
+export type UpdateTaskPayload = Partial<CreateTaskPayload> & {
+  position?: number;
+};
 
 export interface TaskMutationResult {
   id: number;
@@ -22,6 +24,7 @@ export interface ProjectTask {
   title: string;
   description: string;
   status: TaskStatus;
+  position?: number;
   priority: TaskPriority;
   dueDate: string | null;
   timeEstimate: string | null;

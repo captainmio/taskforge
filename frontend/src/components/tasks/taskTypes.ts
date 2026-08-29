@@ -32,6 +32,7 @@ export interface Task {
   timeEstimate?: string;
   priority: TaskPriority;
   status: TaskStatus;
+  position?: number;
 }
 
 export const taskColumns: ReadonlyArray<{

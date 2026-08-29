@@ -40,6 +40,10 @@ const taskBodySchema = z.object({
   timeEstimate: z.string().trim().max(50).nullable(),
 });
 
+const taskUpdateBodySchema = taskBodySchema.partial().extend({
+  position: z.number().int().nonnegative().optional(),
+});
+
 export const createTaskSchema = z.object({
   params: projectTaskParamsSchema,
   body: taskBodySchema.strict(),
@@ -47,7 +51,7 @@ export const createTaskSchema = z.object({
 
 export const updateTaskSchema = z.object({
   params: taskUpdateParamsSchema,
-  body: taskBodySchema.partial().strict().refine(
+  body: taskUpdateBodySchema.strict().refine(
     (body) => Object.keys(body).length > 0,
     "Task update must include at least one field",
   ),

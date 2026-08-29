@@ -173,23 +173,30 @@ describe("Task page", () => {
     expect(screen.getByRole("heading", { name: "Tasks" })).toBeVisible();
   });
 
-  it("replaces a board card when a real-time task update arrives", async () => {
+  it("refreshes the board when a real-time task update arrives", async () => {
     renderPage();
     await screen.findByRole("button", { name: /Implement login flow/ });
+    mocks.getProjectTasks.mockResolvedValueOnce({
+      success: true,
+      data: {
+        tasks: [{
+          id: 1,
+          title: "Implement secure login flow",
+          description: "Connect the sign-in form to authentication.",
+          status: "done",
+          priority: "high",
+          dueDate: null,
+          timeEstimate: null,
+          createdAt: "2026-08-27T00:00:00.000Z",
+          updatedAt: "2026-08-29T00:00:00.000Z",
+          assignees: [],
+        }],
+        pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+      },
+    });
 
     const realtimeOptions = mocks.useProjectTaskRealtime.mock.calls.at(-1)?.[0];
-    realtimeOptions?.onTaskUpdated({
-      id: 1,
-      title: "Implement secure login flow",
-      description: "Connect the sign-in form to authentication.",
-      status: "done",
-      priority: "high",
-      dueDate: null,
-      timeEstimate: null,
-      createdAt: "2026-08-27T00:00:00.000Z",
-      updatedAt: "2026-08-29T00:00:00.000Z",
-      assignees: [],
-    });
+    realtimeOptions?.onTaskUpdated();
 
     expect(
       await screen.findByRole("button", { name: /Implement secure login flow/ }),

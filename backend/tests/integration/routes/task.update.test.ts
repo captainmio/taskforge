@@ -43,6 +43,7 @@ const updatedTask = {
   title: "Implement login flow",
   description: "Connect the sign-in form to authentication.",
   status: "done",
+  position: 0,
   priority: "medium",
   dueDate: "2026-09-15",
   timeEstimate: "1d 4h",
@@ -68,7 +69,7 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
     const response = await request(app)
       .patch("/api/workspaces/42/projects/25/tasks/101")
       .set("Cookie", authCookie)
-      .send({ status: "done" });
+      .send({ status: "done", position: 0 });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -76,7 +77,10 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
       message: "Task updated",
       data: updatedTask,
     });
-    expect(updateTask).toHaveBeenCalledWith(42, 25, 101, { status: "done" });
+    expect(updateTask).toHaveBeenCalledWith(42, 25, 101, {
+      status: "done",
+      position: 0,
+    });
     expect(realtimeMocks.emitTaskUpdated).toHaveBeenCalledWith({
       workspaceId: 42,
       projectId: 25,
