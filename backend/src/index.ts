@@ -1,11 +1,19 @@
+import { createServer } from "node:http";
 import app from "./app.js";
 import { closeCacheRedisConnection } from "./config/cache.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
+import {
+  closeTaskSocketServer,
+  initializeTaskSocketServer,
+} from "./realtime/task.socket.js";
 
 const port = env.PORT;
 
-const server = app.listen(port, () => {
+const server = createServer(app);
+initializeTaskSocketServer(server);
+
+server.listen(port, () => {
   logger.info(
     { logType: "system", event: "server.started", port },
     "[SYSTEM] HTTP server started",
@@ -17,6 +25,7 @@ let isShuttingDown = false;
 const shutdown = (): void => {
   if (isShuttingDown) return;
   isShuttingDown = true;
+  closeTaskSocketServer();
 
   // Stop accepting requests and let active requests finish before disconnecting
   // the cache they may still need while completing their work.

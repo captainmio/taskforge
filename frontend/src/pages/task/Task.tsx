@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from "react";
 import type { DropResult } from "@hello-pangea/dnd";
 import { FaFilter, FaPlus, FaSearch } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
@@ -15,6 +21,7 @@ import {
 } from "../../services/tasks";
 import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { logout } from "../../services/auth";
+import { useProjectTaskRealtime } from "../../hooks/useProjectTaskRealtime";
 
 const toBoardTask = (task: ProjectTask): Task => ({
   id: task.id,
@@ -57,6 +64,34 @@ const TaskPage = (): ReactElement => {
     [search, taskItems],
   );
   const isDialogOpen = selectedTask !== undefined;
+
+  const refreshTasks = useCallback(async () => {
+    if (!id || !projectId || !/^\d+$/.test(projectId)) return;
+
+    try {
+      const response = await getProjectTasks(id, Number(projectId));
+      if (response.success) {
+        setTaskItems(response.data.tasks.map(toBoardTask));
+      }
+    } catch {
+      // Keep the current board if a background real-time refresh fails.
+    }
+  }, [id, projectId]);
+
+  useProjectTaskRealtime({
+    workspaceId: id,
+    projectId: Number(projectId),
+    onTaskUpdated: (updatedTask) => {
+      // The server sends the final saved task. Replacing our local copy keeps
+      // this board correct when another user edits the same task.
+      setTaskItems((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === updatedTask.id ? toBoardTask(updatedTask) : task,
+        ),
+      );
+    },
+    onTaskCreated: refreshTasks,
+  });
 
   useEffect(() => {
     let isActive = true;

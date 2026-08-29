@@ -15,6 +15,10 @@ import {
 } from "../services/task.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import { createSuccessResponse } from "../utils/api-response.js";
+import {
+  emitTaskCreated,
+  emitTaskUpdated,
+} from "../realtime/task.socket.js";
 import type {
   CreateTaskBody,
   CreateTaskParams,
@@ -50,6 +54,7 @@ export const createTask = async (
       { logType: "feature", event: "task.created", taskId: task.id, ...logContext },
       "[FEATURE] Task created",
     );
+    emitTaskCreated({ workspaceId, projectId, taskId: task.id });
     return res.status(201).json(createSuccessResponse("Task created", task));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
@@ -145,6 +150,7 @@ export const updateTask = async (
       { logType: "feature", event: "task.updated", ...logContext },
       "[FEATURE] Task updated",
     );
+    emitTaskUpdated({ workspaceId, projectId, task });
     return res.status(200).json(createSuccessResponse("Task updated", task));
   } catch (error) {
     if (error instanceof ProjectNotFoundError || error instanceof TaskNotFoundError) {
