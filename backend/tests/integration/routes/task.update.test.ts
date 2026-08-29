@@ -3,6 +3,7 @@ import request from "supertest";
 import { ProjectNotFoundError } from "../../../src/errors/project.errors.js";
 import {
   TaskAssigneeNotInWorkspaceError,
+  TaskCompletionForbiddenError,
   TaskNotFoundError,
 } from "../../../src/errors/task.errors.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
@@ -77,7 +78,7 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
       message: "Task updated",
       data: updatedTask,
     });
-    expect(updateTask).toHaveBeenCalledWith(42, 25, 101, {
+    expect(updateTask).toHaveBeenCalledWith(42, 25, 101, "MEMBER", {
       status: "done",
       position: 0,
     });
@@ -86,6 +87,12 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
       projectId: 25,
       task: updatedTask,
     });
+  });
+
+  it("returns forbidden when a member moves a task to Done", async () => {
+    vi.mocked(updateTask).mockRejectedValueOnce(new TaskCompletionForbiddenError());
+    const response = await request(app).patch("/api/workspaces/42/projects/25/tasks/101").set("Cookie", authCookie).send({ status: "done" });
+    expect(response.status).toBe(403);
   });
 
   it("rejects an empty update before checking workspace membership", async () => {

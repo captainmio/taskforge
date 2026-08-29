@@ -35,7 +35,7 @@ describe("POST /api/auth/logout", () => {
     });
     vi.mocked(getCurrentUser).mockResolvedValue({
       user: authenticatedUser,
-      workspaces: [{ id: 10, name: "Engineering" }],
+      workspaces: [{ id: 10, name: "Engineering", role: "OWNER" }],
     });
   });
 
@@ -77,7 +77,7 @@ describe("POST /api/auth/logout", () => {
     expect(authenticatedResponse.status).toBe(200);
     expect(authenticatedResponse.body).toMatchObject({
       user: authenticatedUser,
-      workspaces: [{ id: 10, name: "Engineering" }],
+      workspaces: [{ id: 10, name: "Engineering", role: "OWNER" }],
     });
     expect(authenticatedResponse.body).not.toHaveProperty("workspaceIds");
 

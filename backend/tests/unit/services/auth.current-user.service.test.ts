@@ -16,8 +16,8 @@ describe("getCurrentUser", () => {
       firstname: "Workspace",
       lastname: "Owner",
       workspaceMemberships: [
-        { workspace: { id: 10, displayName: "Engineering" } },
-        { workspace: { id: 11, displayName: "Product" } },
+        { role: "OWNER", workspace: { id: 10, displayName: "Engineering" } },
+        { role: "MEMBER", workspace: { id: 11, displayName: "Product" } },
       ],
     });
   });
@@ -31,8 +31,8 @@ describe("getCurrentUser", () => {
         lastname: "Owner",
       },
       workspaces: [
-        { id: 10, name: "Engineering" },
-        { id: 11, name: "Product" },
+        { id: 10, name: "Engineering", role: "OWNER" },
+        { id: 11, name: "Product", role: "MEMBER" },
       ],
     });
   });

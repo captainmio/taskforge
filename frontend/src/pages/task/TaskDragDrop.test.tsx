@@ -61,17 +61,19 @@ vi.mock("../../services/auth", () => ({ logout: vi.fn() }));
 vi.mock("../../hooks/useAuthenticatedSession", () => ({
   useAuthenticatedSession: () => ({
     user: {
+      id: 7,
       firstname: "Rustem",
       lastname: "Jordan",
       email: "rustem@example.com",
     },
+    workspaces: [{ id: 42, name: "Engineering", role: "ADMIN" }],
   }),
 }));
 
 const renderPage = () =>
   render(
     <MemoryRouter
-      initialEntries={["/workspace/workspace-42/projects/25/tasks"]}
+      initialEntries={["/workspace/42/projects/25/tasks"]}
     >
       <Routes>
         <Route
@@ -107,14 +109,14 @@ describe("Task page drag and drop", () => {
     mocks.updateTask.mockResolvedValue({ success: true, data: { id: 1 } });
   });
 
-  it("persists a task's destination status and position after a drop", async () => {
+  it("persists an admin's task destination status and position after a drop", async () => {
     renderPage();
 
     expect(await screen.findByTestId("task-1")).toHaveTextContent("todo");
     fireEvent.click(screen.getByRole("button", { name: "Move first task" }));
 
     expect(screen.getByTestId("task-1")).toHaveTextContent("done");
-    expect(mocks.updateTask).toHaveBeenCalledWith("workspace-42", 25, 1, {
+    expect(mocks.updateTask).toHaveBeenCalledWith("42", 25, 1, {
       status: "done",
       position: 0,
     });

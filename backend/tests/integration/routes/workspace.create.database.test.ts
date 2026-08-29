@@ -80,7 +80,7 @@ describe("POST /api/workspaces with PostgreSQL", () => {
       .set("Cookie", authCookie);
     expect(currentUserResponse.status).toBe(200);
     expect(currentUserResponse.body.workspaces).toEqual([
-      { id: workspace?.id, name: "Engineering Team" },
+      { id: workspace?.id, name: "Engineering Team", role: "OWNER" },
     ]);
     expect(currentUserResponse.body).not.toHaveProperty("workspaceIds");
   });

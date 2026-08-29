@@ -1,10 +1,11 @@
 import { ProjectNotFoundError } from "../errors/project.errors.js";
 import {
   TaskAssigneeNotInWorkspaceError,
+  TaskCompletionForbiddenError,
   TaskNotFoundError,
 } from "../errors/task.errors.js";
 import { Prisma } from "../generated/prisma/client.js";
-import { TaskPriority, TaskStatus } from "../generated/prisma/enums.js";
+import { TaskPriority, TaskStatus, WorkspaceRole } from "../generated/prisma/enums.js";
 import { findProjectByWorkspace } from "../repositories/project.repository.js";
 import {
   createTaskRecord,
@@ -34,8 +35,16 @@ export const createTask = async (
   workspaceId: number,
   projectId: number,
   createdById: number,
+  actorRole: WorkspaceRole,
   input: CreateTaskBody,
 ) => {
+  if (
+    input.status === "done" &&
+    actorRole !== WorkspaceRole.OWNER &&
+    actorRole !== WorkspaceRole.ADMIN
+  ) {
+    throw new TaskCompletionForbiddenError();
+  }
   const project = await findProjectByWorkspace(workspaceId, projectId);
   if (!project) throw new ProjectNotFoundError();
 
@@ -96,8 +105,17 @@ export const updateTask = async (
   workspaceId: number,
   projectId: number,
   taskId: number,
+  actorRole: WorkspaceRole,
   input: UpdateTaskBody,
 ) => {
+  if (
+    input.status === "done" &&
+    actorRole !== WorkspaceRole.OWNER &&
+    actorRole !== WorkspaceRole.ADMIN
+  ) {
+    throw new TaskCompletionForbiddenError();
+  }
+
   const project = await findProjectByWorkspace(workspaceId, projectId);
   if (!project) throw new ProjectNotFoundError();
 

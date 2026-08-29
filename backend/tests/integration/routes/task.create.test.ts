@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { ProjectNotFoundError } from "../../../src/errors/project.errors.js";
-import { TaskAssigneeNotInWorkspaceError } from "../../../src/errors/task.errors.js";
+import {
+  TaskAssigneeNotInWorkspaceError,
+  TaskCompletionForbiddenError,
+} from "../../../src/errors/task.errors.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import { createTask } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -63,7 +66,7 @@ describe("POST /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
       message: "Task created",
       data: { id: 101 },
     });
-    expect(createTask).toHaveBeenCalledWith(42, 25, 7, {
+    expect(createTask).toHaveBeenCalledWith(42, 25, 7, "MEMBER", {
       ...payload,
       assigneeIds: [7],
     });
@@ -72,6 +75,12 @@ describe("POST /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
       projectId: 25,
       taskId: 101,
     });
+  });
+
+  it("returns forbidden when a member creates a Done task", async () => {
+    vi.mocked(createTask).mockRejectedValueOnce(new TaskCompletionForbiddenError());
+    const response = await request(app).post("/api/workspaces/42/projects/25/tasks").set("Cookie", authCookie).send({ ...payload, status: "done" });
+    expect(response.status).toBe(403);
   });
 
   it("rejects an invalid payload before checking workspace membership", async () => {

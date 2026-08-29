@@ -1,6 +1,6 @@
 import { prisma } from "../config/database.js";
 import { Prisma } from "../generated/prisma/client.js";
-import type { TaskPriority, TaskStatus } from "../generated/prisma/enums.js";
+import { TaskStatus, type TaskPriority } from "../generated/prisma/enums.js";
 
 export interface CreateTaskData {
   projectId: number;

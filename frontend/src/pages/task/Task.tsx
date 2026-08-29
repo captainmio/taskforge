@@ -7,7 +7,8 @@ import {
   type ReactElement,
 } from "react";
 import type { DropResult } from "@hello-pangea/dnd";
-import { FaFilter, FaSearch } from "react-icons/fa";
+import { FaFilter, FaPlus, FaSearch } from "react-icons/fa";
+import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router";
 import AccountMenu from "../../components/ui/AccountMenu";
 import Button from "../../components/ui/Button";
@@ -137,7 +138,7 @@ const TaskPageSkeleton = (): ReactElement => (
 const TaskPage = (): ReactElement => {
   const { id, projectId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthenticatedSession();
+  const { user, workspaces } = useAuthenticatedSession();
   const [taskItems, setTaskItems] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(true);
   const [taskLoadError, setTaskLoadError] = useState<boolean>(false);
@@ -152,8 +153,14 @@ const TaskPage = (): ReactElement => {
     undefined,
   );
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>("todo");
+  const [isColumnStatusLocked, setIsColumnStatusLocked] = useState(false);
   const [projectName, setProjectName] = useState<string>("Tasks");
   const filterPanelRef = useRef<HTMLDivElement>(null);
+  const currentWorkspace = workspaces?.find(
+    (workspace) => String(workspace.id) === id,
+  );
+  const canCompleteInReview =
+    currentWorkspace?.role === "OWNER" || currentWorkspace?.role === "ADMIN";
   const assigneeOptions = useMemo(
     () =>
       [
@@ -282,8 +289,9 @@ const TaskPage = (): ReactElement => {
     };
   }, [id, projectId]);
 
-  const openNewTask = (status: TaskStatus = "todo") => {
+  const openNewTask = (status: TaskStatus = "todo", locked = false) => {
     setNewTaskStatus(status);
+    setIsColumnStatusLocked(locked);
     setSelectedTask(null);
   };
   const handleDragEnd = ({ source, destination, draggableId }: DropResult) => {
@@ -302,6 +310,13 @@ const TaskPage = (): ReactElement => {
     const taskId = Number(draggableId.replace("task-", ""));
     const draggedTask = taskItems.find((task) => task.id === taskId);
     if (!draggedTask) return;
+
+    if (destinationStatus === "done" && !canCompleteInReview) {
+      toast.error(
+        "Only workspace owners and admins can move a task from In Review to Done.",
+      );
+      return;
+    }
 
     const visibleDestinationTasks = tasks.filter(
       (task) => task.status === destinationStatus && task.id !== taskId,
@@ -407,17 +422,24 @@ const TaskPage = (): ReactElement => {
           </label>
           <div
             ref={filterPanelRef}
-            className="relative w-full sm:w-auto sm:shrink-0"
+            className="relative flex w-full gap-2 sm:w-auto sm:shrink-0"
           >
             <Button
               variant="outline"
               leadingIcon={<FaFilter />}
-              className="w-full"
+              className="flex-1 whitespace-nowrap sm:flex-none"
               aria-expanded={isFilterOpen}
               aria-controls="task-filter-menu"
               onClick={() => setIsFilterOpen((isOpen) => !isOpen)}
             >
               Filter{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </Button>
+            <Button
+              leadingIcon={<FaPlus />}
+              onClick={() => openNewTask()}
+              className="flex-1 whitespace-nowrap sm:flex-none"
+            >
+              New Task
             </Button>
             {isFilterOpen ? (
               <div
@@ -555,7 +577,8 @@ const TaskPage = (): ReactElement => {
         <TaskBoard
           tasks={tasks}
           onTaskClick={(task) => setSelectedTask(task)}
-          onAddTask={openNewTask}
+          onAddTask={(status) => openNewTask(status, true)}
+          canAddTask={(status) => status !== "done" || canCompleteInReview}
           onDragEnd={handleDragEnd}
         />
       </div>
@@ -563,8 +586,10 @@ const TaskPage = (): ReactElement => {
         <TaskDialog
           task={selectedTask ?? null}
           initialStatus={newTaskStatus}
+          isStatusLocked={isColumnStatusLocked}
           workspaceId={id ?? ""}
           projectId={Number(projectId)}
+          canCompleteInReview={canCompleteInReview}
           onClose={() => setSelectedTask(undefined)}
           onTaskCreated={(task) =>
             setTaskItems((currentTasks) => [task, ...currentTasks])

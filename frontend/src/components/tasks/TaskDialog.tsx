@@ -17,6 +17,7 @@ import {
 import { getWorkspaceMembers } from "../../services/workspaces";
 import {
   priorityPresentation,
+  taskColumns,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -27,6 +28,8 @@ interface TaskDialogProps {
   initialStatus: TaskStatus;
   workspaceId: string;
   projectId: number;
+  canCompleteInReview?: boolean;
+  isStatusLocked?: boolean;
   onClose: () => void;
   onTaskCreated: (task: Task) => void;
   onTaskUpdated: (taskId: number, updates: Partial<Task>) => void;
@@ -37,6 +40,8 @@ const TaskDialog = ({
   initialStatus,
   workspaceId,
   projectId,
+  canCompleteInReview = false,
+  isStatusLocked = false,
   onClose,
   onTaskCreated,
   onTaskUpdated,
@@ -48,6 +53,7 @@ const TaskDialog = ({
   const [status, setStatus] = useState<TaskStatus>(
     task?.status ?? initialStatus,
   );
+  const statusColumn = taskColumns.find((column) => column.status === status);
   const [priority, setPriority] = useState<TaskPriority>(
     task?.priority ?? "medium",
   );
@@ -280,23 +286,32 @@ const TaskDialog = ({
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="text-xs font-semibold text-gray-700">
                 Status
-                <select
-                  value={status}
-                  onChange={(event) => {
-                    const nextStatus = event.target.value as TaskStatus;
-                    setStatus(nextStatus);
-                    void persistChanges(
-                      { status: nextStatus },
-                      { status: nextStatus },
-                    );
-                  }}
-                  className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
-                >
-                  <option value="todo">To Do</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="in_review">In Review</option>
-                  <option value="done">Done</option>
-                </select>
+                {isStatusLocked ? (
+                  <p className={`mt-1.5 rounded-md border px-3 py-2 text-sm font-medium text-gray-800 ${statusColumn?.surfaceClassName ?? ""}`}>
+                    <span className={`mr-2 inline-block h-2 w-2 rounded-full ${statusColumn?.dotClassName ?? ""}`} />
+                    {statusColumn?.label ?? status.replace("_", " ")}
+                  </p>
+                ) : (
+                  <select
+                    value={status}
+                    onChange={(event) => {
+                      const nextStatus = event.target.value as TaskStatus;
+                      setStatus(nextStatus);
+                      void persistChanges(
+                        { status: nextStatus },
+                        { status: nextStatus },
+                      );
+                    }}
+                    className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
+                  >
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="in_review">In Review</option>
+                    <option value="done" disabled={!canCompleteInReview}>
+                      Done
+                    </option>
+                  </select>
+                )}
               </label>
               <label className="text-xs font-semibold text-gray-700">
                 Priority

@@ -11,6 +11,7 @@ interface TaskColumnProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
+  canAddTask?: boolean;
 }
 
 const TaskColumn = ({
@@ -21,6 +22,7 @@ const TaskColumn = ({
   tasks,
   onTaskClick,
   onAddTask,
+  canAddTask = true,
 }: TaskColumnProps) => (
   <Droppable droppableId={status}>
     {(provided) => (
@@ -49,14 +51,14 @@ const TaskColumn = ({
           ))}
           {provided.placeholder}
         </div>
-        <button
+        {canAddTask ? <button
           type="button"
           onClick={() => onAddTask(status)}
           className="mt-3 inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
         >
           <FaPlus aria-hidden="true" />
           Add task
-        </button>
+        </button> : null}
       </section>
     )}
   </Droppable>

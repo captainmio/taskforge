@@ -26,6 +26,7 @@ export const findUserWithWorkspaceMembershipsById = async (id: number) =>
       workspaceMemberships: {
         orderBy: { createdAt: "asc" },
         select: {
+          role: true,
           workspace: {
             select: {
               id: true,

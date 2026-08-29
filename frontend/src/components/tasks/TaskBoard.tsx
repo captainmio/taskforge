@@ -8,6 +8,7 @@ interface TaskBoardProps {
   onTaskClick: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
   onDragEnd?: (result: DropResult) => void;
+  canAddTask?: (status: TaskStatus) => boolean;
 }
 
 const TaskBoard = ({
@@ -15,6 +16,7 @@ const TaskBoard = ({
   onTaskClick,
   onAddTask,
   onDragEnd = () => undefined,
+  canAddTask = () => true,
 }: TaskBoardProps) => (
   <DragDropContext onDragEnd={onDragEnd}>
     <div className="grid gap-4 xl:grid-cols-4">
@@ -32,6 +34,7 @@ const TaskBoard = ({
             )}
           onTaskClick={onTaskClick}
           onAddTask={onAddTask}
+          canAddTask={canAddTask(column.status)}
         />
       ))}
     </div>

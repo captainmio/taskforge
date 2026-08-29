@@ -1,4 +1,5 @@
 import { apiClient } from "./api";
+import type { WorkspaceMemberRole } from "../types/roles";
 
 export interface RegisterResponse {
   success: boolean;
@@ -20,6 +21,7 @@ export interface LoginResponse {
 export interface JoinedWorkspace {
   id: number;
   name: string;
+  role?: WorkspaceMemberRole;
 }
 
 export interface MeResponse {

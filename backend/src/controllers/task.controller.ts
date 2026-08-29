@@ -6,6 +6,7 @@ import {
 import { ProjectNotFoundError } from "../errors/project.errors.js";
 import {
   TaskAssigneeNotInWorkspaceError,
+  TaskCompletionForbiddenError,
   TaskNotFoundError,
 } from "../errors/task.errors.js";
 import {
@@ -48,6 +49,7 @@ export const createTask = async (
       workspaceId,
       projectId,
       req.user.id,
+      req.workspaceMembership.role,
       req.body,
     );
     req.log.info(
@@ -62,6 +64,9 @@ export const createTask = async (
     }
     if (error instanceof TaskAssigneeNotInWorkspaceError) {
       return res.status(400).json({ success: false, error: error.message });
+    }
+    if (error instanceof TaskCompletionForbiddenError) {
+      return res.status(403).json({ success: false, error: error.message });
     }
 
     req.log.error(
@@ -144,6 +149,7 @@ export const updateTask = async (
       workspaceId,
       projectId,
       taskId,
+      req.workspaceMembership.role,
       req.body,
     );
     req.log.info(
@@ -158,6 +164,9 @@ export const updateTask = async (
     }
     if (error instanceof TaskAssigneeNotInWorkspaceError) {
       return res.status(400).json({ success: false, error: error.message });
+    }
+    if (error instanceof TaskCompletionForbiddenError) {
+      return res.status(403).json({ success: false, error: error.message });
     }
 
     req.log.error(
