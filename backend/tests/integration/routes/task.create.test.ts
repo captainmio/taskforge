@@ -6,6 +6,11 @@ import { findWorkspaceMembership } from "../../../src/repositories/workspace.rep
 import { createTask } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const realtimeMocks = vi.hoisted(() => ({
+  emitTaskCreated: vi.fn(),
+  emitTaskUpdated: vi.fn(),
+}));
+
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
   async (importOriginal) => ({
@@ -19,6 +24,8 @@ vi.mock(
 vi.mock("../../../src/services/task.service.js", () => ({
   createTask: vi.fn(),
 }));
+
+vi.mock("../../../src/realtime/task.socket.js", () => realtimeMocks);
 
 const { default: app } = await import("../../../src/app.js");
 
@@ -38,6 +45,8 @@ const payload = {
 
 describe("POST /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
   beforeEach(() => {
+    realtimeMocks.emitTaskCreated.mockReset();
+    realtimeMocks.emitTaskUpdated.mockReset();
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
     vi.mocked(createTask).mockResolvedValue({ id: 101 });
   });
@@ -57,6 +66,11 @@ describe("POST /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
     expect(createTask).toHaveBeenCalledWith(42, 25, 7, {
       ...payload,
       assigneeIds: [7],
+    });
+    expect(realtimeMocks.emitTaskCreated).toHaveBeenCalledWith({
+      workspaceId: 42,
+      projectId: 25,
+      taskId: 101,
     });
   });
 

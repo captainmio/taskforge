@@ -9,6 +9,11 @@ import { findWorkspaceMembership } from "../../../src/repositories/workspace.rep
 import { updateTask } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const realtimeMocks = vi.hoisted(() => ({
+  emitTaskCreated: vi.fn(),
+  emitTaskUpdated: vi.fn(),
+}));
+
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
   async (importOriginal) => ({
@@ -24,6 +29,8 @@ vi.mock("../../../src/services/task.service.js", () => ({
   getProjectTasks: vi.fn(),
   updateTask: vi.fn(),
 }));
+
+vi.mock("../../../src/realtime/task.socket.js", () => realtimeMocks);
 
 const { default: app } = await import("../../../src/app.js");
 
@@ -51,6 +58,8 @@ const updatedTask = {
 
 describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId", () => {
   beforeEach(() => {
+    realtimeMocks.emitTaskCreated.mockReset();
+    realtimeMocks.emitTaskUpdated.mockReset();
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
     vi.mocked(updateTask).mockResolvedValue(updatedTask as never);
   });
@@ -68,6 +77,11 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
       data: updatedTask,
     });
     expect(updateTask).toHaveBeenCalledWith(42, 25, 101, { status: "done" });
+    expect(realtimeMocks.emitTaskUpdated).toHaveBeenCalledWith({
+      workspaceId: 42,
+      projectId: 25,
+      task: updatedTask,
+    });
   });
 
   it("rejects an empty update before checking workspace membership", async () => {

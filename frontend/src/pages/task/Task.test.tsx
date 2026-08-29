@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   getProjectTasks: vi.fn(),
   logout: vi.fn(),
   navigate: vi.fn(),
+  useProjectTaskRealtime: vi.fn(),
 }));
 
 vi.mock("../../services/projects", () => ({
@@ -30,6 +31,10 @@ vi.mock("../../hooks/useAuthenticatedSession", () => ({
       email: "rustem@example.com",
     },
   }),
+}));
+
+vi.mock("../../hooks/useProjectTaskRealtime", () => ({
+  useProjectTaskRealtime: mocks.useProjectTaskRealtime,
 }));
 
 vi.mock("react-router", async () => {
@@ -58,6 +63,7 @@ describe("Task page", () => {
     mocks.getProjectTasks.mockReset();
     mocks.logout.mockReset();
     mocks.navigate.mockReset();
+    mocks.useProjectTaskRealtime.mockReset();
     mocks.getProjectById.mockResolvedValue({
       success: true,
       data: { project: { name: "Website Redesign" } },
@@ -165,5 +171,58 @@ describe("Task page", () => {
 
     await waitFor(() => expect(mocks.getProjectById).toHaveBeenCalled());
     expect(screen.getByRole("heading", { name: "Tasks" })).toBeVisible();
+  });
+
+  it("replaces a board card when a real-time task update arrives", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
+
+    const realtimeOptions = mocks.useProjectTaskRealtime.mock.calls.at(-1)?.[0];
+    realtimeOptions?.onTaskUpdated({
+      id: 1,
+      title: "Implement secure login flow",
+      description: "Connect the sign-in form to authentication.",
+      status: "done",
+      priority: "high",
+      dueDate: null,
+      timeEstimate: null,
+      createdAt: "2026-08-27T00:00:00.000Z",
+      updatedAt: "2026-08-29T00:00:00.000Z",
+      assignees: [],
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /Implement secure login flow/ }),
+    ).toBeVisible();
+  });
+
+  it("refreshes tasks when a real-time creation event arrives", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
+    mocks.getProjectTasks.mockResolvedValueOnce({
+      success: true,
+      data: {
+        tasks: [{
+          id: 11,
+          title: "New real-time task",
+          description: "Created in another browser.",
+          status: "todo",
+          priority: "medium",
+          dueDate: null,
+          timeEstimate: null,
+          createdAt: "2026-08-29T00:00:00.000Z",
+          updatedAt: "2026-08-29T00:00:00.000Z",
+          assignees: [],
+        }],
+        pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+      },
+    });
+
+    const realtimeOptions = mocks.useProjectTaskRealtime.mock.calls.at(-1)?.[0];
+    realtimeOptions?.onTaskCreated();
+
+    expect(
+      await screen.findByRole("button", { name: /New real-time task/ }),
+    ).toBeVisible();
   });
 });
