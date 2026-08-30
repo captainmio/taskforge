@@ -6,6 +6,18 @@ import { priorityPresentation, type Task } from "./taskTypes";
 
 const DESCRIPTION_PREVIEW_LENGTH: number = 140;
 
+const formatDueDate = (dueDate: string) => {
+  if (!dueDate) return "No due date";
+  const date = new Date(`${dueDate.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? dueDate
+    : new Intl.DateTimeFormat(undefined, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(date);
+};
+
 interface TaskCardProps {
   task: Task;
   index: number;
@@ -95,7 +107,7 @@ const TaskCard = ({ task, index, onClick }: TaskCardProps) => {
             ) : null}
             <span className="flex items-center gap-1">
               <FaCalendarAlt aria-hidden="true" />
-              {task.dueDate || "No due date"}
+              {formatDueDate(task.dueDate)}
             </span>
             <span className="flex items-center gap-1">
               <span

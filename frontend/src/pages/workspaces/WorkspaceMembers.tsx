@@ -185,29 +185,16 @@ const WorkspaceMembers = () => {
 
   const handleSearchChange = (value: string): void => {
     setSearchQuery(value);
-    console.log("Workspace member search changed", {
-      workspaceId: id,
-      query: value,
-    });
   };
 
   const handleRoleFilterChange = (value: string): void => {
     const nextFilter =
       parseAllowedValue(memberRoleFilters, value) ?? memberRoleFilters.ALL;
     setRoleFilter(nextFilter);
-    console.log("Workspace member role filter changed", {
-      workspaceId: id,
-      role: nextFilter,
-    });
   };
 
   const handleSortChange = (nextSort: DataTableSort): void => {
     setSort(nextSort);
-    console.log("Workspace member sorting changed", {
-      workspaceId: id,
-      column: nextSort.columnId,
-      direction: nextSort.direction,
-    });
   };
 
   const openRoleModal = (member: WorkspaceMember): void => {
@@ -215,11 +202,6 @@ const WorkspaceMembers = () => {
 
     setMemberToEdit(member);
     setSelectedRole(member.role);
-    console.log("Workspace member role editor opened", {
-      workspaceId: id,
-      memberId: member.id,
-      currentRole: member.role,
-    });
   };
 
   const closeRoleModal = (): void => {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import debounce from "lodash/debounce";
 import { FaCalendarAlt, FaCircle } from "react-icons/fa";
+import { toast } from "react-toastify";
 import Button from "../ui/Button";
 import Select from "../ui/Select";
 import TaskAssigneeMultiSelect, {
@@ -63,7 +64,9 @@ const TaskDialog = ({
   const [timeEstimate, setTimeEstimate] = useState<string>(
     task?.timeEstimate ?? "",
   );
-  const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? "");
+  const [dueDate, setDueDate] = useState<string>(
+    task?.dueDate?.slice(0, 10) ?? "",
+  );
   const [createdTaskId, setCreatedTaskId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const creationStarted = useRef(false);
@@ -173,6 +176,7 @@ const TaskDialog = ({
       };
       setCreatedTaskId(createdTask.id);
       onTaskCreated(createdTask);
+      toast.success("Task created");
     } catch {
       // Allow the user to edit the draft and retry on the next title trigger.
       creationStarted.current = false;
@@ -287,8 +291,12 @@ const TaskDialog = ({
               <label className="text-xs font-semibold text-gray-700">
                 Status
                 {isStatusLocked ? (
-                  <p className={`mt-1.5 rounded-md border px-3 py-2 text-sm font-medium text-gray-800 ${statusColumn?.surfaceClassName ?? ""}`}>
-                    <span className={`mr-2 inline-block h-2 w-2 rounded-full ${statusColumn?.dotClassName ?? ""}`} />
+                  <p
+                    className={`mt-1.5 rounded-md border px-3 py-2 text-sm font-medium text-gray-800 ${statusColumn?.surfaceClassName ?? ""}`}
+                  >
+                    <span
+                      className={`mr-2 inline-block h-2 w-2 rounded-full ${statusColumn?.dotClassName ?? ""}`}
+                    />
                     {statusColumn?.label ?? status.replace("_", " ")}
                   </p>
                 ) : (
@@ -342,6 +350,7 @@ const TaskDialog = ({
                 <div className="relative mt-1.5">
                   <FaCalendarAlt className="pointer-events-none absolute left-3 top-3 text-gray-400" />
                   <input
+                    type="date"
                     value={dueDate}
                     onChange={(event) => setDueDate(event.target.value)}
                     onBlur={() =>

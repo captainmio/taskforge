@@ -37,6 +37,19 @@ const task: Task = {
 };
 
 describe("TaskCard", () => {
+  it("formats an ISO due date for display", () => {
+    render(
+      <TaskCard
+        task={{ ...task, dueDate: "2026-09-15" }}
+        index={0}
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/2026/)).toBeVisible();
+    expect(screen.queryByText("2026-09-15")).toBeNull();
+  });
+
   it("allows its button to act as a drag handle and shows a grabbing cursor while pressed", () => {
     render(<TaskCard task={task} index={0} onClick={vi.fn()} />);
 

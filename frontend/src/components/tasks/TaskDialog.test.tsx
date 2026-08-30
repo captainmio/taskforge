@@ -60,6 +60,10 @@ describe("TaskDialog", () => {
     );
 
     expect(screen.getByPlaceholderText("e.g. 1d 4h")).toHaveValue("1d 4h");
+    expect(screen.getByDisplayValue("2026-09-15")).toHaveAttribute(
+      "type",
+      "date",
+    );
     expect(await screen.findByText("Alex Member")).toBeVisible();
     expect(mocks.getWorkspaceMembers).toHaveBeenCalledWith("42", {
       page: 1,
