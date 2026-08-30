@@ -1,4 +1,5 @@
 import { ProjectNotFoundError } from "../errors/project.errors.js";
+import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
 import {
   TaskAssigneeNotInWorkspaceError,
   TaskCompletionForbiddenError,
@@ -57,7 +58,7 @@ export const createTask = async (
     throw new TaskAssigneeNotInWorkspaceError();
   }
 
-  return createTaskRecord({
+  const task = await createTaskRecord({
     projectId,
     createdById,
     title: input.title,
@@ -68,6 +69,9 @@ export const createTask = async (
     timeEstimate: input.timeEstimate,
     assigneeIds,
   });
+  await deleteCachedWorkspaceOverview(workspaceId);
+
+  return task;
 };
 
 export const getProjectTasks = async (
@@ -144,6 +148,8 @@ export const updateTask = async (
       assigneeIds,
     });
     if (!task) throw new TaskNotFoundError();
+
+    await deleteCachedWorkspaceOverview(workspaceId);
 
     return {
       ...task,

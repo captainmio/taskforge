@@ -28,6 +28,7 @@ import {
 import { Prisma } from "../generated/prisma/client.js";
 import {
   InvitationStatus,
+  TaskStatus,
   WorkspaceRole,
 } from "../generated/prisma/enums.js";
 import {
@@ -44,6 +45,7 @@ import {
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
   findWorkspaceOverview,
+  findWorkspaceProjectTaskCounts,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -378,9 +380,27 @@ export const getWorkspaceOverview = async (
   const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
   if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
 
-  const { members, projects, createdAt, ...workspace } = await findWorkspaceOverview(
-    workspaceId,
-  );
+  const [workspaceRecord, projectTaskCounts] = await Promise.all([
+    findWorkspaceOverview(workspaceId),
+    findWorkspaceProjectTaskCounts(workspaceId),
+  ]);
+  const { members, projects, createdAt, ...workspace } = workspaceRecord;
+  const taskCountsByProject = new Map<
+    number,
+    { taskCount: number; completedTaskCount: number }
+  >();
+
+  for (const taskCount of projectTaskCounts) {
+    const counts = taskCountsByProject.get(taskCount.projectId) ?? {
+      taskCount: 0,
+      completedTaskCount: 0,
+    };
+    counts.taskCount += taskCount._count._all;
+    if (taskCount.status === TaskStatus.done) {
+      counts.completedTaskCount += taskCount._count._all;
+    }
+    taskCountsByProject.set(taskCount.projectId, counts);
+  }
 
   // Normalize Prisma dates before caching so cache hits and database reads expose
   // the same JSON-safe response shape.
@@ -392,12 +412,20 @@ export const getWorkspaceOverview = async (
       role,
       joinedAt: joinedAt.toISOString(),
     })),
-    projects: projects.map((project) => ({
-      ...project,
-      startDate: project.startDate?.toISOString() ?? null,
-      dueDate: project.dueDate?.toISOString() ?? null,
-      createdAt: project.createdAt.toISOString(),
-    })),
+    projects: projects.map((project) => {
+      const taskCounts = taskCountsByProject.get(project.id) ?? {
+        taskCount: 0,
+        completedTaskCount: 0,
+      };
+
+      return {
+        ...project,
+        ...taskCounts,
+        startDate: project.startDate?.toISOString() ?? null,
+        dueDate: project.dueDate?.toISOString() ?? null,
+        createdAt: project.createdAt.toISOString(),
+      };
+    }),
   };
 
   await setCachedWorkspaceOverview(workspaceId, overview);

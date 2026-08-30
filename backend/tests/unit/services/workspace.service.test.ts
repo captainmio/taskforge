@@ -5,6 +5,7 @@ import {
   ProjectDefaultView,
   ProjectIcon,
   ProjectStatus,
+  TaskStatus,
   WorkspaceIcon,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
@@ -44,6 +45,7 @@ import {
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
   findWorkspaceOverview,
+  findWorkspaceProjectTaskCounts,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -76,6 +78,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   findInvitationsAwaitingQueue: vi.fn(),
   findWorkspaceInviteLinkByTokenHash: vi.fn(),
   findWorkspaceOverview: vi.fn(),
+  findWorkspaceProjectTaskCounts: vi.fn(),
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
   replaceInvitationToken: vi.fn(),
@@ -623,6 +626,8 @@ describe("getWorkspaceOverview", () => {
         dueDate: "2026-10-01T00:00:00.000Z",
         defaultView: ProjectDefaultView.board,
         createdAt: "2026-08-22T00:00:00.000Z",
+        taskCount: 5,
+        completedTaskCount: 2,
       },
     ],
   };
@@ -630,6 +635,10 @@ describe("getWorkspaceOverview", () => {
   beforeEach(() => {
     vi.mocked(getCachedWorkspaceOverview).mockResolvedValue(null);
     vi.mocked(findWorkspaceOverview).mockResolvedValue(repositoryOverview);
+    vi.mocked(findWorkspaceProjectTaskCounts).mockResolvedValue([
+      { projectId: 25, status: TaskStatus.todo, _count: { _all: 3 } },
+      { projectId: 25, status: TaskStatus.done, _count: { _all: 2 } },
+    ] as never);
     vi.mocked(setCachedWorkspaceOverview).mockResolvedValue(undefined);
   });
 
@@ -639,12 +648,14 @@ describe("getWorkspaceOverview", () => {
     await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
     expect(getCachedWorkspaceOverview).toHaveBeenCalledWith(10);
     expect(findWorkspaceOverview).not.toHaveBeenCalled();
+    expect(findWorkspaceProjectTaskCounts).not.toHaveBeenCalled();
     expect(setCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
-  it("normalizes workspace, membership, and project dates before caching the overview", async () => {
+  it("aggregates project task counts and normalizes dates before caching the overview", async () => {
     await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
     expect(findWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(findWorkspaceProjectTaskCounts).toHaveBeenCalledWith(10);
     expect(setCachedWorkspaceOverview).toHaveBeenCalledWith(
       10,
       normalizedOverview,

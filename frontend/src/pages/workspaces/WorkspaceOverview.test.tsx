@@ -35,6 +35,8 @@ const workspaceOverview = {
       dueDate: "2026-10-01T00:00:00.000Z",
       defaultView: "board" as const,
       createdAt: "2026-08-22T00:00:00.000Z",
+      taskCount: 8,
+      completedTaskCount: 3,
     },
     {
       id: 26,
@@ -46,6 +48,8 @@ const workspaceOverview = {
       dueDate: null,
       defaultView: "list" as const,
       createdAt: "2026-08-23T00:00:00.000Z",
+      taskCount: 0,
+      completedTaskCount: 0,
     },
   ],
 };
@@ -86,7 +90,7 @@ describe("Workspace overview", () => {
     });
   });
 
-  it("renders the selected workspace metadata and member preview", async () => {
+  it("renders completed task totals and progress for every project", async () => {
     render(
       <MemoryRouter>
         <WorkspaceOverview />
@@ -110,10 +114,19 @@ describe("Workspace overview", () => {
       .getAllByText("Projects")
       .find((element) => element.tagName === "P");
     expect(projectsStatLabel?.parentElement).toHaveTextContent("2");
-    expect(screen.getByText("Projects (2)")).toBeVisible();
     expect(screen.getByText("Website Redesign")).toBeVisible();
-    expect(screen.getByText("Refresh the marketing site.")).toBeVisible();
+    expect(screen.getByText("3 Completed")).toBeVisible();
+    expect(
+      screen.getByRole("progressbar", {
+        name: "Website Redesign completion",
+      }),
+    ).toHaveAttribute("aria-valuenow", "38");
     expect(screen.getByText("Mobile App")).toBeVisible();
+    expect(screen.getByText("0 Completed")).toBeVisible();
+    expect(screen.getByText("No tasks yet")).toBeVisible();
+    expect(
+      screen.queryByText("Refresh the marketing site."),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Workspace Owner (You)")).toBeVisible();
     expect(screen.getByText("owner@example.com")).toBeVisible();
   });
@@ -150,8 +163,7 @@ describe("Workspace overview", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Projects (0)")).toBeVisible();
-    expect(screen.getByText("No projects yet.")).toBeVisible();
+    expect(await screen.findByText("No projects yet.")).toBeVisible();
     expect(screen.queryByText("Website Redesign")).toBeNull();
   });
 });

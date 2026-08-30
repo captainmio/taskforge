@@ -59,6 +59,8 @@ const cachedOverview = {
       dueDate: "2026-10-01T00:00:00.000Z",
       defaultView: ProjectDefaultView.board,
       createdAt: "2026-08-22T00:00:00.000Z",
+      taskCount: 5,
+      completedTaskCount: 2,
     },
   ],
 };

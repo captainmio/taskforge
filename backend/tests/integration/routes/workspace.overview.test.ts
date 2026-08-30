@@ -63,6 +63,8 @@ const workspaceOverview = {
       dueDate: "2026-10-01T00:00:00.000Z",
       defaultView: "board" as const,
       createdAt: "2026-08-22T00:00:00.000Z",
+      taskCount: 8,
+      completedTaskCount: 3,
     },
   ],
 };
@@ -132,6 +134,10 @@ describe("GET /api/workspaces/:workspaceId/overview", () => {
         authenticatedUser.id,
       );
       expect(getWorkspaceOverview).toHaveBeenCalledWith(42);
+      expect(response.body.data.projects[0]).toMatchObject({
+        taskCount: 8,
+        completedTaskCount: 3,
+      });
     },
   );
 });

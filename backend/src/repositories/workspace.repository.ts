@@ -2,6 +2,7 @@ import { prisma } from "../config/database.js";
 import {
   InvitationDeliveryStatus,
   InvitationStatus,
+  TaskStatus,
   WorkspaceRole,
   type WorkspaceIcon,
   type WorkspaceRole as WorkspaceRoleValue,
@@ -359,6 +360,13 @@ export const findWorkspaceOverview = async (workspaceId: number) =>
         },
       },
     },
+  });
+
+export const findWorkspaceProjectTaskCounts = async (workspaceId: number) =>
+  prisma.task.groupBy({
+    by: ["projectId", "status"],
+    where: { project: { workspaceId, deletedAt: null } },
+    _count: { _all: true },
   });
 
 export const findWorkspaceMembersPage = async (

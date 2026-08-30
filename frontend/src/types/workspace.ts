@@ -73,6 +73,8 @@ export interface WorkspaceProject {
   dueDate: string | null;
   defaultView: ProjectDefaultView;
   createdAt: string;
+  taskCount: number;
+  completedTaskCount: number;
 }
 
 export interface WorkspaceOverview {

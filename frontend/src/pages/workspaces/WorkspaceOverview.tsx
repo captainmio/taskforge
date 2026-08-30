@@ -1,6 +1,5 @@
 import {
   FaCalendarAlt,
-  FaChevronRight,
   FaEdit,
   FaFolder,
   FaSignOutAlt,
@@ -15,8 +14,8 @@ import { projectIconOptions } from "../../components/projects/projectIconOptions
 import ActionCard from "../../components/ui/ActionCard";
 import Badge, { type BadgeVariant } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import IconDescriptionItem from "../../components/ui/IconDescriptionItem";
 import ProfileListItem from "../../components/ui/ProfileListItem";
+import ProgressBar from "../../components/ui/ProgressBar";
 import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
@@ -157,6 +156,10 @@ const WorkspaceOverview = () => {
   // The fallback keeps the overview usable while a deployment transitions from
   // an older API response that did not yet include projects.
   const workspaceProjects = workspaceOverview.projects ?? [];
+  const workspaceTaskCount = workspaceProjects.reduce(
+    (total, project) => total + project.taskCount,
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -178,7 +181,7 @@ const WorkspaceOverview = () => {
           className="pointer-events-none absolute -right-16 -top-20 size-52 rounded-full bg-emerald-100/60 blur-3xl"
           aria-hidden="true"
         />
-        <div className="grid gap-6 xl:grid-cols-[1fr_1.15fr] xl:items-center">
+        <div className="grid gap-6 xl:grid-cols-[minmax(15rem,0.6fr)_minmax(0,1.4fr)] xl:items-center">
           <div className="flex items-start gap-4">
             <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-site-green text-lg font-bold text-white shadow-sm">
               {getInitials(workspaceOverview.displayName)}
@@ -197,7 +200,7 @@ const WorkspaceOverview = () => {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={<FaFolder />}
               label="Projects"
@@ -212,8 +215,15 @@ const WorkspaceOverview = () => {
             <StatCard
               icon={<FaTasks />}
               label="Tasks"
-              value={39}
+              value={workspaceTaskCount}
               iconClassName="bg-purple-50 text-purple-600 ring-purple-100"
+            />
+            {/* TODO: Replace this temporary due-task total with the workspace summary API metric. */}
+            <StatCard
+              icon={<FaCalendarAlt />}
+              label="Tasks due"
+              value={12}
+              iconClassName="bg-amber-50 text-amber-600 ring-amber-100"
             />
           </div>
         </div>
@@ -238,23 +248,45 @@ const WorkspaceOverview = () => {
                 const iconOption = projectIconOptions.find(
                   (option) => option.id === project.icon,
                 );
-
+                const progress =
+                  project.taskCount === 0
+                    ? 0
+                    : (project.completedTaskCount / project.taskCount) * 100;
                 return (
                   <li
                     key={project.id}
-                    className="border-b border-gray-100 px-4 py-3.5 last:border-b-0"
+                    className="border-b border-gray-100 py-3.5 last:border-b-0"
                   >
-                    <IconDescriptionItem
-                      icon={iconOption?.icon ?? <FaFolder />}
-                      title={project.name}
-                      description={project.description || undefined}
-                      iconContainerClassName={
-                        iconOption?.className ?? "bg-gray-100 text-gray-600"
-                      }
-                      trailing={
-                        <FaChevronRight className="size-3" aria-hidden="true" />
-                      }
-                    />
+                    <Link
+                      to={`${projectsPath}/${project.id}/tasks`}
+                      className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 rounded-xl px-2 py-1 transition-colors hover:bg-slate-50"
+                    >
+                      <span
+                        className={`row-span-2 flex size-10 items-center justify-center rounded-xl [&>svg]:size-4 ${iconOption?.className ?? "bg-gray-100 text-gray-600"}`}
+                        aria-hidden="true"
+                      >
+                        {iconOption?.icon ?? <FaFolder />}
+                      </span>
+                      <div className="flex min-w-0 items-center justify-between gap-3">
+                        <p className="truncate text-sm font-semibold text-gray-950">
+                          {project.name}
+                        </p>
+                        <span className="shrink-0 text-xs font-semibold text-site-green">
+                          {project.completedTaskCount} Completed
+                        </span>
+                      </div>
+                      {project.taskCount > 0 ? (
+                        <ProgressBar
+                          className="mt-2"
+                          value={progress}
+                          label={`${project.name} completion`}
+                        />
+                      ) : (
+                        <p className="mt-2 text-xs text-gray-500">
+                          No tasks yet
+                        </p>
+                      )}
+                    </Link>
                   </li>
                 );
               })}
