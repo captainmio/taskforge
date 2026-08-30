@@ -138,4 +138,29 @@ describe("DataTable", () => {
       within(mobileSortControls).getByRole("button", { name: "Joined at" }),
     ).toBeVisible();
   });
+
+  it("activates a row with a mouse click or keyboard", () => {
+    const onRowClick = vi.fn();
+    render(
+      <DataTable
+        ariaLabel="Clickable members"
+        rows={rows}
+        columns={columns}
+        getRowKey={(row) => row.id}
+        emptyState={<p>No rows</p>}
+        onRowClick={onRowClick}
+      />,
+    );
+    const table = screen.getByRole("table", { name: "Clickable members" });
+    const adaRow = within(table).getByText("Ada").closest("tr");
+    const graceRow = within(table).getByText("Grace").closest("tr");
+
+    if (!adaRow || !graceRow) throw new Error("Expected member rows");
+
+    fireEvent.click(adaRow);
+    fireEvent.keyDown(graceRow, { key: "Enter" });
+
+    expect(onRowClick).toHaveBeenNthCalledWith(1, rows[0]);
+    expect(onRowClick).toHaveBeenNthCalledWith(2, rows[1]);
+  });
 });

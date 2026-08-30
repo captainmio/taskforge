@@ -26,6 +26,7 @@ interface DataTableProps<T> {
   emptyState: ReactNode;
   sort?: DataTableSort | null;
   onSortChange?: (sort: DataTableSort) => void;
+  onRowClick?: (row: T) => void;
 }
 
 const SortIcon = ({
@@ -54,6 +55,7 @@ const DataTable = <T,>({
   emptyState,
   sort,
   onSortChange,
+  onRowClick,
 }: DataTableProps<T>) => {
   const sortableColumns = columns.filter((column) => column.sortable);
 
@@ -130,7 +132,23 @@ const DataTable = <T,>({
             {rows.map((row) => (
               <tr
                 key={getRowKey(row)}
-                className="block px-4 py-2 md:table-row md:px-0 md:py-0"
+                tabIndex={onRowClick ? 0 : undefined}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+                className={`block px-4 py-2 md:table-row md:px-0 md:py-0 ${
+                  onRowClick
+                    ? "cursor-pointer transition-colors hover:bg-emerald-50/50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-site-green"
+                    : ""
+                }`}
               >
                 {columns.map((column) => (
                   <td

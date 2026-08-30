@@ -70,7 +70,7 @@ export const findTasksByProject = async (
   const [tasks, total] = await prisma.$transaction([
     prisma.task.findMany({
       where,
-      orderBy: [{ status: "asc" }, { position: "asc" }, { id: "asc" }],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip,
       take,
       select: taskSelect,

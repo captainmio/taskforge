@@ -15,6 +15,7 @@ import Button from "../../components/ui/Button";
 import Skeleton from "../../components/ui/Skeleton";
 import TaskBoard from "../../components/tasks/TaskBoard";
 import TaskDialog from "../../components/tasks/TaskDialog";
+import TaskList from "../../components/tasks/TaskList";
 import type {
   Task,
   TaskPriority,
@@ -50,6 +51,7 @@ const toBoardTask = (task: ProjectTask): Task => ({
 });
 
 type DueDateFilter = "all" | "overdue" | "today" | "this_week" | "none";
+type TaskView = "board" | "list";
 
 const dueDateFilterLabels: Record<DueDateFilter, string> = {
   all: "Any due date",
@@ -143,6 +145,7 @@ const TaskPage = (): ReactElement => {
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(true);
   const [taskLoadError, setTaskLoadError] = useState<boolean>(false);
   const [search, setSearch] = useState("");
+  const [taskView, setTaskView] = useState<TaskView>("board");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<TaskPriority[]>(
@@ -550,22 +553,25 @@ const TaskPage = (): ReactElement => {
       <div className="mt-5 flex gap-6 border-b border-gray-200 text-sm font-medium">
         <button
           type="button"
-          className="cursor-pointer border-b-2 border-emerald-500 px-3 pb-3 text-emerald-700"
+          onClick={() => setTaskView("board")}
+          className={`cursor-pointer border-b-2 px-3 pb-3 ${
+            taskView === "board"
+              ? "border-emerald-500 text-emerald-700"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
         >
           Board
         </button>
         <button
           type="button"
-          className="cursor-pointer px-3 pb-3 text-gray-500"
+          onClick={() => setTaskView("list")}
+          className={`cursor-pointer border-b-2 px-3 pb-3 ${
+            taskView === "list"
+              ? "border-emerald-500 text-emerald-700"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
         >
           List
-        </button>
-        <span className="pb-3 text-gray-300">|</span>
-        <button
-          type="button"
-          className="cursor-pointer px-3 pb-3 text-gray-700"
-        >
-          All Projects
         </button>
       </div>
       <div className="mt-4 overflow-x-auto pb-2">
@@ -574,13 +580,21 @@ const TaskPage = (): ReactElement => {
             Unable to load tasks. Please try again.
           </p>
         ) : null}
-        <TaskBoard
-          tasks={tasks}
-          onTaskClick={(task) => setSelectedTask(task)}
-          onAddTask={(status) => openNewTask(status, true)}
-          canAddTask={(status) => status !== "done" || canCompleteInReview}
-          onDragEnd={handleDragEnd}
-        />
+        {taskView === "board" ? (
+          <TaskBoard
+            tasks={tasks}
+            onTaskClick={(task) => setSelectedTask(task)}
+            onAddTask={(status) => openNewTask(status, true)}
+            canAddTask={(status) => status !== "done" || canCompleteInReview}
+            onDragEnd={handleDragEnd}
+          />
+        ) : (
+          <TaskList
+            key={`${search}-${selectedAssignees.join("|")}-${selectedPriorities.join("|")}-${dueDateFilter}`}
+            tasks={tasks}
+            onTaskClick={(task) => setSelectedTask(task)}
+          />
+        )}
       </div>
       {isDialogOpen ? (
         <TaskDialog

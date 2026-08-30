@@ -1,22 +1,16 @@
 import { useState } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaInfoCircle } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaFlag,
+  FaInfoCircle,
+} from "react-icons/fa";
 import { Draggable } from "@hello-pangea/dnd";
 import AvatarGroup from "../ui/AvatarGroup";
+import { formatTaskDueDate } from "../../utils/formatTaskDueDate";
 import { priorityPresentation, type Task } from "./taskTypes";
 
 const DESCRIPTION_PREVIEW_LENGTH: number = 140;
-
-const formatDueDate = (dueDate: string) => {
-  if (!dueDate) return "No due date";
-  const date = new Date(`${dueDate.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? dueDate
-    : new Intl.DateTimeFormat(undefined, {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(date);
-};
 
 interface TaskCardProps {
   task: Task;
@@ -107,11 +101,11 @@ const TaskCard = ({ task, index, onClick }: TaskCardProps) => {
             ) : null}
             <span className="flex items-center gap-1">
               <FaCalendarAlt aria-hidden="true" />
-              {formatDueDate(task.dueDate)}
+              {formatTaskDueDate(task.dueDate)}
             </span>
             <span className="flex items-center gap-1">
-              <span
-                className={`size-1.5 rounded-full ${priorityPresentation[task.priority].dotClassName}`}
+              <FaFlag
+                className={priorityPresentation[task.priority].iconClassName}
                 aria-hidden="true"
               />
               {priorityPresentation[task.priority].label}

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TaskPage from "./Task";
@@ -219,6 +225,30 @@ describe("Task page", () => {
       "Create wireframes",
     );
     expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
+  });
+
+  it("shows filtered tasks in List view and opens a selected row", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: /Implement login flow/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search tasks" }), {
+      target: { value: "wireframes" },
+    });
+
+    const table = screen.getByRole("table", { name: "Project tasks" });
+    expect(within(table).getByText("Create wireframes")).toBeVisible();
+    expect(
+      within(table).queryByText("Implement login flow"),
+    ).not.toBeInTheDocument();
+
+    const row = within(table).getByText("Create wireframes").closest("tr");
+    if (!row) throw new Error("Expected task row");
+    fireEvent.click(row);
+
+    expect(screen.getByRole("textbox", { name: "Task title" })).toHaveValue(
+      "Create wireframes",
+    );
   });
 
   it("keeps the generic title when the project request fails", async () => {
