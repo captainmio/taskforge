@@ -48,6 +48,12 @@ const cachedOverview = {
       joinedAt: "2026-08-20T00:00:00.000Z",
     },
   ],
+  taskSummary: {
+    todo: 3,
+    inProgress: 1,
+    inReview: 1,
+    done: 2,
+  },
   projects: [
     {
       id: 25,

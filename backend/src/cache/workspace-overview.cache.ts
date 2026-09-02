@@ -42,6 +42,12 @@ export interface WorkspaceOverviewData {
   createdAt: string;
   members: WorkspaceOverviewMember[];
   projects: WorkspaceOverviewProject[];
+  taskSummary: {
+    todo: number;
+    inProgress: number;
+    inReview: number;
+    done: number;
+  };
 }
 
 // The version segment lets a future response-shape change use a new namespace

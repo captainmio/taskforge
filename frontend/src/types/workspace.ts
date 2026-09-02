@@ -77,6 +77,13 @@ export interface WorkspaceProject {
   completedTaskCount: number;
 }
 
+export interface WorkspaceTaskSummary {
+  todo: number;
+  inProgress: number;
+  inReview: number;
+  done: number;
+}
+
 export interface WorkspaceOverview {
   id: number;
   displayName: string;
@@ -85,4 +92,5 @@ export interface WorkspaceOverview {
   createdAt: string;
   members: WorkspaceMember[];
   projects: WorkspaceProject[];
+  taskSummary?: WorkspaceTaskSummary;
 }

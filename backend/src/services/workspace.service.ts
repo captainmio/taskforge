@@ -389,15 +389,29 @@ export const getWorkspaceOverview = async (
     number,
     { taskCount: number; completedTaskCount: number }
   >();
+  const taskSummary = {
+    todo: 0,
+    inProgress: 0,
+    inReview: 0,
+    done: 0,
+  };
 
   for (const taskCount of projectTaskCounts) {
+    const count = taskCount._count._all;
     const counts = taskCountsByProject.get(taskCount.projectId) ?? {
       taskCount: 0,
       completedTaskCount: 0,
     };
-    counts.taskCount += taskCount._count._all;
+    counts.taskCount += count;
     if (taskCount.status === TaskStatus.done) {
-      counts.completedTaskCount += taskCount._count._all;
+      counts.completedTaskCount += count;
+      taskSummary.done += count;
+    } else if (taskCount.status === TaskStatus.in_review) {
+      taskSummary.inReview += count;
+    } else if (taskCount.status === TaskStatus.in_progress) {
+      taskSummary.inProgress += count;
+    } else {
+      taskSummary.todo += count;
     }
     taskCountsByProject.set(taskCount.projectId, counts);
   }
@@ -412,6 +426,7 @@ export const getWorkspaceOverview = async (
       role,
       joinedAt: joinedAt.toISOString(),
     })),
+    taskSummary,
     projects: projects.map((project) => {
       const taskCounts = taskCountsByProject.get(project.id) ?? {
         taskCount: 0,

@@ -3,7 +3,7 @@ import { env } from "./env.js";
 
 // Bump this whenever a cached data contract changes. This keeps clients from
 // receiving older Redis entries that do not include newly added fields.
-export const CACHE_VERSION = "v4";
+export const CACHE_VERSION = "v5";
 
 let cacheRedisConnection: IORedis | undefined;
 

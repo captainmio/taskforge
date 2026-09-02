@@ -16,6 +16,7 @@ import Badge, { type BadgeVariant } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import ProfileListItem from "../../components/ui/ProfileListItem";
 import ProgressBar from "../../components/ui/ProgressBar";
+import RoundedSpacedDonutChart from "../../components/ui/RoundedSpacedDonutChart";
 import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
@@ -156,6 +157,12 @@ const WorkspaceOverview = () => {
   // The fallback keeps the overview usable while a deployment transitions from
   // an older API response that did not yet include projects.
   const workspaceProjects = workspaceOverview.projects ?? [];
+  const workspaceTaskSummary = workspaceOverview.taskSummary ?? {
+    todo: 0,
+    inProgress: 0,
+    inReview: 0,
+    done: 0,
+  };
   const workspaceTaskCount = workspaceProjects.reduce(
     (total, project) => total + project.taskCount,
     0,
@@ -282,7 +289,7 @@ const WorkspaceOverview = () => {
                           label={`${project.name} completion`}
                         />
                       ) : (
-                        <p className="mt-2 text-xs text-gray-500">
+                        <p className="mt-2 text-right text-xs text-gray-500">
                           No tasks yet
                         </p>
                       )}
@@ -345,6 +352,29 @@ const WorkspaceOverview = () => {
           )}
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Task distribution"
+        className="mt-5 border-purple-100 bg-gradient-to-br from-white to-purple-50/60 shadow-sm"
+      >
+        <RoundedSpacedDonutChart
+          totalLabel="Tasks"
+          data={[
+            { label: "To Do", value: workspaceTaskSummary.todo, color: "#64748b" },
+            {
+              label: "In Progress",
+              value: workspaceTaskSummary.inProgress,
+              color: "#7c3aed",
+            },
+            {
+              label: "In Review",
+              value: workspaceTaskSummary.inReview,
+              color: "#d97706",
+            },
+            { label: "Done", value: workspaceTaskSummary.done, color: "#14ae5d" },
+          ]}
+        />
+      </SectionCard>
 
       <SectionCard
         title="Settings & Actions"

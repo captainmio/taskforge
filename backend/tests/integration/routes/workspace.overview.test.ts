@@ -52,6 +52,12 @@ const workspaceOverview = {
   icon: "code" as const,
   createdAt: "2026-08-18T00:00:00.000Z",
   members: workspaceMembers,
+  taskSummary: {
+    todo: 3,
+    inProgress: 4,
+    inReview: 1,
+    done: 2,
+  },
   projects: [
     {
       id: 25,
@@ -137,6 +143,12 @@ describe("GET /api/workspaces/:workspaceId/overview", () => {
       expect(response.body.data.projects[0]).toMatchObject({
         taskCount: 8,
         completedTaskCount: 3,
+      });
+      expect(response.body.data.taskSummary).toEqual({
+        todo: 3,
+        inProgress: 4,
+        inReview: 1,
+        done: 2,
       });
     },
   );

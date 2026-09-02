@@ -6,8 +6,8 @@ TaskForge is a full-stack workspace and project-management application. It has a
 
 | Area | Technologies |
 | --- | --- |
-| Frontend | TypeScript, React, Vite, Tailwind CSS, React Router, Axios, React Hook Form |
-| Backend | TypeScript, Node.js, Express, PostgreSQL, Prisma ORM, Redis, BullMQ, Pino, Zod, JWT, bcrypt |
+| Frontend | TypeScript, React, Vite, Tailwind CSS, React Router, Axios, React Hook Form, Socket.IO Client |
+| Backend | TypeScript, Node.js, Express, PostgreSQL, Prisma ORM, Redis, BullMQ, Socket.IO, Pino, Zod, JWT, bcrypt |
 | Testing | Vitest, Testing Library, Supertest |
 
 ## Prerequisites
@@ -30,7 +30,7 @@ TaskForge is a full-stack workspace and project-management application. It has a
    npm install
    ```
 
-2. Create `backend/.env` from [`backend/.env.example`](backend/.env.example). At minimum, set:
+2. Create `backend/.env` from [`backend/.env.example`](backend/.env.example). Configure the values for your local services:
 
    ```env
    NODE_ENV="development"
@@ -59,6 +59,40 @@ TaskForge is a full-stack workspace and project-management application. It has a
    npx prisma generate
    npx prisma migrate deploy
    ```
+
+## Environment configuration
+
+The example files document every supported variable. Keep local `.env` files out of version control and never reuse production credentials for tests.
+
+### Backend (`backend/.env`)
+
+| Variable | Purpose |
+| --- | --- |
+| `NODE_ENV` | Runtime mode. Use `development` locally and `production` when deployed. |
+| `PORT` | HTTP port for the API. Defaults to `3000` in the example. |
+| `DATABASE_URL` | PostgreSQL connection string used by Prisma. |
+| `JWT_SECRET` | Long, unique secret used to sign authentication tokens. |
+| `BCRYPT_SALT_ROUNDS` | bcrypt work factor for password hashing; use the example value in normal development. |
+| `FRONTEND_API` | Allowed frontend origin for CORS and the base URL for invitation links. |
+| `REDIS_PORT` | Host port exposed by `backend/docker-compose.yml`; it does not configure the application connection. |
+| `REDIS_URL` | Redis connection used by the API and invitation worker queues. |
+| `CACHE_REDIS_URL` | Redis connection for cached application data; use a separate logical Redis database from `REDIS_URL`. |
+| `REDIS_CACHE_TTL_SECONDS` | Lifetime of cached data, in seconds. |
+| `LOG_LEVEL` | Minimum structured-log severity: `fatal`, `error`, `warn`, `info`, `debug`, or `trace`. |
+| `LOG_FILE_ENABLED` | Enables or disables rotated JSON log files in addition to standard output. |
+| `LOG_FILE_PATH`, `LOG_FILE_MAX_SIZE`, `LOG_FILE_RETENTION_COUNT` | Location, maximum size, and retained count for application log files. |
+| `INVITATION_LOG_PATH` | File used by the invitation worker to record delivery attempts. |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_APP_URL` | Public URL of the frontend. |
+| `VITE_API_URL` | Browser-accessible API base URL, including `/api`. Vite embeds this value during the build. |
+
+### Test environment (`backend/.env.test`)
+
+Copy [`backend/.env.test.example`](backend/.env.test.example) and configure an isolated database and Redis logical databases. `TEST_DATABASE_CONFIRM` must remain `taskforge-tests`; it is a safety check before database integration tests run.
 
 ## Local development
 
@@ -96,6 +130,11 @@ Run these commands from `frontend`:
 | --- | --- |
 | `npm test` | Runs the frontend test suite once. |
 | `npm run test:watch` | Re-runs relevant tests while files change. |
+| `npm run typecheck` | Type-checks the frontend without building it. |
+| `npm run lint` | Runs ESLint checks. |
+| `npm run format:check` | Checks Prettier formatting. |
+| `npm run build` | Type-checks and creates a production build in `dist`. |
+| `npm run preview` | Serves the production build locally for verification. |
 
 ### Backend
 
@@ -107,6 +146,10 @@ Run these commands from `backend`:
 | `npm run test:watch` | Re-runs the fast tests while files change. |
 | `npm run test:integration` | Applies migrations to the test database and runs database integration tests. |
 | `npm run test:all` | Runs both fast and database integration tests. |
+| `npm run build` | Compiles the API and worker into `dist`. |
+| `npm start` | Starts the compiled API. |
+| `npm run worker:invitations` | Runs the invitation worker from TypeScript for a one-off local process. |
+| `npm run worker:invitations:start` | Starts the compiled invitation worker. |
 
 Database integration tests need a separate test database. Copy [`backend/.env.test.example`](backend/.env.test.example) to `backend/.env.test`, set its database URL, and leave this value unchanged:
 

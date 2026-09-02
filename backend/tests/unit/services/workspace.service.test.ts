@@ -615,6 +615,12 @@ describe("getWorkspaceOverview", () => {
         joinedAt: "2026-08-20T00:00:00.000Z",
       },
     ],
+    taskSummary: {
+      todo: 3,
+      inProgress: 4,
+      inReview: 1,
+      done: 2,
+    },
     projects: [
       {
         id: 25,
@@ -626,7 +632,7 @@ describe("getWorkspaceOverview", () => {
         dueDate: "2026-10-01T00:00:00.000Z",
         defaultView: ProjectDefaultView.board,
         createdAt: "2026-08-22T00:00:00.000Z",
-        taskCount: 5,
+        taskCount: 10,
         completedTaskCount: 2,
       },
     ],
@@ -637,6 +643,8 @@ describe("getWorkspaceOverview", () => {
     vi.mocked(findWorkspaceOverview).mockResolvedValue(repositoryOverview);
     vi.mocked(findWorkspaceProjectTaskCounts).mockResolvedValue([
       { projectId: 25, status: TaskStatus.todo, _count: { _all: 3 } },
+      { projectId: 25, status: TaskStatus.in_progress, _count: { _all: 4 } },
+      { projectId: 25, status: TaskStatus.in_review, _count: { _all: 1 } },
       { projectId: 25, status: TaskStatus.done, _count: { _all: 2 } },
     ] as never);
     vi.mocked(setCachedWorkspaceOverview).mockResolvedValue(undefined);
@@ -652,7 +660,7 @@ describe("getWorkspaceOverview", () => {
     expect(setCachedWorkspaceOverview).not.toHaveBeenCalled();
   });
 
-  it("aggregates project task counts and normalizes dates before caching the overview", async () => {
+  it("aggregates project task status counts and normalizes dates before caching the overview", async () => {
     await expect(getWorkspaceOverview(10)).resolves.toEqual(normalizedOverview);
     expect(findWorkspaceOverview).toHaveBeenCalledWith(10);
     expect(findWorkspaceProjectTaskCounts).toHaveBeenCalledWith(10);
