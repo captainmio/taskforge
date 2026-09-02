@@ -2,6 +2,7 @@ import type {
   CreateWorkspacePayload,
   WorkspaceMember,
   WorkspaceOverview,
+  WorkspaceRecentUpdate,
 } from "../types/workspace";
 import type { WorkspaceMemberRole, WorkspaceRole } from "../types/roles";
 import { apiClient, type ApiSuccessResponse } from "./api";
@@ -28,6 +29,14 @@ export const getWorkspaceOverview = async (
 ): Promise<ApiSuccessResponse<WorkspaceOverview>> => {
   const response = await apiClient.get<ApiSuccessResponse<WorkspaceOverview>>(
     `/workspaces/${workspaceId}/overview`,
+  );
+  return response.data;
+};
+
+export const getWorkspaceHistory = async (workspaceId: string, cursor?: number) => {
+  const response = await apiClient.get<ApiSuccessResponse<{ history: WorkspaceRecentUpdate[]; nextCursor: number | null }>>(
+    `/workspaces/${workspaceId}/history`,
+    { params: { limit: 25, ...(cursor ? { cursor } : {}) } },
   );
   return response.data;
 };

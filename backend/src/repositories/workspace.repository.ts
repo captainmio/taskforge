@@ -330,21 +330,7 @@ export const findWorkspaceOverview = async (workspaceId: number) =>
       description: true,
       icon: true,
       createdAt: true,
-      members: {
-        orderBy: { createdAt: "asc" },
-        select: {
-          role: true,
-          createdAt: true,
-          user: {
-            select: {
-              id: true,
-              firstname: true,
-              lastname: true,
-              email: true,
-            },
-          },
-        },
-      },
+      _count: { select: { members: true } },
       projects: {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         select: {
@@ -361,6 +347,54 @@ export const findWorkspaceOverview = async (workspaceId: number) =>
       },
     },
   });
+
+export const findWorkspaceRecentTaskHistory = async (
+  workspaceId: number,
+  limit: number,
+) =>
+  prisma.taskHistory.findMany({
+    where: { task: { project: { workspaceId, deletedAt: null } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit,
+    select: {
+      id: true,
+      action: true,
+      changes: true,
+      createdAt: true,
+      actor: {
+        select: { id: true, firstname: true, lastname: true, email: true },
+      },
+      task: {
+        select: {
+          id: true,
+          title: true,
+          project: { select: { id: true, name: true } },
+        },
+      },
+    },
+  });
+
+export const findWorkspaceTaskHistory = async (
+  workspaceId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const records = await prisma.taskHistory.findMany({
+    where: { task: { project: { workspaceId, deletedAt: null } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor } } : {}),
+    skip: cursor ? 1 : 0,
+    take: limit + 1,
+    select: {
+      id: true, action: true, changes: true, createdAt: true,
+      actor: { select: { id: true, firstname: true, lastname: true, email: true } },
+      task: { select: { id: true, title: true, project: { select: { id: true, name: true } } } },
+    },
+  });
+  const hasMore = records.length > limit;
+  const history = hasMore ? records.slice(0, limit) : records;
+  return { history, nextCursor: hasMore ? history.at(-1)?.id ?? null : null };
+};
 
 export const findWorkspaceProjectTaskCounts = async (workspaceId: number) =>
   prisma.task.groupBy({

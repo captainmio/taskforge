@@ -30,7 +30,6 @@ export const createTaskRecord = async ({ assigneeIds, ...data }: CreateTaskData)
     const position = await transaction.task.count({
       where: { projectId: data.projectId, status: data.status },
     });
-
     return transaction.task.create({
       data: {
         ...data,
@@ -200,13 +199,20 @@ export const updateTaskRecord = async (
         }
 
         const nextAssigneeIds = assigneeIds ?? currentTask.assignees.map(({ userId }) => userId);
-        const changes: Record<string, { from: string | number | null | number[]; to: string | number | null | number[] }> = {};
+        type HistoryValue = string | number | null | number[];
+        type HistoryChange = {
+          from: HistoryValue;
+          to: HistoryValue;
+        };
+        const changes: Record<string, HistoryChange> = {};
         const recordChange = (
           field: string,
-          from: string | number | null | number[],
-          to: string | number | null | number[],
+          from: HistoryValue,
+          to: HistoryValue,
         ) => {
-          if (JSON.stringify(from) !== JSON.stringify(to)) changes[field] = { from, to };
+          if (JSON.stringify(from) !== JSON.stringify(to)) {
+            changes[field] = { from, to };
+          }
         };
 
         recordChange("title", currentTask.title, data.title ?? currentTask.title);
@@ -230,14 +236,22 @@ export const updateTaskRecord = async (
           nextAssigneeIds,
         );
 
-        await transaction.taskHistory.create({
-          data: {
-            taskId,
-            actorUserId: actorUserId ?? currentTask.createdById,
-            action: "updated",
-            changes: changes as Prisma.InputJsonObject,
-          },
-        });
+        const effectiveChanges = Object.fromEntries(
+          Object.entries(changes).filter(
+            ([, change]) =>
+              JSON.stringify(change.from) !== JSON.stringify(change.to),
+          ),
+        );
+        if (Object.keys(effectiveChanges).length > 0) {
+          await transaction.taskHistory.create({
+            data: {
+              taskId,
+              actorUserId: actorUserId ?? currentTask.createdById,
+              action: "updated",
+              changes: effectiveChanges as Prisma.InputJsonObject,
+            },
+          });
+        }
 
         return task;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
@@ -266,6 +280,84 @@ const taskHistorySelect = {
   },
 } satisfies Prisma.TaskHistorySelect;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const getAssigneeIds = (value: unknown): number[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === "number")
+    : [];
+
+const collectHistoryAssigneeIds = (changes: unknown): number[] => {
+  if (!isRecord(changes)) return [];
+  const snapshot = isRecord(changes.snapshot) ? changes.snapshot : null;
+  const assigneeChange = isRecord(changes.assigneeIds)
+    ? changes.assigneeIds
+    : null;
+
+  return [
+    ...getAssigneeIds(snapshot?.assigneeIds),
+    ...getAssigneeIds(assigneeChange?.from),
+    ...getAssigneeIds(assigneeChange?.to),
+  ];
+};
+
+const addResolvedAssigneeNames = (
+  changes: unknown,
+  namesById: ReadonlyMap<number, string>,
+): unknown => {
+  if (!isRecord(changes)) return changes;
+  const resolvedChanges = { ...changes };
+  const snapshot = isRecord(changes.snapshot) ? changes.snapshot : null;
+  if (snapshot) {
+    resolvedChanges.snapshot = {
+      ...snapshot,
+      assigneeNames: getAssigneeIds(snapshot.assigneeIds).map(
+        (id) => namesById.get(id) ?? `User ${id}`,
+      ),
+    };
+  }
+
+  const assigneeChange = isRecord(changes.assigneeIds)
+    ? changes.assigneeIds
+    : null;
+  if (assigneeChange) {
+    resolvedChanges.assigneeIds = {
+      ...assigneeChange,
+      fromNames: getAssigneeIds(assigneeChange.from).map(
+        (id) => namesById.get(id) ?? `User ${id}`,
+      ),
+      toNames: getAssigneeIds(assigneeChange.to).map(
+        (id) => namesById.get(id) ?? `User ${id}`,
+      ),
+    };
+  }
+
+  return resolvedChanges;
+};
+
+export const resolveTaskHistoryAssigneeNames = async <
+  T extends { changes: unknown },
+>(records: readonly T[]): Promise<T[]> => {
+  const assigneeIds = [
+    ...new Set(records.flatMap((record) => collectHistoryAssigneeIds(record.changes))),
+  ];
+  if (assigneeIds.length === 0) return [...records];
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: assigneeIds } },
+    select: { id: true, firstname: true, lastname: true },
+  });
+  const namesById = new Map(
+    users.map((user) => [user.id, `${user.firstname} ${user.lastname}`]),
+  );
+
+  return records.map((record) => ({
+    ...record,
+    changes: addResolvedAssigneeNames(record.changes, namesById),
+  }));
+};
+
 export const findTaskHistoryByTask = async (
   projectId: number,
   taskId: number,
@@ -288,9 +380,10 @@ export const findTaskHistoryByTask = async (
   });
   const hasMore = records.length > limit;
   const history = hasMore ? records.slice(0, limit) : records;
+  const historyWithAssigneeNames = await resolveTaskHistoryAssigneeNames(history);
 
   return {
-    history,
+    history: historyWithAssigneeNames,
     nextCursor: hasMore ? history.at(-1)?.id ?? null : null,
   };
 };

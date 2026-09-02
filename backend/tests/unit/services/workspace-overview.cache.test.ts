@@ -38,6 +38,8 @@ const cachedOverview = {
   description: "Builds and maintains the product.",
   icon: WorkspaceIcon.code,
   createdAt: "2026-08-18T00:00:00.000Z",
+  memberCount: 1,
+  recentUpdates: [],
   members: [
     {
       id: 8,

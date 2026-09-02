@@ -27,14 +27,14 @@ const renderList = (tasks: Task[], onTaskClick = vi.fn()) => {
 };
 
 describe("TaskList", () => {
-  it("limits a long task description to 100 characters", () => {
+  it("limits a long task description to 50 characters", () => {
     const description = "a".repeat(101);
     renderList([createTask(1, { description })]);
     const taskDescription = screen
       .getByText("Task 1")
       .parentElement?.querySelector("p.mt-1");
 
-    expect(taskDescription).toHaveTextContent(`${"a".repeat(100)}…`);
+    expect(taskDescription).toHaveTextContent(`${"a".repeat(50)}…`);
     expect(taskDescription).not.toHaveTextContent(description);
   });
 

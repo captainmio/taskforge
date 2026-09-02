@@ -1,5 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import {
+  resolveTaskHistoryAssigneeNames,
+} from "../repositories/task.repository.js";
+import {
   deleteCachedWorkspaceOverview,
   getCachedWorkspaceOverview,
   setCachedWorkspaceOverview,
@@ -46,6 +49,8 @@ import {
   findWorkspaceInviteLinkByTokenHash,
   findWorkspaceOverview,
   findWorkspaceProjectTaskCounts,
+  findWorkspaceRecentTaskHistory,
+  findWorkspaceTaskHistory,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -380,11 +385,14 @@ export const getWorkspaceOverview = async (
   const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
   if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
 
-  const [workspaceRecord, projectTaskCounts] = await Promise.all([
+  const [workspaceRecord, projectTaskCounts, recentTaskHistory] = await Promise.all([
     findWorkspaceOverview(workspaceId),
     findWorkspaceProjectTaskCounts(workspaceId),
+    findWorkspaceRecentTaskHistory(workspaceId, 3),
   ]);
-  const { members, projects, createdAt, ...workspace } = workspaceRecord;
+  const recentTaskHistoryWithAssigneeNames =
+    await resolveTaskHistoryAssigneeNames(recentTaskHistory);
+  const { projects, createdAt, _count, ...workspace } = workspaceRecord;
   const taskCountsByProject = new Map<
     number,
     { taskCount: number; completedTaskCount: number }
@@ -421,12 +429,12 @@ export const getWorkspaceOverview = async (
   const overview: WorkspaceOverviewData = {
     ...workspace,
     createdAt: createdAt.toISOString(),
-    members: members.map(({ user, role, createdAt: joinedAt }) => ({
-      ...user,
-      role,
-      joinedAt: joinedAt.toISOString(),
-    })),
+    memberCount: _count.members,
     taskSummary,
+    recentUpdates: recentTaskHistoryWithAssigneeNames.map(({ createdAt: updatedAt, ...update }) => ({
+      ...update,
+      createdAt: updatedAt.toISOString(),
+    })),
     projects: projects.map((project) => {
       const taskCounts = taskCountsByProject.get(project.id) ?? {
         taskCount: 0,
@@ -445,6 +453,19 @@ export const getWorkspaceOverview = async (
 
   await setCachedWorkspaceOverview(workspaceId, overview);
   return overview;
+};
+
+export const getWorkspaceTaskHistory = async (
+  workspaceId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const result = await findWorkspaceTaskHistory(workspaceId, cursor, limit);
+  const history = await resolveTaskHistoryAssigneeNames(result.history);
+  return {
+    history: history.map(({ createdAt, ...entry }) => ({ ...entry, createdAt: createdAt.toISOString() })),
+    nextCursor: result.nextCursor,
+  };
 };
 
 export const getWorkspaceMembers = async (

@@ -5,7 +5,7 @@ import CreateProject from "./CreateProject";
 
 const mocks = vi.hoisted(() => ({
   createProject: vi.fn(),
-  getWorkspaceOverview: vi.fn(),
+  getWorkspaceMembers: vi.fn(),
   navigate: vi.fn(),
   toastSuccess: vi.fn(),
 }));
@@ -15,7 +15,7 @@ vi.mock("../../services/projects", () => ({
 }));
 
 vi.mock("../../services/workspaces", () => ({
-  getWorkspaceOverview: mocks.getWorkspaceOverview,
+  getWorkspaceMembers: mocks.getWorkspaceMembers,
 }));
 
 vi.mock("../../hooks/useAuthenticatedSession", () => ({
@@ -54,25 +54,18 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
-const workspaceOverviewFor = (role: "OWNER" | "ADMIN" | "MEMBER") => ({
+const workspaceMembersFor = (role: "OWNER" | "ADMIN" | "MEMBER") => ({
   success: true as const,
   message: "Workspace overview retrieved",
   data: {
-    id: 42,
-    displayName: "Engineering",
-    description: "",
-    icon: "code" as const,
-    createdAt: "2026-08-18T12:00:00.000Z",
-    members: [
-      {
-        id: 1,
-        firstname: "Rustem",
-        lastname: "Jordan",
-        email: "rustem@example.com",
-        role,
-        joinedAt: "2026-08-18T12:00:00.000Z",
-      },
-    ],
+    members: [],
+    currentUserRole: role,
+    pagination: {
+      page: 1,
+      pageSize: 1,
+      total: 1,
+      totalPages: 1,
+    },
   },
 });
 
@@ -81,14 +74,14 @@ describe("Create Project page", () => {
     mocks.createProject.mockReset();
     mocks.navigate.mockReset();
     mocks.toastSuccess.mockReset();
-    mocks.getWorkspaceOverview.mockResolvedValue(workspaceOverviewFor("OWNER"));
+    mocks.getWorkspaceMembers.mockResolvedValue(workspaceMembersFor("OWNER"));
   });
 
   it.each(["OWNER", "ADMIN"] as const)(
     "renders the project form for a workspace %s",
     async (role) => {
-      mocks.getWorkspaceOverview.mockResolvedValueOnce(
-        workspaceOverviewFor(role),
+      mocks.getWorkspaceMembers.mockResolvedValueOnce(
+        workspaceMembersFor(role),
       );
       renderPage();
 
@@ -173,8 +166,8 @@ describe("Create Project page", () => {
   });
 
   it("redirects a member away from the create-project page", async () => {
-    mocks.getWorkspaceOverview.mockResolvedValueOnce(
-      workspaceOverviewFor("MEMBER"),
+    mocks.getWorkspaceMembers.mockResolvedValueOnce(
+      workspaceMembersFor("MEMBER"),
     );
     renderPage();
 

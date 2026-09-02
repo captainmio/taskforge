@@ -35,23 +35,14 @@ const authCookie = `accessToken=${jwt.sign(
   "test-only-jwt-secret",
 )}`;
 
-const workspaceMembers = [
-  {
-    id: 7,
-    firstname: "Workspace",
-    lastname: "Member",
-    email: authenticatedUser.email,
-    role: "MEMBER" as const,
-    joinedAt: "2026-08-19T00:00:00.000Z",
-  },
-];
 const workspaceOverview = {
   id: 42,
   displayName: "Engineering Team",
   description: "Builds and maintains the product.",
   icon: "code" as const,
   createdAt: "2026-08-18T00:00:00.000Z",
-  members: workspaceMembers,
+  memberCount: 1,
+  recentUpdates: [],
   taskSummary: {
     todo: 3,
     inProgress: 4,

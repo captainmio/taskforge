@@ -3,6 +3,9 @@ import { FaExchangeAlt, FaPlus } from "react-icons/fa";
 import Button from "../ui/Button";
 import Skeleton from "../ui/Skeleton";
 import { getTaskHistory, type TaskHistoryEntry } from "../../services/tasks";
+import TaskHistoryChangeDetails, {
+  hasTaskHistoryDetails,
+} from "./TaskHistoryChangeDetails";
 
 interface TaskHistoryMember {
   id: string;
@@ -17,32 +20,6 @@ interface TaskHistoryProps {
   refreshVersion: number;
 }
 
-const statusLabels: Record<string, string> = {
-  todo: "To Do",
-  in_progress: "In Progress",
-  in_review: "In Review",
-  done: "Done",
-};
-
-const fieldLabels: Record<string, string> = {
-  title: "Title",
-  description: "Description",
-  status: "Status",
-  position: "Position",
-  priority: "Priority",
-  dueDate: "Due date",
-  timeEstimate: "Time estimate",
-  assigneeIds: "Assignees",
-};
-
-const valuePreviewLength = 160;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const isChange = (value: unknown): value is { from: unknown; to: unknown } =>
-  isRecord(value) && "from" in value && "to" in value;
-
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
     month: "short",
@@ -51,86 +28,6 @@ const formatDate = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-
-const formatValue = (
-  value: unknown,
-  field: string,
-  members: readonly TaskHistoryMember[],
-): string => {
-  if (value === null || value === "") return "None";
-  if (field === "status" && typeof value === "string") {
-    return statusLabels[value] ?? value;
-  }
-  if (field === "priority" && typeof value === "string") {
-    return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
-  }
-  if (field === "dueDate" && typeof value === "string") {
-    return new Intl.DateTimeFormat(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(`${value}T00:00:00`));
-  }
-  if (field === "assigneeIds" && Array.isArray(value)) {
-    return value.length === 0
-      ? "Unassigned"
-      : value
-          .map(
-            (id) =>
-              members.find((member) => member.id === String(id))?.name ??
-              `User ${id}`,
-          )
-          .join(", ");
-  }
-  return String(value);
-};
-
-interface HistoryChangeValueProps {
-  value: string;
-  valueKey: string;
-  isExpanded: boolean;
-  onToggle: (valueKey: string) => void;
-}
-
-const HistoryChangeValue = ({
-  value,
-  valueKey,
-  isExpanded,
-  onToggle,
-}: HistoryChangeValueProps) => {
-  const isLong = value.length > valuePreviewLength;
-  const displayedValue =
-    isLong && !isExpanded
-      ? `${value.slice(0, valuePreviewLength).trimEnd()}…`
-      : value;
-
-  return (
-    <>
-      <strong className="break-words font-semibold text-gray-800">
-        {displayedValue}
-      </strong>
-      {isLong ? (
-        <button
-          type="button"
-          className="ml-1 font-semibold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 cursor-pointer"
-          aria-expanded={isExpanded}
-          onClick={() => onToggle(valueKey)}
-        >
-          {isExpanded ? "Show less" : "Show full value"}
-        </button>
-      ) : null}
-    </>
-  );
-};
-
-const hasVisibleHistoryDetail = (entry: TaskHistoryEntry) => {
-  const changes = isRecord(entry.changes) ? entry.changes : {};
-  if (isRecord(changes.snapshot)) return true;
-
-  return Object.entries(changes).some(
-    ([field, value]) => field !== "snapshot" && isChange(value),
-  );
-};
 
 const TaskHistory = ({
   workspaceId,
@@ -146,9 +43,6 @@ const TaskHistory = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [expandedValues, setExpandedValues] = useState<Set<string>>(
-    () => new Set(),
-  );
 
   useEffect(() => {
     if (!taskId) {
@@ -206,18 +100,6 @@ const TaskHistory = ({
     }
   };
 
-  const toggleValue = (valueKey: string) => {
-    setExpandedValues((currentValues) => {
-      const nextValues = new Set(currentValues);
-      if (nextValues.has(valueKey)) {
-        nextValues.delete(valueKey);
-      } else {
-        nextValues.add(valueKey);
-      }
-      return nextValues;
-    });
-  };
-
   return (
     <aside className="border-t border-gray-100 bg-slate-50/70 p-6 lg:border-l lg:border-t-0 overflow-y-auto">
       <h3 className="text-sm font-bold text-gray-950">Task History</h3>
@@ -261,19 +143,9 @@ const TaskHistory = ({
         </div>
       ) : (
         <>
-          {history.filter(hasVisibleHistoryDetail).length > 0 ? (
+          {history.filter((entry) => hasTaskHistoryDetails(entry.changes)).length > 0 ? (
             <ol className="mt-6 space-y-6">
-              {history.filter(hasVisibleHistoryDetail).map((entry) => {
-                const changes = isRecord(entry.changes) ? entry.changes : {};
-                const snapshot = isRecord(changes.snapshot)
-                  ? changes.snapshot
-                  : null;
-                const changeEntries = Object.entries(changes).flatMap(
-                  ([field, value]) =>
-                    field !== "snapshot" && isChange(value)
-                      ? [{ field, change: value }]
-                      : [],
-                );
+              {history.filter((entry) => hasTaskHistoryDetails(entry.changes)).map((entry) => {
                 const actorName = `${entry.actor.firstname} ${entry.actor.lastname}`;
                 const isCreated = entry.action === "created";
                 const Icon = isCreated ? FaPlus : FaExchangeAlt;
@@ -298,62 +170,11 @@ const TaskHistory = ({
                           ? "created this task."
                           : "updated this task."}
                       </p>
-                      {snapshot ? (
-                        <p className="mt-1">
-                          Created with{" "}
-                          <strong className="font-semibold text-gray-800">
-                            {formatValue(snapshot.status, "status", members)}
-                          </strong>{" "}
-                          status and{" "}
-                          <strong className="font-semibold text-gray-800">
-                            {formatValue(
-                              snapshot.priority,
-                              "priority",
-                              members,
-                            )}
-                          </strong>{" "}
-                          priority.
-                        </p>
-                      ) : null}
-                      {changeEntries.length > 0 ? (
-                        <ul className="mt-1 space-y-1">
-                          {changeEntries.map(({ field, change }) => {
-                            const fromValue = formatValue(
-                              change.from,
-                              field,
-                              members,
-                            );
-                            const toValue = formatValue(
-                              change.to,
-                              field,
-                              members,
-                            );
-                            const fromValueKey = `${entry.id}:${field}:from`;
-                            const toValueKey = `${entry.id}:${field}:to`;
-
-                            return (
-                              <li key={field}>
-                                <strong className="font-semibold text-gray-800">
-                                  {fieldLabels[field] ?? field}:
-                                </strong>{" "}
-                                <HistoryChangeValue
-                                  value={fromValue}
-                                  valueKey={fromValueKey}
-                                  isExpanded={expandedValues.has(fromValueKey)}
-                                  onToggle={toggleValue}
-                                />{" "}
-                                to{" "}
-                                <HistoryChangeValue
-                                  value={toValue}
-                                  valueKey={toValueKey}
-                                  isExpanded={expandedValues.has(toValueKey)}
-                                  onToggle={toggleValue}
-                                />
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
+                      <TaskHistoryChangeDetails
+                        changes={entry.changes}
+                        valueKeyPrefix={String(entry.id)}
+                        members={members}
+                      />
                       <time className="mt-1 block text-[11px] text-gray-400">
                         {formatDate(entry.createdAt)}
                       </time>

@@ -84,13 +84,23 @@ export interface WorkspaceTaskSummary {
   done: number;
 }
 
+export interface WorkspaceRecentUpdate {
+  id: number;
+  action: string;
+  changes: unknown;
+  createdAt: string;
+  actor: { id: number; firstname: string; lastname: string; email: string };
+  task: { id: number; title: string; project: { id: number; name: string } };
+}
+
 export interface WorkspaceOverview {
   id: number;
   displayName: string;
   description: string;
   icon: WorkspaceIcon;
   createdAt: string;
-  members: WorkspaceMember[];
+  memberCount?: number;
   projects: WorkspaceProject[];
   taskSummary?: WorkspaceTaskSummary;
+  recentUpdates?: WorkspaceRecentUpdate[];
 }

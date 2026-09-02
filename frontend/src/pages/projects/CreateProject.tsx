@@ -8,9 +8,8 @@ import ProjectForm, {
 } from "../../components/projects/ProjectForm";
 import Button from "../../components/ui/Button";
 import Skeleton from "../../components/ui/Skeleton";
-import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import { createProject } from "../../services/projects";
-import { getWorkspaceOverview } from "../../services/workspaces";
+import { getWorkspaceMembers } from "../../services/workspaces";
 import { canCreateWorkspaceProjects } from "../../types/roles";
 
 const CreateProjectSkeleton = () => (
@@ -47,7 +46,6 @@ const CreateProjectSkeleton = () => (
 const CreateProject = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuthenticatedSession();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoadingAuthorization, setIsLoadingAuthorization] = useState(true);
 
@@ -61,12 +59,13 @@ const CreateProject = () => {
 
     const verifyProjectCreationPermission = async () => {
       try {
-        const response = await getWorkspaceOverview(id);
-        const currentMember = response.data.members.find(
-          (member) => member.id === currentUser.id,
-        );
+        const response = await getWorkspaceMembers(id, {
+          page: 1,
+          pageSize: 1,
+        });
         const isAllowed =
-          response.success && canCreateWorkspaceProjects(currentMember?.role);
+          response.success &&
+          canCreateWorkspaceProjects(response.data.currentUserRole);
 
         if (!isActive) return;
 
@@ -87,7 +86,7 @@ const CreateProject = () => {
     return () => {
       isActive = false;
     };
-  }, [currentUser.id, id, navigate]);
+  }, [id, navigate]);
 
   const handleCreateProject = async (
     values: ProjectFormValues,

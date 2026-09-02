@@ -98,6 +98,16 @@ const positiveIntegerQueryValue = (label: string) =>
       `${label} is too large`,
     );
 
+export const workspaceHistorySchema = z.object({
+  params: workspaceParamsSchema,
+  query: z.object({
+    cursor: positiveIntegerQueryValue("Cursor").optional(),
+    limit: positiveIntegerQueryValue("Limit")
+      .refine((value) => Number(value) <= MAX_PAGE_SIZE, "Limit cannot exceed 100")
+      .optional(),
+  }),
+});
+
 export const workspaceMembersSchema = z.object({
   params: workspaceParamsSchema,
   query: z.object({
@@ -146,6 +156,7 @@ export type WorkspaceParams = z.infer<
 export type WorkspaceOverviewParams = z.infer<
   typeof workspaceOverviewSchema
 >["params"];
+export type WorkspaceHistoryQuery = z.infer<typeof workspaceHistorySchema>["query"];
 export type WorkspaceMembersQuery = z.infer<
   typeof workspaceMembersSchema
 >["query"];

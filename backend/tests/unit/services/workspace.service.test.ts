@@ -46,6 +46,7 @@ import {
   findWorkspaceInviteLinkByTokenHash,
   findWorkspaceOverview,
   findWorkspaceProjectTaskCounts,
+  findWorkspaceRecentTaskHistory,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -78,6 +79,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   findInvitationsAwaitingQueue: vi.fn(),
   findWorkspaceInviteLinkByTokenHash: vi.fn(),
   findWorkspaceOverview: vi.fn(),
+  findWorkspaceRecentTaskHistory: vi.fn(),
   findWorkspaceProjectTaskCounts: vi.fn(),
   markInvitationExpired: vi.fn(),
   markInvitationsQueued: vi.fn(),
@@ -573,18 +575,7 @@ describe("getWorkspaceOverview", () => {
     description: "Builds and maintains the product.",
     icon: WorkspaceIcon.code,
     createdAt: new Date("2026-08-18T00:00:00.000Z"),
-    members: [
-      {
-        user: {
-          id: 8,
-          firstname: "Workspace",
-          lastname: "Member",
-          email: "member@example.com",
-        },
-        role: WorkspaceRole.MEMBER,
-        createdAt: new Date("2026-08-20T00:00:00.000Z"),
-      },
-    ],
+    _count: { members: 1 },
     projects: [
       {
         id: 25,
@@ -605,16 +596,8 @@ describe("getWorkspaceOverview", () => {
     description: "Builds and maintains the product.",
     icon: WorkspaceIcon.code,
     createdAt: "2026-08-18T00:00:00.000Z",
-    members: [
-      {
-        id: 8,
-        firstname: "Workspace",
-        lastname: "Member",
-        email: "member@example.com",
-        role: WorkspaceRole.MEMBER,
-        joinedAt: "2026-08-20T00:00:00.000Z",
-      },
-    ],
+    memberCount: 1,
+    recentUpdates: [],
     taskSummary: {
       todo: 3,
       inProgress: 4,
@@ -647,6 +630,7 @@ describe("getWorkspaceOverview", () => {
       { projectId: 25, status: TaskStatus.in_review, _count: { _all: 1 } },
       { projectId: 25, status: TaskStatus.done, _count: { _all: 2 } },
     ] as never);
+    vi.mocked(findWorkspaceRecentTaskHistory).mockResolvedValue([] as never);
     vi.mocked(setCachedWorkspaceOverview).mockResolvedValue(undefined);
   });
 

@@ -23,6 +23,7 @@ import {
   createWorkspaceInviteLink as createWorkspaceInviteLinkService,
   createWorkspace as createWorkspaceService,
   getWorkspaceOverview as getWorkspaceOverviewService,
+  getWorkspaceTaskHistory as getWorkspaceTaskHistoryService,
   getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
   removeWorkspaceMember as removeWorkspaceMemberService,
@@ -36,6 +37,7 @@ import type {
   InviteWorkspaceMembersBody,
   WorkspaceParams,
   WorkspaceOverviewParams,
+  WorkspaceHistoryQuery,
   WorkspaceMembersQuery,
   RemoveWorkspaceMemberParams,
   UpdateWorkspaceMemberRoleBody,
@@ -360,6 +362,18 @@ export const getWorkspaceOverview = async (
       error: "Something went wrong on our end",
     });
   }
+};
+
+export const getWorkspaceTaskHistory = async (
+  req: AuthenticatedRequest<unknown, WorkspaceOverviewParams, WorkspaceHistoryQuery>,
+  res: Response,
+) => {
+  const history = await getWorkspaceTaskHistoryService(
+    Number(req.params.workspaceId),
+    req.query.cursor ? Number(req.query.cursor) : undefined,
+    req.query.limit ? Number(req.query.limit) : 25,
+  );
+  return res.status(200).json(createSuccessResponse("Workspace history retrieved", history));
 };
 
 export const getWorkspaceMembers = async (

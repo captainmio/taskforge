@@ -34,14 +34,36 @@ export interface WorkspaceOverviewProject {
   completedTaskCount: number;
 }
 
+export interface WorkspaceRecentUpdate {
+  id: number;
+  action: string;
+  changes: unknown;
+  createdAt: string;
+  actor: {
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+  };
+  task: {
+    id: number;
+    title: string;
+    project: {
+      id: number;
+      name: string;
+    };
+  };
+}
+
 export interface WorkspaceOverviewData {
   id: number;
   displayName: string;
   description: string;
   icon: WorkspaceIcon;
   createdAt: string;
-  members: WorkspaceOverviewMember[];
+  memberCount: number;
   projects: WorkspaceOverviewProject[];
+  recentUpdates: WorkspaceRecentUpdate[];
   taskSummary: {
     todo: number;
     inProgress: number;

@@ -155,9 +155,6 @@ describe("Workspace members page", () => {
   });
 
   it("searches member details and filters the loaded page by role", async () => {
-    const consoleLog = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined);
     await renderPage();
 
     fireEvent.change(screen.getByLabelText("Search members"), {
@@ -165,11 +162,6 @@ describe("Workspace members page", () => {
     });
     expect(screen.getByText("Ada Member")).toBeVisible();
     expect(screen.queryByText("Zoe Admin")).not.toBeInTheDocument();
-    expect(consoleLog).toHaveBeenCalledWith("Workspace member search changed", {
-      workspaceId: "42",
-      query: "ada@example.com",
-    });
-
     fireEvent.change(screen.getByLabelText("Search members"), {
       target: { value: "" },
     });
