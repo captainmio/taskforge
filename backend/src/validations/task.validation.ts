@@ -70,9 +70,24 @@ export const projectTasksSchema = z.object({
   }),
 });
 
+export const taskHistorySchema = z.object({
+  params: taskUpdateParamsSchema,
+  query: z.object({
+    cursor: positiveIntegerQueryValue("Cursor").optional(),
+    limit: positiveIntegerQueryValue("Limit")
+      .refine(
+        (value) => Number(value) <= MAX_PAGE_SIZE,
+        `Limit cannot exceed ${MAX_PAGE_SIZE}`,
+      )
+      .optional(),
+  }),
+});
+
 export type CreateTaskBody = z.infer<typeof createTaskSchema>["body"];
 export type CreateTaskParams = z.infer<typeof createTaskSchema>["params"];
 export type UpdateTaskBody = z.infer<typeof updateTaskSchema>["body"];
 export type UpdateTaskParams = z.infer<typeof updateTaskSchema>["params"];
 export type ProjectTasksParams = z.infer<typeof projectTasksSchema>["params"];
 export type ProjectTasksQuery = z.infer<typeof projectTasksSchema>["query"];
+export type TaskHistoryParams = z.infer<typeof taskHistorySchema>["params"];
+export type TaskHistoryQuery = z.infer<typeof taskHistorySchema>["query"];

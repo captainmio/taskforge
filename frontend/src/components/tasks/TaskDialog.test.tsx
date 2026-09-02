@@ -1,9 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TaskDialog from "./TaskDialog";
 import type { Task } from "./taskTypes";
 
-const mocks = vi.hoisted(() => ({ getWorkspaceMembers: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  getWorkspaceMembers: vi.fn(),
+  getTaskHistory: vi.fn(),
+  updateTask: vi.fn(),
+}));
 
 vi.mock("../../services/workspaces", () => ({
   getWorkspaceMembers: mocks.getWorkspaceMembers,
@@ -11,7 +15,8 @@ vi.mock("../../services/workspaces", () => ({
 
 vi.mock("../../services/tasks", () => ({
   createTask: vi.fn(),
-  updateTask: vi.fn(),
+  getTaskHistory: mocks.getTaskHistory,
+  updateTask: mocks.updateTask,
 }));
 
 const task: Task = {
@@ -28,6 +33,8 @@ const task: Task = {
 
 describe("TaskDialog", () => {
   beforeEach(() => {
+    mocks.getTaskHistory.mockReset();
+    mocks.updateTask.mockReset();
     mocks.getWorkspaceMembers.mockResolvedValue({
       success: true,
       data: {
@@ -44,6 +51,10 @@ describe("TaskDialog", () => {
         pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
       },
     });
+    mocks.getTaskHistory.mockResolvedValue({
+      data: { history: [], nextCursor: null },
+    });
+    mocks.updateTask.mockResolvedValue({ success: true, data: task });
   });
 
   it("hydrates the time estimate and assignees from the selected task", async () => {
@@ -69,5 +80,27 @@ describe("TaskDialog", () => {
       page: 1,
       pageSize: 100,
     });
+  });
+
+  it("refreshes task history after a successful task update", async () => {
+    render(
+      <TaskDialog
+        task={task}
+        initialStatus="todo"
+        workspaceId="42"
+        projectId={25}
+        onClose={vi.fn()}
+        onTaskCreated={vi.fn()}
+        onTaskUpdated={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(mocks.getTaskHistory).toHaveBeenCalledTimes(1));
+    const description = screen.getByLabelText("Description");
+    fireEvent.change(description, { target: { value: "Updated description" } });
+    fireEvent.blur(description);
+
+    await waitFor(() => expect(mocks.updateTask).toHaveBeenCalled());
+    await waitFor(() => expect(mocks.getTaskHistory).toHaveBeenCalledTimes(2));
   });
 });

@@ -11,6 +11,7 @@ import {
 } from "../errors/task.errors.js";
 import {
   createTask as createTaskService,
+  getTaskHistory as getTaskHistoryService,
   getProjectTasks as getProjectTasksService,
   updateTask as updateTaskService,
 } from "../services/task.service.js";
@@ -25,6 +26,8 @@ import type {
   CreateTaskParams,
   ProjectTasksParams,
   ProjectTasksQuery,
+  TaskHistoryParams,
+  TaskHistoryQuery,
   UpdateTaskBody,
   UpdateTaskParams,
 } from "../validations/task.validation.js";
@@ -128,6 +131,40 @@ export const getProjectTasks = async (
   }
 };
 
+export const getTaskHistory = async (
+  req: AuthenticatedRequest<unknown, TaskHistoryParams, TaskHistoryQuery>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const taskId = Number(req.params.taskId);
+  // is the ID of the last history record from the previous page
+  const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
+  const limit = req.query.limit ? Number(req.query.limit) : DEFAULT_PAGE_SIZE;
+
+  try {
+    const history = await getTaskHistoryService(
+      workspaceId,
+      projectId,
+      taskId,
+      cursor,
+      limit,
+    );
+    return res
+      .status(200)
+      .json(createSuccessResponse("Task history retrieved", history));
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError || error instanceof TaskNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
+  }
+};
+
 export const updateTask = async (
   req: AuthenticatedRequest<UpdateTaskBody, UpdateTaskParams>,
   res: Response,
@@ -151,6 +188,7 @@ export const updateTask = async (
       taskId,
       req.workspaceMembership.role,
       req.body,
+      req.user.id,
     );
     req.log.info(
       { logType: "feature", event: "task.updated", ...logContext },

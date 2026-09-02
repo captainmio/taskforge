@@ -48,6 +48,24 @@ export interface ProjectTaskListData {
   };
 }
 
+export interface TaskHistoryEntry {
+  id: number;
+  action: string;
+  changes: unknown;
+  createdAt: string;
+  actor: {
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+  };
+}
+
+export interface TaskHistoryData {
+  history: TaskHistoryEntry[];
+  nextCursor: number | null;
+}
+
 export const getProjectTasks = async (
   workspaceId: string,
   projectId: number,
@@ -55,6 +73,19 @@ export const getProjectTasks = async (
   const response = await apiClient.get<ApiSuccessResponse<ProjectTaskListData>>(
     `/workspaces/${workspaceId}/projects/${projectId}/tasks`,
     { params: { page: 1, pageSize: 100 } },
+  );
+  return response.data;
+};
+
+export const getTaskHistory = async (
+  workspaceId: string,
+  projectId: number,
+  taskId: number,
+  cursor?: number,
+): Promise<ApiSuccessResponse<TaskHistoryData>> => {
+  const response = await apiClient.get<ApiSuccessResponse<TaskHistoryData>>(
+    `/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}/history`,
+    { params: { limit: 25, ...(cursor ? { cursor } : {}) } },
   );
   return response.data;
 };

@@ -69,6 +69,7 @@ const TaskDialog = ({
   );
   const [createdTaskId, setCreatedTaskId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [historyRefreshVersion, setHistoryRefreshVersion] = useState(0);
   const creationStarted = useRef(false);
   const taskId = task?.id ?? createdTaskId;
 
@@ -138,6 +139,7 @@ const TaskDialog = ({
     try {
       await updateTask(workspaceId, projectId, taskId, payload);
       onTaskUpdated(taskId, boardUpdates);
+      setHistoryRefreshVersion((currentVersion) => currentVersion + 1);
     } catch {
       // The shared API client displays errors while preserving the user's input.
     }
@@ -375,7 +377,14 @@ const TaskDialog = ({
               }
             />
           </fieldset>
-          <TaskHistory />
+          <TaskHistory
+            key={taskId ?? "new-task"}
+            workspaceId={workspaceId}
+            projectId={projectId}
+            taskId={taskId}
+            members={members}
+            refreshVersion={historyRefreshVersion}
+          />
         </div>
         <footer className="flex shrink-0 justify-end border-t border-gray-100 bg-slate-50 px-6 py-4">
           <Button variant="ghost" onClick={onClose}>

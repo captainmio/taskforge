@@ -10,6 +10,7 @@ import { TaskPriority, TaskStatus, WorkspaceRole } from "../generated/prisma/enu
 import { findProjectByWorkspace } from "../repositories/project.repository.js";
 import {
   createTaskRecord,
+  findTaskHistoryByTask,
   findTasksByProject,
   updateTaskRecord,
 } from "../repositories/task.repository.js";
@@ -105,12 +106,35 @@ export const getProjectTasks = async (
   };
 };
 
+export const getTaskHistory = async (
+  workspaceId: number,
+  projectId: number,
+  taskId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+
+  const result = await findTaskHistoryByTask(projectId, taskId, cursor, limit);
+  if (!result) throw new TaskNotFoundError();
+
+  return {
+    history: result.history.map(({ createdAt, ...entry }) => ({
+      ...entry,
+      createdAt: createdAt.toISOString(),
+    })),
+    nextCursor: result.nextCursor,
+  };
+};
+
 export const updateTask = async (
   workspaceId: number,
   projectId: number,
   taskId: number,
   actorRole: WorkspaceRole,
   input: UpdateTaskBody,
+  actorUserId?: number,
 ) => {
   if (
     input.status === "done" &&
@@ -137,7 +161,7 @@ export const updateTask = async (
   }
 
   try {
-    const task = await updateTaskRecord(projectId, taskId, {
+    const updateData = {
       ...input,
       ...(input.status === undefined
         ? {}
@@ -146,7 +170,12 @@ export const updateTask = async (
         ? {}
         : { priority: taskPriorityByInput[input.priority] }),
       assigneeIds,
-    });
+    };
+    const task = await (
+      actorUserId === undefined
+        ? updateTaskRecord(projectId, taskId, updateData)
+        : updateTaskRecord(projectId, taskId, updateData, actorUserId)
+    );
     if (!task) throw new TaskNotFoundError();
 
     await deleteCachedWorkspaceOverview(workspaceId);

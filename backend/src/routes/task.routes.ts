@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createTask,
+  getTaskHistory,
   getProjectTasks,
   updateTask,
 } from "../controllers/task.controller.js";
@@ -11,6 +12,7 @@ import { validate } from "../middlewares/validate.js";
 import {
   createTaskSchema,
   projectTasksSchema,
+  taskHistorySchema,
   updateTaskSchema,
 } from "../validations/task.validation.js";
 
@@ -30,6 +32,14 @@ router.post(
   validate(createTaskSchema),
   requireWorkspaceMembership,
   authenticatedHandler(createTask),
+);
+
+router.get(
+  "/:taskId/history",
+  requireAuth,
+  validate(taskHistorySchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(getTaskHistory),
 );
 
 router.patch(

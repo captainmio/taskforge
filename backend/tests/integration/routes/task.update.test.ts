@@ -81,7 +81,7 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
     expect(updateTask).toHaveBeenCalledWith(42, 25, 101, "MEMBER", {
       status: "done",
       position: 0,
-    });
+    }, 7);
     expect(realtimeMocks.emitTaskUpdated).toHaveBeenCalledWith({
       workspaceId: 42,
       projectId: 25,

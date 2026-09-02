@@ -26,17 +26,37 @@ export interface UpdateTaskData {
 }
 
 export const createTaskRecord = async ({ assigneeIds, ...data }: CreateTaskData) => {
-  const position = await prisma.task.count({
-    where: { projectId: data.projectId, status: data.status },
-  });
+  return prisma.$transaction(async (transaction) => {
+    const position = await transaction.task.count({
+      where: { projectId: data.projectId, status: data.status },
+    });
 
-  return prisma.task.create({
-    data: {
-      ...data,
-      position,
-      assignees: { create: assigneeIds.map((userId) => ({ userId })) },
-    },
-    select: { id: true },
+    return transaction.task.create({
+      data: {
+        ...data,
+        position,
+        assignees: { create: assigneeIds.map((userId) => ({ userId })) },
+        history: {
+          create: {
+            actorUserId: data.createdById,
+            action: "created",
+            changes: {
+              snapshot: {
+                title: data.title,
+                description: data.description,
+                status: data.status,
+                position,
+                priority: data.priority,
+                dueDate: data.dueDate,
+                timeEstimate: data.timeEstimate,
+                assigneeIds,
+              },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
   });
 };
 
@@ -85,13 +105,25 @@ export const updateTaskRecord = async (
   projectId: number,
   taskId: number,
   { assigneeIds, ...data }: UpdateTaskData,
+  actorUserId?: number,
 ) => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await prisma.$transaction(async (transaction) => {
         const currentTask = await transaction.task.findFirst({
           where: { id: taskId, projectId },
-          select: { id: true, status: true },
+          select: {
+            id: true,
+            createdById: true,
+            title: true,
+            description: true,
+            status: true,
+            position: true,
+            priority: true,
+            dueDate: true,
+            timeEstimate: true,
+            assignees: { orderBy: { userId: "asc" }, select: { userId: true } },
+          },
         });
         if (!currentTask) return null;
 
@@ -112,54 +144,102 @@ export const updateTaskRecord = async (
           };
         }
 
+        let task;
+        let nextPosition = currentTask.position;
+
         if (!isMove) {
-          return transaction.task.update({
+          task = await transaction.task.update({
             where: { id: taskId },
             data: updateData,
             select: taskSelect,
           });
+        } else {
+          const targetTasks = await transaction.task.findMany({
+            where: { projectId, status: nextStatus, id: { not: taskId } },
+            orderBy: [{ position: "asc" }, { id: "asc" }],
+            select: { id: true },
+          });
+          const requestedPosition = data.position ?? targetTasks.length;
+          nextPosition = Math.min(
+            Math.max(requestedPosition, 0),
+            targetTasks.length,
+          );
+          const reorderedTargetIds = targetTasks.map((task) => task.id);
+          reorderedTargetIds.splice(nextPosition, 0, taskId);
+
+          const sourceTasks =
+            nextStatus === currentTask.status
+              ? []
+              : await transaction.task.findMany({
+                  where: {
+                    projectId,
+                    status: currentTask.status,
+                    id: { not: taskId },
+                  },
+                  orderBy: [{ position: "asc" }, { id: "asc" }],
+                  select: { id: true },
+                });
+
+          updateData.status = nextStatus;
+          updateData.position = nextPosition;
+          await transaction.task.update({ where: { id: taskId }, data: updateData });
+
+          await Promise.all([
+            ...sourceTasks.map((task, position) =>
+              transaction.task.update({ where: { id: task.id }, data: { position } }),
+            ),
+            ...reorderedTargetIds.map((id, position) =>
+              transaction.task.update({ where: { id }, data: { position } }),
+            ),
+          ]);
+
+          task = await transaction.task.findUnique({
+            where: { id: taskId },
+            select: taskSelect,
+          });
         }
 
-        const targetTasks = await transaction.task.findMany({
-          where: { projectId, status: nextStatus, id: { not: taskId } },
-          orderBy: [{ position: "asc" }, { id: "asc" }],
-          select: { id: true },
-        });
-        const requestedPosition = data.position ?? targetTasks.length;
-        const nextPosition = Math.min(
-          Math.max(requestedPosition, 0),
-          targetTasks.length,
+        const nextAssigneeIds = assigneeIds ?? currentTask.assignees.map(({ userId }) => userId);
+        const changes: Record<string, { from: string | number | null | number[]; to: string | number | null | number[] }> = {};
+        const recordChange = (
+          field: string,
+          from: string | number | null | number[],
+          to: string | number | null | number[],
+        ) => {
+          if (JSON.stringify(from) !== JSON.stringify(to)) changes[field] = { from, to };
+        };
+
+        recordChange("title", currentTask.title, data.title ?? currentTask.title);
+        recordChange("description", currentTask.description, data.description ?? currentTask.description);
+        recordChange("status", currentTask.status, nextStatus);
+        recordChange("position", currentTask.position, nextPosition);
+        recordChange("priority", currentTask.priority, data.priority ?? currentTask.priority);
+        recordChange(
+          "dueDate",
+          currentTask.dueDate,
+          data.dueDate === undefined ? currentTask.dueDate : data.dueDate,
         );
-        const reorderedTargetIds = targetTasks.map((task) => task.id);
-        reorderedTargetIds.splice(nextPosition, 0, taskId);
+        recordChange(
+          "timeEstimate",
+          currentTask.timeEstimate,
+          data.timeEstimate === undefined ? currentTask.timeEstimate : data.timeEstimate,
+        );
+        recordChange(
+          "assigneeIds",
+          currentTask.assignees.map(({ userId }) => userId),
+          nextAssigneeIds,
+        );
 
-        const sourceTasks =
-          nextStatus === currentTask.status
-            ? []
-            : await transaction.task.findMany({
-                where: {
-                  projectId,
-                  status: currentTask.status,
-                  id: { not: taskId },
-                },
-                orderBy: [{ position: "asc" }, { id: "asc" }],
-                select: { id: true },
-              });
+        await transaction.taskHistory.create({
+          data: {
+            taskId,
+            actorUserId: actorUserId ?? currentTask.createdById,
+            action: "updated",
+            changes: changes as Prisma.InputJsonObject,
+          },
+        });
 
-        updateData.status = nextStatus;
-        updateData.position = nextPosition;
-        await transaction.task.update({ where: { id: taskId }, data: updateData });
-
-        await Promise.all([
-          ...sourceTasks.map((task, position) =>
-            transaction.task.update({ where: { id: task.id }, data: { position } }),
-          ),
-          ...reorderedTargetIds.map((id, position) =>
-            transaction.task.update({ where: { id }, data: { position } }),
-          ),
-        ]);
-
-        return transaction.task.findUnique({ where: { id: taskId }, select: taskSelect });
+        return task;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       if (
@@ -174,4 +254,43 @@ export const updateTaskRecord = async (
   }
 
   return null;
+};
+
+const taskHistorySelect = {
+  id: true,
+  action: true,
+  changes: true,
+  createdAt: true,
+  actor: {
+    select: { id: true, firstname: true, lastname: true, email: true },
+  },
+} satisfies Prisma.TaskHistorySelect;
+
+export const findTaskHistoryByTask = async (
+  projectId: number,
+  taskId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, projectId },
+    select: { id: true },
+  });
+  if (!task) return null;
+
+  const records = await prisma.taskHistory.findMany({
+    where: { taskId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor } } : {}),
+    skip: cursor ? 1 : 0,
+    take: limit + 1,
+    select: taskHistorySelect,
+  });
+  const hasMore = records.length > limit;
+  const history = hasMore ? records.slice(0, limit) : records;
+
+  return {
+    history,
+    nextCursor: hasMore ? history.at(-1)?.id ?? null : null,
+  };
 };
