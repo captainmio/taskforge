@@ -1,5 +1,6 @@
 import { ProjectNotFoundError } from "../errors/project.errors.js";
 import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
+import { deleteCachedWorkspaceUpcomingTasks } from "../cache/workspace-upcoming-tasks.cache.js";
 import {
   TaskAssigneeNotInWorkspaceError,
   TaskCompletionForbiddenError,
@@ -70,7 +71,10 @@ export const createTask = async (
     timeEstimate: input.timeEstimate,
     assigneeIds,
   });
-  await deleteCachedWorkspaceOverview(workspaceId);
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
+  ]);
 
   return task;
 };
@@ -178,7 +182,10 @@ export const updateTask = async (
     );
     if (!task) throw new TaskNotFoundError();
 
-    await deleteCachedWorkspaceOverview(workspaceId);
+    await Promise.all([
+      deleteCachedWorkspaceOverview(workspaceId),
+      deleteCachedWorkspaceUpcomingTasks(workspaceId),
+    ]);
 
     return {
       ...task,

@@ -3,6 +3,7 @@ import type {
   WorkspaceMember,
   WorkspaceOverview,
   WorkspaceRecentUpdate,
+  WorkspaceUpcomingTask,
 } from "../types/workspace";
 import type { WorkspaceMemberRole, WorkspaceRole } from "../types/roles";
 import { apiClient, type ApiSuccessResponse } from "./api";
@@ -33,11 +34,35 @@ export const getWorkspaceOverview = async (
   return response.data;
 };
 
-export const getWorkspaceHistory = async (workspaceId: string, cursor?: number) => {
-  const response = await apiClient.get<ApiSuccessResponse<{ history: WorkspaceRecentUpdate[]; nextCursor: number | null }>>(
-    `/workspaces/${workspaceId}/history`,
-    { params: { limit: 25, ...(cursor ? { cursor } : {}) } },
-  );
+export const getWorkspaceHistory = async (
+  workspaceId: string,
+  cursor?: number,
+) => {
+  const response = await apiClient.get<
+    ApiSuccessResponse<{
+      history: WorkspaceRecentUpdate[];
+      nextCursor: number | null;
+    }>
+  >(`/workspaces/${workspaceId}/history`, {
+    params: { limit: 25, ...(cursor ? { cursor } : {}) },
+  });
+  return response.data;
+};
+
+export interface WorkspaceUpcomingTaskListData {
+  tasks: WorkspaceUpcomingTask[];
+  nextCursor: number | null;
+}
+
+export const getWorkspaceUpcomingTasks = async (
+  workspaceId: string,
+  cursor?: number,
+): Promise<ApiSuccessResponse<WorkspaceUpcomingTaskListData>> => {
+  const response = await apiClient.get<
+    ApiSuccessResponse<WorkspaceUpcomingTaskListData>
+  >(`/workspaces/${workspaceId}/upcoming-tasks`, {
+    params: { limit: 5, ...(cursor ? { cursor } : {}) },
+  });
   return response.data;
 };
 

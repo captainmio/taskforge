@@ -139,19 +139,20 @@ export const createWorkspaceInvitationsRecord = async (
     // database permits only one invitation per email in a workspace. If an
     // email was invited before, PostgreSQL rejects this operation, so the other
     // emails are not accidentally saved as a partial result.
-    const invitations = await transaction.workspaceInvitation.createManyAndReturn({
-      data: data.invitations.map((invitation) => ({
-        ...invitation,
-        workspaceId: data.workspaceId,
-        invitedById: data.invitedById,
-      })),
-      select: {
-        id: true,
-        email: true,
-        normalizedEmail: true,
-        role: true,
-      },
-    });
+    const invitations =
+      await transaction.workspaceInvitation.createManyAndReturn({
+        data: data.invitations.map((invitation) => ({
+          ...invitation,
+          workspaceId: data.workspaceId,
+          invitedById: data.invitedById,
+        })),
+        select: {
+          id: true,
+          email: true,
+          normalizedEmail: true,
+          role: true,
+        },
+      });
 
     return { workspace, invitations, existingMemberEmails: [] };
   });
@@ -251,7 +252,7 @@ export const findInvitationByTokenHash = async (tokenHash: string) =>
       },
     },
   });
-  
+
 // update and insert
 export const upsertWorkspaceInviteLink = async (
   data: UpsertWorkspaceInviteLinkData,
@@ -386,14 +387,55 @@ export const findWorkspaceTaskHistory = async (
     skip: cursor ? 1 : 0,
     take: limit + 1,
     select: {
-      id: true, action: true, changes: true, createdAt: true,
-      actor: { select: { id: true, firstname: true, lastname: true, email: true } },
-      task: { select: { id: true, title: true, project: { select: { id: true, name: true } } } },
+      id: true,
+      action: true,
+      changes: true,
+      createdAt: true,
+      actor: {
+        select: { id: true, firstname: true, lastname: true, email: true },
+      },
+      task: {
+        select: {
+          id: true,
+          title: true,
+          project: { select: { id: true, name: true } },
+        },
+      },
     },
   });
   const hasMore = records.length > limit;
   const history = hasMore ? records.slice(0, limit) : records;
-  return { history, nextCursor: hasMore ? history.at(-1)?.id ?? null : null };
+  return { history, nextCursor: hasMore ? (history.at(-1)?.id ?? null) : null };
+};
+
+export const findWorkspaceUpcomingTasks = async (
+  workspaceId: number,
+  userId: number,
+  cursor: number | undefined,
+  limit: number,
+  today: string,
+) => {
+  const records = await prisma.task.findMany({
+    where: {
+      dueDate: { gte: today },
+      assignees: { some: { userId } },
+      project: { workspaceId, deletedAt: null },
+    },
+    orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+    ...(cursor ? { cursor: { id: cursor } } : {}),
+    skip: cursor ? 1 : 0,
+    take: limit + 1,
+    select: {
+      id: true,
+      title: true,
+      dueDate: true,
+      project: { select: { id: true, name: true } },
+    },
+  });
+  const hasMore = records.length > limit;
+  const tasks = hasMore ? records.slice(0, limit) : records;
+
+  return { tasks, nextCursor: hasMore ? tasks.at(-1)?.id ?? null : null };
 };
 
 export const findWorkspaceProjectTaskCounts = async (workspaceId: number) =>

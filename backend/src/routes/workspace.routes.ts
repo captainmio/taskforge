@@ -5,6 +5,7 @@ import {
   createWorkspaceInviteLink,
   createWorkspace,
   getWorkspaceOverview,
+  getWorkspaceUpcomingTasks,
   getWorkspaceTaskHistory,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
@@ -22,6 +23,7 @@ import {
   createWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   workspaceOverviewSchema,
+  workspaceUpcomingTasksSchema,
   workspaceHistorySchema,
   workspaceMembersSchema,
   removeWorkspaceMemberSchema,
@@ -49,6 +51,13 @@ router.get(
   validate(workspaceHistorySchema),
   requireWorkspaceMembership,
   authenticatedHandler(getWorkspaceTaskHistory),
+);
+router.get(
+  "/:workspaceId/upcoming-tasks",
+  requireAuth,
+  validate(workspaceUpcomingTasksSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(getWorkspaceUpcomingTasks),
 );
 router.get(
   "/:workspaceId/members",

@@ -6,6 +6,7 @@ import WorkspaceOverview from "./WorkspaceOverview";
 const mocks = vi.hoisted(() => ({
   getWorkspaceHistory: vi.fn(),
   getWorkspaceOverview: vi.fn(),
+  getWorkspaceUpcomingTasks: vi.fn(),
   navigate: vi.fn(),
 }));
 
@@ -85,6 +86,7 @@ const workspaceOverview = {
 vi.mock("../../services/workspaces", () => ({
   getWorkspaceHistory: mocks.getWorkspaceHistory,
   getWorkspaceOverview: mocks.getWorkspaceOverview,
+  getWorkspaceUpcomingTasks: mocks.getWorkspaceUpcomingTasks,
 }));
 
 vi.mock("../../hooks/useAuthenticatedSession", () => ({
@@ -121,6 +123,21 @@ describe("Workspace overview", () => {
       success: true,
       message: "Workspace overview retrieved",
       data: workspaceOverview,
+    });
+    mocks.getWorkspaceUpcomingTasks.mockResolvedValue({
+      success: true,
+      message: "Upcoming tasks retrieved",
+      data: {
+        tasks: [
+          {
+            id: 201,
+            title: "Review launch checklist",
+            dueDate: "2026-09-18",
+            project: { id: 27, name: "Launch Readiness" },
+          },
+        ],
+        nextCursor: null,
+      },
     });
   });
 
@@ -245,6 +262,33 @@ describe("Workspace overview", () => {
     expect(await screen.findByText("Status:")).toBeVisible();
     expect(screen.getByText("Ship workspace history")).toBeVisible();
     expect(screen.queryByText("Ignore empty update")).not.toBeInTheDocument();
+  });
+
+  it("loads and renders the current user's upcoming tasks", async () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceOverview />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Review launch checklist")).toBeVisible();
+    expect(screen.getByText("Launch Readiness")).toBeVisible();
+    expect(mocks.getWorkspaceUpcomingTasks).toHaveBeenCalledWith("42");
+  });
+
+  it("shows an empty state when the upcoming-tasks API returns no tasks", async () => {
+    mocks.getWorkspaceUpcomingTasks.mockResolvedValueOnce({
+      success: true,
+      message: "Upcoming tasks retrieved",
+      data: { tasks: [], nextCursor: null },
+    });
+    render(
+      <MemoryRouter>
+        <WorkspaceOverview />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("No upcoming tasks.")).toBeVisible();
   });
 
   it("shows an empty state when the workspace has no projects", async () => {

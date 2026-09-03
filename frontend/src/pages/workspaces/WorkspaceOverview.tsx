@@ -24,13 +24,22 @@ import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import { formatRelativeDateTime } from "../../utils/formatRelativeDateTime";
+import { formatTaskDueDate } from "../../utils/formatTaskDueDate";
+import {
+  getTaskDueDateStatus,
+  type TaskDueDateStatus,
+} from "../../utils/getTaskDueDateStatus";
 import { getInitials } from "../../utils/getInitials";
 import { useEffect, useState } from "react";
 import {
   getWorkspaceHistory,
   getWorkspaceOverview,
+  getWorkspaceUpcomingTasks,
 } from "../../services/workspaces";
-import type { WorkspaceOverview as WorkspaceOverviewData } from "../../types/workspace";
+import type {
+  WorkspaceOverview as WorkspaceOverviewData,
+  WorkspaceUpcomingTask,
+} from "../../types/workspace";
 
 const formatCreationDate = (createdAt: string): string => {
   const date = new Date(createdAt);
@@ -41,6 +50,28 @@ const formatCreationDate = (createdAt: string): string => {
     month: "long",
     year: "numeric",
   }).format(date);
+};
+
+const dueDatePresentation: Record<
+  TaskDueDateStatus,
+  { label: string; className: string }
+> = {
+  overdue: {
+    label: "Overdue",
+    className: "bg-red-50 text-red-700 ring-red-100",
+  },
+  dueSoon: {
+    label: "Due soon",
+    className: "bg-red-50 text-red-700 ring-red-100",
+  },
+  approaching: {
+    label: "Approaching",
+    className: "bg-amber-50 text-amber-700 ring-amber-100",
+  },
+  later: {
+    label: "Has time",
+    className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  },
 };
 
 const WorkspaceOverviewSkeleton = () => (
@@ -83,13 +114,18 @@ const WorkspaceOverviewSkeleton = () => (
         </div>
       ))}
     </div>
-    <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
-      <Skeleton className="h-6 w-48" />
-      <div className="grid gap-3 lg:grid-cols-3">
-        {[1, 2, 3].map((item) => (
-          <Skeleton key={item} className="h-24" />
-        ))}
-      </div>
+    <div className="grid gap-5 xl:grid-cols-2">
+      {[1, 2].map((item) => (
+        <div
+          key={item}
+          className="space-y-4 rounded-xl border border-gray-200 bg-white p-4"
+        >
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -102,6 +138,9 @@ const WorkspaceOverview = () => {
   >(null);
   const [workspaceOverview, setWorkspaceOverview] =
     useState<WorkspaceOverviewData | null>(null);
+  const [upcomingTasks, setUpcomingTasks] = useState<WorkspaceUpcomingTask[]>(
+    [],
+  );
   const [isRecentUpdatesModalOpen, setIsRecentUpdatesModalOpen] =
     useState<boolean>(false);
   const [allUpdates, setAllUpdates] = useState<
@@ -133,6 +172,14 @@ const WorkspaceOverview = () => {
         }
 
         setWorkspaceOverview(response.data);
+
+        try {
+          const upcomingTasksResponse = await getWorkspaceUpcomingTasks(id);
+          if (isActive) setUpcomingTasks(upcomingTasksResponse.data.tasks);
+        } catch {
+          if (isActive) setUpcomingTasks([]);
+        }
+
         setAuthorizedWorkspaceId(id);
       } catch {
         if (isActive) navigate("/", { replace: true });
@@ -376,36 +423,75 @@ const WorkspaceOverview = () => {
         </SectionCard>
       </div>
 
-      <SectionCard
-        title="Tasks Summary"
-        className="mt-5 border-purple-100 bg-gradient-to-br from-white to-purple-50/60 shadow-sm"
-      >
-        <RoundedSpacedDonutChart
-          totalLabel="Tasks"
-          data={[
-            {
-              label: "To Do",
-              value: workspaceTaskSummary.todo,
-              color: "#64748b",
-            },
-            {
-              label: "In Progress",
-              value: workspaceTaskSummary.inProgress,
-              color: "#7c3aed",
-            },
-            {
-              label: "In Review",
-              value: workspaceTaskSummary.inReview,
-              color: "#d97706",
-            },
-            {
-              label: "Done",
-              value: workspaceTaskSummary.done,
-              color: "#14ae5d",
-            },
-          ]}
-        />
-      </SectionCard>
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
+        <SectionCard
+          title="Tasks Summary"
+          className="border-purple-100 bg-gradient-to-br from-white to-purple-50/60 shadow-sm"
+        >
+          <RoundedSpacedDonutChart
+            totalLabel="Tasks"
+            data={[
+              {
+                label: "To Do",
+                value: workspaceTaskSummary.todo,
+                color: "#64748b",
+              },
+              {
+                label: "In Progress",
+                value: workspaceTaskSummary.inProgress,
+                color: "#7c3aed",
+              },
+              {
+                label: "In Review",
+                value: workspaceTaskSummary.inReview,
+                color: "#d97706",
+              },
+              {
+                label: "Done",
+                value: workspaceTaskSummary.done,
+                color: "#14ae5d",
+              },
+            ]}
+          />
+        </SectionCard>
+
+        <SectionCard title="Upcoming Task" className="shadow-sm">
+          <ul className="-m-4 divide-y divide-amber-100">
+            {upcomingTasks.length > 0 ? (
+              upcomingTasks.map((task) => {
+                const dueDate =
+                  dueDatePresentation[getTaskDueDateStatus(task.dueDate)];
+
+                return (
+                  <li key={task.id} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-950">
+                          {task.title}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-gray-500">
+                          {task.project.name}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset ${dueDate.className}`}
+                      >
+                        <FaCalendarAlt className="size-3" aria-hidden="true" />
+                        <span>{formatTaskDueDate(task.dueDate)}</span>
+                        <span className="sr-only">({dueDate.label})</span>
+                      </span>
+                    </div>
+                  </li>
+                );
+              })
+            ) : (
+              <li className="px-4 py-8 text-center text-sm text-gray-500">
+                No upcoming tasks.
+              </li>
+            )}
+          </ul>
+        </SectionCard>
+      </div>
 
       <SectionCard
         title="Settings & Actions"

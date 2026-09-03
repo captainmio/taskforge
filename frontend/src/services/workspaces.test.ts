@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getWorkspaceOverview, updateWorkspaceMemberRole } from "./workspaces";
+import {
+  getWorkspaceOverview,
+  getWorkspaceUpcomingTasks,
+  updateWorkspaceMemberRole,
+} from "./workspaces";
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
@@ -40,6 +44,33 @@ describe("getWorkspaceOverview", () => {
 
     await expect(getWorkspaceOverview("42")).resolves.toEqual(apiResponse);
     expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/overview");
+  });
+});
+
+describe("getWorkspaceUpcomingTasks", () => {
+  it("requests the first five upcoming tasks by default", async () => {
+    const apiResponse = {
+      success: true as const,
+      message: "Upcoming tasks retrieved",
+      data: { tasks: [], nextCursor: null },
+    };
+    mocks.get.mockResolvedValue({ data: apiResponse });
+
+    await expect(getWorkspaceUpcomingTasks("42")).resolves.toEqual(apiResponse);
+    expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/upcoming-tasks", {
+      params: { limit: 5 },
+    });
+  });
+
+  it("passes a cursor when loading a later page", async () => {
+    mocks.get.mockResolvedValue({
+      data: { success: true, message: "Upcoming tasks retrieved", data: { tasks: [], nextCursor: null } },
+    });
+
+    await getWorkspaceUpcomingTasks("42", 81);
+    expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/upcoming-tasks", {
+      params: { limit: 5, cursor: 81 },
+    });
   });
 });
 

@@ -1,8 +1,5 @@
 import type { Response } from "express";
-import {
-  DEFAULT_PAGE,
-  DEFAULT_PAGE_SIZE,
-} from "../config/pagination.js";
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from "../config/pagination.js";
 import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
@@ -23,6 +20,7 @@ import {
   createWorkspaceInviteLink as createWorkspaceInviteLinkService,
   createWorkspace as createWorkspaceService,
   getWorkspaceOverview as getWorkspaceOverviewService,
+  getWorkspaceUpcomingTasks as getWorkspaceUpcomingTasksService,
   getWorkspaceTaskHistory as getWorkspaceTaskHistoryService,
   getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
@@ -38,6 +36,7 @@ import type {
   WorkspaceParams,
   WorkspaceOverviewParams,
   WorkspaceHistoryQuery,
+  WorkspaceUpcomingTasksQuery,
   WorkspaceMembersQuery,
   RemoveWorkspaceMemberParams,
   UpdateWorkspaceMemberRoleBody,
@@ -176,7 +175,9 @@ export const createWorkspaceInviteLink = async (
 
     return res
       .status(201)
-      .json(createSuccessResponse("Workspace invitation link generated", result));
+      .json(
+        createSuccessResponse("Workspace invitation link generated", result),
+      );
   } catch (error) {
     if (error instanceof WorkspaceInviteLinkGenerationForbiddenError) {
       req.log.warn(
@@ -365,7 +366,11 @@ export const getWorkspaceOverview = async (
 };
 
 export const getWorkspaceTaskHistory = async (
-  req: AuthenticatedRequest<unknown, WorkspaceOverviewParams, WorkspaceHistoryQuery>,
+  req: AuthenticatedRequest<
+    unknown,
+    WorkspaceOverviewParams,
+    WorkspaceHistoryQuery
+  >,
   res: Response,
 ) => {
   const history = await getWorkspaceTaskHistoryService(
@@ -373,7 +378,28 @@ export const getWorkspaceTaskHistory = async (
     req.query.cursor ? Number(req.query.cursor) : undefined,
     req.query.limit ? Number(req.query.limit) : 25,
   );
-  return res.status(200).json(createSuccessResponse("Workspace history retrieved", history));
+  return res
+    .status(200)
+    .json(createSuccessResponse("Workspace history retrieved", history));
+};
+
+export const getWorkspaceUpcomingTasks = async (
+  req: AuthenticatedRequest<
+    unknown,
+    WorkspaceOverviewParams,
+    WorkspaceUpcomingTasksQuery
+  >,
+  res: Response,
+) => {
+  const upcomingTasks = await getWorkspaceUpcomingTasksService(
+    Number(req.params.workspaceId),
+    req.user.id,
+    req.query.cursor ? Number(req.query.cursor) : undefined,
+    req.query.limit ? Number(req.query.limit) : 20,
+  );
+  return res
+    .status(200)
+    .json(createSuccessResponse("Upcoming tasks retrieved", upcomingTasks));
 };
 
 export const getWorkspaceMembers = async (
@@ -485,8 +511,12 @@ export const removeWorkspaceMember = async (
       error instanceof WorkspaceMemberNotFoundError ||
       error instanceof WorkspaceOwnerRemovalError
     ) {
-      const status = error instanceof WorkspaceMemberNotFoundError ? 404 :
-        error instanceof WorkspaceOwnerRemovalError ? 409 : 403;
+      const status =
+        error instanceof WorkspaceMemberNotFoundError
+          ? 404
+          : error instanceof WorkspaceOwnerRemovalError
+            ? 409
+            : 403;
 
       req.log.warn(
         {
@@ -573,9 +603,11 @@ export const updateWorkspaceMemberRole = async (
       "[FEATURE] Workspace member role updated",
     );
 
-    return res.status(200).json(
-      createSuccessResponse("Workspace member role updated", result.member),
-    );
+    return res
+      .status(200)
+      .json(
+        createSuccessResponse("Workspace member role updated", result.member),
+      );
   } catch (error) {
     if (
       error instanceof WorkspaceMemberRoleUpdateForbiddenError ||
@@ -583,8 +615,12 @@ export const updateWorkspaceMemberRole = async (
       error instanceof WorkspaceMemberNotFoundError ||
       error instanceof WorkspaceOwnerRoleUpdateError
     ) {
-      const status = error instanceof WorkspaceMemberNotFoundError ? 404 :
-        error instanceof WorkspaceOwnerRoleUpdateError ? 409 : 403;
+      const status =
+        error instanceof WorkspaceMemberNotFoundError
+          ? 404
+          : error instanceof WorkspaceOwnerRoleUpdateError
+            ? 409
+            : 403;
 
       req.log.warn(
         {

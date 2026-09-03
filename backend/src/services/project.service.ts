@@ -5,6 +5,7 @@ import {
   type ProjectListItem,
 } from "../cache/project-list.cache.js";
 import { deleteCachedWorkspaceOverview } from "../cache/workspace-overview.cache.js";
+import { deleteCachedWorkspaceUpcomingTasks } from "../cache/workspace-upcoming-tasks.cache.js";
 import {
   ProjectCreationForbiddenError,
   ProjectDeletionForbiddenError,
@@ -63,6 +64,7 @@ export const createProject = async (
   // has committed the new record so the next read contains the new project.
   await Promise.all([
     deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
     deleteCachedProjectList(workspaceId),
   ]);
 
@@ -117,6 +119,7 @@ export const deleteProject = async (
 
   await Promise.all([
     deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
     deleteCachedProjectList(workspaceId),
   ]);
 
@@ -146,6 +149,7 @@ export const updateProject = async (
 
   await Promise.all([
     deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
     deleteCachedProjectList(workspaceId),
   ]);
 

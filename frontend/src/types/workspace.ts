@@ -93,6 +93,13 @@ export interface WorkspaceRecentUpdate {
   task: { id: number; title: string; project: { id: number; name: string } };
 }
 
+export interface WorkspaceUpcomingTask {
+  id: number;
+  title: string;
+  dueDate: string;
+  project: { id: number; name: string };
+}
+
 export interface WorkspaceOverview {
   id: number;
   displayName: string;

@@ -1,13 +1,15 @@
 import { createHash, randomBytes } from "node:crypto";
-import {
-  resolveTaskHistoryAssigneeNames,
-} from "../repositories/task.repository.js";
+import { resolveTaskHistoryAssigneeNames } from "../repositories/task.repository.js";
 import {
   deleteCachedWorkspaceOverview,
   getCachedWorkspaceOverview,
   setCachedWorkspaceOverview,
   type WorkspaceOverviewData,
 } from "../cache/workspace-overview.cache.js";
+import {
+  getCachedWorkspaceUpcomingTasks,
+  setCachedWorkspaceUpcomingTasks,
+} from "../cache/workspace-upcoming-tasks.cache.js";
 import {
   deleteCachedWorkspaceMemberLists,
   getCachedWorkspaceMembers,
@@ -50,6 +52,7 @@ import {
   findWorkspaceOverview,
   findWorkspaceProjectTaskCounts,
   findWorkspaceRecentTaskHistory,
+  findWorkspaceUpcomingTasks,
   findWorkspaceTaskHistory,
   findWorkspaceMembersPage,
   markInvitationExpired,
@@ -131,13 +134,15 @@ export const createWorkspace = async (
       const token = tokenByEmail.get(invitation.normalizedEmail);
       if (!token) return [];
 
-      return [{
-        invitationId: invitation.id,
-        email: invitation.email,
-        workspaceDisplayName: result.workspace.displayName,
-        role: invitation.role,
-        verificationUrl: createVerificationUrl(token),
-      }];
+      return [
+        {
+          invitationId: invitation.id,
+          email: invitation.email,
+          workspaceDisplayName: result.workspace.displayName,
+          role: invitation.role,
+          verificationUrl: createVerificationUrl(token),
+        },
+      ];
     });
 
     try {
@@ -207,19 +212,24 @@ export const inviteWorkspaceMembers = async (
     await deleteCachedWorkspaceMemberLists(workspaceId);
 
     const tokenByEmail = new Map(
-      preparedInvitations.map(({ data, token }) => [data.normalizedEmail, token]),
+      preparedInvitations.map(({ data, token }) => [
+        data.normalizedEmail,
+        token,
+      ]),
     );
     const jobs = result.invitations.flatMap((invitation) => {
       const token = tokenByEmail.get(invitation.normalizedEmail);
       if (!token) return [];
 
-      return [{
-        invitationId: invitation.id,
-        email: invitation.email,
-        workspaceDisplayName: result.workspace.displayName,
-        role: invitation.role,
-        verificationUrl: createVerificationUrl(token),
-      }];
+      return [
+        {
+          invitationId: invitation.id,
+          email: invitation.email,
+          workspaceDisplayName: result.workspace.displayName,
+          role: invitation.role,
+          verificationUrl: createVerificationUrl(token),
+        },
+      ];
     });
 
     try {
@@ -279,7 +289,9 @@ export const acceptWorkspaceInvitation = async (
   token: string,
   user: { id: number; email: string },
 ) => {
-  const invitation = await findInvitationByTokenHash(hashInvitationToken(token));
+  const invitation = await findInvitationByTokenHash(
+    hashInvitationToken(token),
+  );
 
   if (!invitation) {
     throw new InvitationAcceptanceError("INVALID");
@@ -327,10 +339,7 @@ export const createWorkspaceInviteLink = async (
   createdById: number,
   actorRole: WorkspaceRole,
 ) => {
-  if (
-    actorRole !== WorkspaceRole.OWNER &&
-    actorRole !== WorkspaceRole.ADMIN
-  ) {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
     throw new WorkspaceInviteLinkGenerationForbiddenError();
   }
 
@@ -385,11 +394,12 @@ export const getWorkspaceOverview = async (
   const cachedWorkspaceOverview = await getCachedWorkspaceOverview(workspaceId);
   if (cachedWorkspaceOverview) return cachedWorkspaceOverview;
 
-  const [workspaceRecord, projectTaskCounts, recentTaskHistory] = await Promise.all([
-    findWorkspaceOverview(workspaceId),
-    findWorkspaceProjectTaskCounts(workspaceId),
-    findWorkspaceRecentTaskHistory(workspaceId, 3),
-  ]);
+  const [workspaceRecord, projectTaskCounts, recentTaskHistory] =
+    await Promise.all([
+      findWorkspaceOverview(workspaceId),
+      findWorkspaceProjectTaskCounts(workspaceId),
+      findWorkspaceRecentTaskHistory(workspaceId, 3),
+    ]);
   const recentTaskHistoryWithAssigneeNames =
     await resolveTaskHistoryAssigneeNames(recentTaskHistory);
   const { projects, createdAt, _count, ...workspace } = workspaceRecord;
@@ -431,10 +441,12 @@ export const getWorkspaceOverview = async (
     createdAt: createdAt.toISOString(),
     memberCount: _count.members,
     taskSummary,
-    recentUpdates: recentTaskHistoryWithAssigneeNames.map(({ createdAt: updatedAt, ...update }) => ({
-      ...update,
-      createdAt: updatedAt.toISOString(),
-    })),
+    recentUpdates: recentTaskHistoryWithAssigneeNames.map(
+      ({ createdAt: updatedAt, ...update }) => ({
+        ...update,
+        createdAt: updatedAt.toISOString(),
+      }),
+    ),
     projects: projects.map((project) => {
       const taskCounts = taskCountsByProject.get(project.id) ?? {
         taskCount: 0,
@@ -463,9 +475,51 @@ export const getWorkspaceTaskHistory = async (
   const result = await findWorkspaceTaskHistory(workspaceId, cursor, limit);
   const history = await resolveTaskHistoryAssigneeNames(result.history);
   return {
-    history: history.map(({ createdAt, ...entry }) => ({ ...entry, createdAt: createdAt.toISOString() })),
+    history: history.map(({ createdAt, ...entry }) => ({
+      ...entry,
+      createdAt: createdAt.toISOString(),
+    })),
     nextCursor: result.nextCursor,
   };
+};
+
+export const getWorkspaceUpcomingTasks = async (
+  workspaceId: number,
+  userId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const cachedUpcomingTasks = await getCachedWorkspaceUpcomingTasks(
+    workspaceId,
+    userId,
+    cursor,
+    limit,
+  );
+  if (cachedUpcomingTasks) return cachedUpcomingTasks;
+
+  const result = await findWorkspaceUpcomingTasks(
+    workspaceId,
+    userId,
+    cursor,
+    limit,
+    new Date().toISOString().slice(0, 10),
+  );
+  const upcomingTasks = {
+    tasks: result.tasks.map(({ dueDate, ...task }) => ({
+      ...task,
+      dueDate: dueDate ?? "",
+    })),
+    nextCursor: result.nextCursor,
+  };
+
+  await setCachedWorkspaceUpcomingTasks(
+    workspaceId,
+    userId,
+    cursor,
+    limit,
+    upcomingTasks,
+  );
+  return upcomingTasks;
 };
 
 export const getWorkspaceMembers = async (
@@ -508,17 +562,11 @@ export const removeWorkspaceMember = async (
   memberUserId: number,
   actorRole: WorkspaceRole,
 ) => {
-  if (
-    actorRole !== WorkspaceRole.OWNER &&
-    actorRole !== WorkspaceRole.ADMIN
-  ) {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
     throw new WorkspaceMemberRemovalForbiddenError();
   }
 
-  const removal = await removeWorkspaceMemberRecord(
-    workspaceId,
-    memberUserId,
-  );
+  const removal = await removeWorkspaceMemberRecord(workspaceId, memberUserId);
 
   if (removal.status === "NOT_FOUND") {
     throw new WorkspaceMemberNotFoundError();
@@ -550,10 +598,7 @@ export const updateWorkspaceMemberRole = async (
   actorRole: WorkspaceRole,
   role: Exclude<WorkspaceRole, "OWNER">,
 ) => {
-  if (
-    actorRole !== WorkspaceRole.OWNER &&
-    actorRole !== WorkspaceRole.ADMIN
-  ) {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
     throw new WorkspaceMemberRoleUpdateForbiddenError();
   }
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
+import { deleteCachedWorkspaceUpcomingTasks } from "../../../src/cache/workspace-upcoming-tasks.cache.js";
 import {
   deleteCachedProjectList,
   getCachedProjectList,
@@ -39,6 +40,10 @@ vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
   deleteCachedWorkspaceOverview: vi.fn(),
 }));
 
+vi.mock("../../../src/cache/workspace-upcoming-tasks.cache.js", () => ({
+  deleteCachedWorkspaceUpcomingTasks: vi.fn(),
+}));
+
 vi.mock("../../../src/cache/project-list.cache.js", () => ({
   deleteCachedProjectList: vi.fn(),
   getCachedProjectList: vi.fn(),
@@ -58,6 +63,7 @@ const input = {
 describe("createProject", () => {
   beforeEach(() => {
     vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceUpcomingTasks).mockResolvedValue(undefined);
     vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
   });
 
@@ -81,6 +87,7 @@ describe("createProject", () => {
         defaultView: "board",
       });
       expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(10);
       expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
     },
   );
@@ -98,6 +105,7 @@ describe("createProject", () => {
       expect.objectContaining({ startDate: null, dueDate: null }),
     );
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(10);
     expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
   });
 
@@ -156,6 +164,7 @@ describe("getProjects", () => {
 describe("deleteProject", () => {
   beforeEach(() => {
     vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceUpcomingTasks).mockResolvedValue(undefined);
     vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
   });
 
@@ -167,6 +176,7 @@ describe("deleteProject", () => {
       await expect(deleteProject(10, 25, actorRole)).resolves.toEqual({ id: 25 });
       expect(deleteProjectRecord).toHaveBeenCalledWith(10, 25);
       expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(10);
       expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
     },
   );

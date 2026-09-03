@@ -42,7 +42,11 @@ const workspaceInvitesSchema = z
 
 export const createWorkspaceSchema = z.object({
   body: z.object({
-    workspaceName: z.string().trim().min(1, "Workspace name is required").max(100),
+    workspaceName: z
+      .string()
+      .trim()
+      .min(1, "Workspace name is required")
+      .max(100),
     description: z.string().trim().max(500),
     icon: workspaceIconSchema,
     invites: workspaceInvitesSchema,
@@ -103,7 +107,23 @@ export const workspaceHistorySchema = z.object({
   query: z.object({
     cursor: positiveIntegerQueryValue("Cursor").optional(),
     limit: positiveIntegerQueryValue("Limit")
-      .refine((value) => Number(value) <= MAX_PAGE_SIZE, "Limit cannot exceed 100")
+      .refine(
+        (value) => Number(value) <= MAX_PAGE_SIZE,
+        "Limit cannot exceed 100",
+      )
+      .optional(),
+  }),
+});
+
+export const workspaceUpcomingTasksSchema = z.object({
+  params: workspaceParamsSchema,
+  query: z.object({
+    cursor: positiveIntegerQueryValue("Cursor").optional(),
+    limit: positiveIntegerQueryValue("Limit")
+      .refine(
+        (value) => Number(value) <= MAX_PAGE_SIZE,
+        "Limit cannot exceed 100",
+      )
       .optional(),
   }),
 });
@@ -150,13 +170,16 @@ export type AcceptWorkspaceInviteLinkBody = z.infer<
 export type InviteWorkspaceMembersBody = z.infer<
   typeof inviteWorkspaceMembersSchema
 >["body"];
-export type WorkspaceParams = z.infer<
-  typeof workspaceParamsSchema
->;
+export type WorkspaceParams = z.infer<typeof workspaceParamsSchema>;
 export type WorkspaceOverviewParams = z.infer<
   typeof workspaceOverviewSchema
 >["params"];
-export type WorkspaceHistoryQuery = z.infer<typeof workspaceHistorySchema>["query"];
+export type WorkspaceHistoryQuery = z.infer<
+  typeof workspaceHistorySchema
+>["query"];
+export type WorkspaceUpcomingTasksQuery = z.infer<
+  typeof workspaceUpcomingTasksSchema
+>["query"];
 export type WorkspaceMembersQuery = z.infer<
   typeof workspaceMembersSchema
 >["query"];

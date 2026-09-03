@@ -1,4 +1,5 @@
 import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-overview.cache.js";
+import { deleteCachedWorkspaceUpcomingTasks } from "../../../src/cache/workspace-upcoming-tasks.cache.js";
 import { TaskPriority, TaskStatus, WorkspaceRole } from "../../../src/generated/prisma/enums.js";
 import { findProjectByWorkspace } from "../../../src/repositories/project.repository.js";
 import { createTaskRecord, updateTaskRecord } from "../../../src/repositories/task.repository.js";
@@ -8,6 +9,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
   deleteCachedWorkspaceOverview: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-upcoming-tasks.cache.js", () => ({
+  deleteCachedWorkspaceUpcomingTasks: vi.fn(),
 }));
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
@@ -44,6 +49,7 @@ describe("task overview cache invalidation", () => {
     vi.mocked(createTaskRecord).mockResolvedValue(taskRecord as never);
     vi.mocked(updateTaskRecord).mockResolvedValue(taskRecord as never);
     vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceUpcomingTasks).mockResolvedValue(undefined);
   });
 
   it("clears the workspace overview cache after creating a task", async () => {
@@ -58,6 +64,7 @@ describe("task overview cache invalidation", () => {
     });
 
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(42);
+    expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(42);
   });
 
   it("clears the workspace overview cache after updating a task", async () => {
@@ -66,5 +73,6 @@ describe("task overview cache invalidation", () => {
     });
 
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(42);
+    expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(42);
   });
 });
