@@ -1,4 +1,5 @@
 import { prisma } from "../config/database.js";
+import { Prisma } from "../generated/prisma/client.js";
 import {
   InvitationDeliveryStatus,
   InvitationStatus,
@@ -414,21 +415,75 @@ export const findWorkspaceUpcomingTasks = async (
   cursor: number | undefined,
   limit: number,
   today: string,
+  sort: "due_asc" | "due_desc" | "priority" | "status" | "project",
 ) => {
+  const orderBy: Record<typeof sort, Prisma.TaskOrderByWithRelationInput[]> = {
+    due_asc: [{ dueDate: "asc" }, { id: "asc" }],
+    due_desc: [{ dueDate: "desc" }, { id: "asc" }],
+    priority: [{ priority: "desc" }, { dueDate: "asc" }, { id: "asc" }],
+    status: [{ status: "asc" }, { dueDate: "asc" }, { id: "asc" }],
+    project: [{ project: { name: "asc" } }, { dueDate: "asc" }, { id: "asc" }],
+  };
   const records = await prisma.task.findMany({
     where: {
       dueDate: { gte: today },
       assignees: { some: { userId } },
       project: { workspaceId, deletedAt: null },
     },
-    orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+    orderBy: orderBy[sort],
     ...(cursor ? { cursor: { id: cursor } } : {}),
     skip: cursor ? 1 : 0,
     take: limit + 1,
     select: {
       id: true,
       title: true,
+      description: true,
+      status: true,
+      priority: true,
       dueDate: true,
+      timeEstimate: true,
+      assignees: { select: { user: { select: { id: true, firstname: true, lastname: true, email: true } } } },
+      project: { select: { id: true, name: true } },
+    },
+  });
+  const hasMore = records.length > limit;
+  const tasks = hasMore ? records.slice(0, limit) : records;
+
+  return { tasks, nextCursor: hasMore ? tasks.at(-1)?.id ?? null : null };
+};
+
+export const findWorkspaceMyTasks = async (
+  workspaceId: number,
+  userId: number,
+  cursor: number | undefined,
+  limit: number,
+  sort: "due_asc" | "due_desc" | "priority" | "status" | "project",
+) => {
+  const orderBy: Record<typeof sort, Prisma.TaskOrderByWithRelationInput[]> = {
+    due_asc: [{ dueDate: "asc" }, { id: "asc" }],
+    due_desc: [{ dueDate: "desc" }, { id: "asc" }],
+    priority: [{ priority: "desc" }, { dueDate: "asc" }, { id: "asc" }],
+    status: [{ status: "asc" }, { dueDate: "asc" }, { id: "asc" }],
+    project: [{ project: { name: "asc" } }, { dueDate: "asc" }, { id: "asc" }],
+  };
+  const records = await prisma.task.findMany({
+    where: {
+      assignees: { some: { userId } },
+      project: { workspaceId, deletedAt: null },
+    },
+    orderBy: orderBy[sort],
+    ...(cursor ? { cursor: { id: cursor } } : {}),
+    skip: cursor ? 1 : 0,
+    take: limit + 1,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      status: true,
+      priority: true,
+      dueDate: true,
+      timeEstimate: true,
+      assignees: { select: { user: { select: { id: true, firstname: true, lastname: true, email: true } } } },
       project: { select: { id: true, name: true } },
     },
   });

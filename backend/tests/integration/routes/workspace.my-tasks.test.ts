@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
-import { getWorkspaceUpcomingTasks } from "../../../src/services/workspace.service.js";
+import { getWorkspaceMyTasks } from "../../../src/services/workspace.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock(
@@ -20,7 +20,7 @@ vi.mock(
     ...(await importOriginal<
       typeof import("../../../src/services/workspace.service.js")
     >()),
-    getWorkspaceUpcomingTasks: vi.fn(),
+    getWorkspaceMyTasks: vi.fn(),
   }),
 );
 
@@ -32,10 +32,10 @@ const authCookie = `accessToken=${jwt.sign(
   "test-only-jwt-secret",
 )}`;
 
-describe("GET /api/workspaces/:workspaceId/upcoming-tasks", () => {
+describe("GET /api/workspaces/:workspaceId/my-tasks", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
-    vi.mocked(getWorkspaceUpcomingTasks).mockResolvedValue({
+    vi.mocked(getWorkspaceMyTasks).mockResolvedValue({
       tasks: [],
       nextCursor: null,
     });
@@ -43,28 +43,28 @@ describe("GET /api/workspaces/:workspaceId/upcoming-tasks", () => {
 
   it("uses the authenticated member and requested pagination values", async () => {
     const response = await request(app)
-      .get("/api/workspaces/42/upcoming-tasks?limit=5&cursor=81")
+      .get("/api/workspaces/42/my-tasks?limit=5&cursor=81&sort=priority")
       .set("Cookie", authCookie);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       success: true,
-      message: "Upcoming tasks retrieved",
+      message: "My tasks retrieved",
       data: { tasks: [], nextCursor: null },
     });
-    expect(getWorkspaceUpcomingTasks).toHaveBeenCalledWith(42, 7, 81, 5, "due_asc");
+    expect(getWorkspaceMyTasks).toHaveBeenCalledWith(42, 7, 81, 5, "priority");
   });
 
   it.each(["0", "101", "invalid"]) (
     "rejects invalid limits before checking workspace membership",
     async (limit) => {
       const response = await request(app)
-        .get(`/api/workspaces/42/upcoming-tasks?limit=${limit}`)
+        .get(`/api/workspaces/42/my-tasks?limit=${limit}`)
         .set("Cookie", authCookie);
 
       expect(response.status).toBe(400);
       expect(findWorkspaceMembership).not.toHaveBeenCalled();
-      expect(getWorkspaceUpcomingTasks).not.toHaveBeenCalled();
+      expect(getWorkspaceMyTasks).not.toHaveBeenCalled();
     },
   );
 });

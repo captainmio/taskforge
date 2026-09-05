@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getWorkspaceOverview,
+  getWorkspaceMyTasks,
   getWorkspaceUpcomingTasks,
   updateWorkspaceMemberRole,
 } from "./workspaces";
@@ -58,18 +59,38 @@ describe("getWorkspaceUpcomingTasks", () => {
 
     await expect(getWorkspaceUpcomingTasks("42")).resolves.toEqual(apiResponse);
     expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/upcoming-tasks", {
-      params: { limit: 5 },
+      params: { limit: 5, sort: "due_asc" },
     });
   });
 
   it("passes a cursor when loading a later page", async () => {
     mocks.get.mockResolvedValue({
-      data: { success: true, message: "Upcoming tasks retrieved", data: { tasks: [], nextCursor: null } },
+      data: {
+        success: true,
+        message: "Upcoming tasks retrieved",
+        data: { tasks: [], nextCursor: null },
+      },
     });
 
     await getWorkspaceUpcomingTasks("42", 81);
     expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/upcoming-tasks", {
-      params: { limit: 5, cursor: 81 },
+      params: { limit: 5, cursor: 81, sort: "due_asc" },
+    });
+  });
+});
+
+describe("getWorkspaceMyTasks", () => {
+  it("requests the current user's tasks including those without due dates", async () => {
+    const apiResponse = {
+      success: true as const,
+      message: "My tasks retrieved",
+      data: { tasks: [], nextCursor: null },
+    };
+    mocks.get.mockResolvedValue({ data: apiResponse });
+
+    await expect(getWorkspaceMyTasks("42")).resolves.toEqual(apiResponse);
+    expect(mocks.get).toHaveBeenCalledWith("/workspaces/42/my-tasks", {
+      params: { limit: 5, sort: "due_asc" },
     });
   });
 });

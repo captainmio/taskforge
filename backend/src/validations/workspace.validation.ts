@@ -125,6 +125,21 @@ export const workspaceUpcomingTasksSchema = z.object({
         "Limit cannot exceed 100",
       )
       .optional(),
+    sort: z.enum(["due_asc", "due_desc", "priority", "status", "project"]).optional(),
+  }),
+});
+
+export const workspaceMyTasksSchema = z.object({
+  params: workspaceParamsSchema,
+  query: z.object({
+    cursor: positiveIntegerQueryValue("Cursor").optional(),
+    limit: positiveIntegerQueryValue("Limit")
+      .refine(
+        (value) => Number(value) <= MAX_PAGE_SIZE,
+        "Limit cannot exceed 100",
+      )
+      .optional(),
+    sort: z.enum(["due_asc", "due_desc", "priority", "status", "project"]).optional(),
   }),
 });
 
@@ -180,6 +195,7 @@ export type WorkspaceHistoryQuery = z.infer<
 export type WorkspaceUpcomingTasksQuery = z.infer<
   typeof workspaceUpcomingTasksSchema
 >["query"];
+export type WorkspaceMyTasksQuery = z.infer<typeof workspaceMyTasksSchema>["query"];
 export type WorkspaceMembersQuery = z.infer<
   typeof workspaceMembersSchema
 >["query"];

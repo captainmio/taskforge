@@ -19,6 +19,7 @@ import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
   createWorkspaceInviteLink as createWorkspaceInviteLinkService,
   createWorkspace as createWorkspaceService,
+  getWorkspaceMyTasks as getWorkspaceMyTasksService,
   getWorkspaceOverview as getWorkspaceOverviewService,
   getWorkspaceUpcomingTasks as getWorkspaceUpcomingTasksService,
   getWorkspaceTaskHistory as getWorkspaceTaskHistoryService,
@@ -36,6 +37,7 @@ import type {
   WorkspaceParams,
   WorkspaceOverviewParams,
   WorkspaceHistoryQuery,
+  WorkspaceMyTasksQuery,
   WorkspaceUpcomingTasksQuery,
   WorkspaceMembersQuery,
   RemoveWorkspaceMemberParams,
@@ -396,10 +398,25 @@ export const getWorkspaceUpcomingTasks = async (
     req.user.id,
     req.query.cursor ? Number(req.query.cursor) : undefined,
     req.query.limit ? Number(req.query.limit) : 20,
+    req.query.sort ?? "due_asc",
   );
   return res
     .status(200)
     .json(createSuccessResponse("Upcoming tasks retrieved", upcomingTasks));
+};
+
+export const getWorkspaceMyTasks = async (
+  req: AuthenticatedRequest<unknown, WorkspaceOverviewParams, WorkspaceMyTasksQuery>,
+  res: Response,
+) => {
+  const tasks = await getWorkspaceMyTasksService(
+    Number(req.params.workspaceId),
+    req.user.id,
+    req.query.cursor ? Number(req.query.cursor) : undefined,
+    req.query.limit ? Number(req.query.limit) : 20,
+    req.query.sort ?? "due_asc",
+  );
+  return res.status(200).json(createSuccessResponse("My tasks retrieved", tasks));
 };
 
 export const getWorkspaceMembers = async (

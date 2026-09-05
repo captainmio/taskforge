@@ -242,7 +242,9 @@ describe("Workspace overview", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "View All" }));
 
-    expect(await screen.findByRole("dialog", { name: "Recent Updates" })).toBeVisible();
+    expect(
+      await screen.findByRole("dialog", { name: "Recent Updates" }),
+    ).toBeVisible();
     expect(mocks.getWorkspaceHistory).toHaveBeenCalledWith("42", undefined);
     expect(await screen.findByText("Published")).toBeVisible();
 
@@ -274,6 +276,18 @@ describe("Workspace overview", () => {
     expect(await screen.findByText("Review launch checklist")).toBeVisible();
     expect(screen.getByText("Launch Readiness")).toBeVisible();
     expect(mocks.getWorkspaceUpcomingTasks).toHaveBeenCalledWith("42");
+  });
+
+  it("links the upcoming-task preview to My Tasks", async () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceOverview />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "View All" }),
+    ).toHaveAttribute("href", "/workspace/42/my-tasks");
   });
 
   it("shows an empty state when the upcoming-tasks API returns no tasks", async () => {

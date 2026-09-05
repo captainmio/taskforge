@@ -57,11 +57,25 @@ export interface WorkspaceUpcomingTaskListData {
 export const getWorkspaceUpcomingTasks = async (
   workspaceId: string,
   cursor?: number,
+  sort = "due_asc",
 ): Promise<ApiSuccessResponse<WorkspaceUpcomingTaskListData>> => {
   const response = await apiClient.get<
     ApiSuccessResponse<WorkspaceUpcomingTaskListData>
   >(`/workspaces/${workspaceId}/upcoming-tasks`, {
-    params: { limit: 5, ...(cursor ? { cursor } : {}) },
+    params: { limit: 5, sort, ...(cursor ? { cursor } : {}) },
+  });
+  return response.data;
+};
+
+export const getWorkspaceMyTasks = async (
+  workspaceId: string,
+  cursor?: number,
+  sort = "due_asc",
+): Promise<ApiSuccessResponse<WorkspaceUpcomingTaskListData>> => {
+  const response = await apiClient.get<
+    ApiSuccessResponse<WorkspaceUpcomingTaskListData>
+  >(`/workspaces/${workspaceId}/my-tasks`, {
+    params: { limit: 5, sort, ...(cursor ? { cursor } : {}) },
   });
   return response.data;
 };

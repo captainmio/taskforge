@@ -6,7 +6,7 @@ import AppSidebar from "./AppSidebar";
 const CurrentLocation = () => <span>{useLocation().pathname}</span>;
 
 describe("AppSidebar", () => {
-  it("links Projects and Members to the active workspace listings", () => {
+  it("links My Tasks, Projects, and Members to the active workspace listings", () => {
     render(
       <MemoryRouter initialEntries={["/workspace/42"]}>
         <Routes>
@@ -27,6 +27,10 @@ describe("AppSidebar", () => {
     expect(screen.getByRole("link", { name: "Projects" })).toHaveAttribute(
       "href",
       "/workspace/42/projects",
+    );
+    expect(screen.getByRole("link", { name: "My Tasks" })).toHaveAttribute(
+      "href",
+      "/workspace/42/my-tasks",
     );
     expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
       "href",

@@ -52,6 +52,7 @@ import {
   findWorkspaceOverview,
   findWorkspaceProjectTaskCounts,
   findWorkspaceRecentTaskHistory,
+  findWorkspaceMyTasks,
   findWorkspaceUpcomingTasks,
   findWorkspaceTaskHistory,
   findWorkspaceMembersPage,
@@ -488,12 +489,14 @@ export const getWorkspaceUpcomingTasks = async (
   userId: number,
   cursor: number | undefined,
   limit: number,
+  sort: "due_asc" | "due_desc" | "priority" | "status" | "project" = "due_asc",
 ) => {
   const cachedUpcomingTasks = await getCachedWorkspaceUpcomingTasks(
     workspaceId,
     userId,
     cursor,
     limit,
+    sort,
   );
   if (cachedUpcomingTasks) return cachedUpcomingTasks;
 
@@ -503,11 +506,13 @@ export const getWorkspaceUpcomingTasks = async (
     cursor,
     limit,
     new Date().toISOString().slice(0, 10),
+    sort,
   );
   const upcomingTasks = {
-    tasks: result.tasks.map(({ dueDate, ...task }) => ({
+    tasks: result.tasks.map(({ dueDate, assignees, ...task }) => ({
       ...task,
       dueDate: dueDate ?? "",
+      assignees: assignees.map(({ user }) => user),
     })),
     nextCursor: result.nextCursor,
   };
@@ -517,9 +522,29 @@ export const getWorkspaceUpcomingTasks = async (
     userId,
     cursor,
     limit,
+    sort,
     upcomingTasks,
   );
   return upcomingTasks;
+};
+
+export const getWorkspaceMyTasks = async (
+  workspaceId: number,
+  userId: number,
+  cursor: number | undefined,
+  limit: number,
+  sort: "due_asc" | "due_desc" | "priority" | "status" | "project" = "due_asc",
+) => {
+  const result = await findWorkspaceMyTasks(workspaceId, userId, cursor, limit, sort);
+
+  return {
+    tasks: result.tasks.map(({ dueDate, assignees, ...task }) => ({
+      ...task,
+      dueDate: dueDate ?? "",
+      assignees: assignees.map(({ user }) => user),
+    })),
+    nextCursor: result.nextCursor,
+  };
 };
 
 export const getWorkspaceMembers = async (

@@ -44,6 +44,7 @@ import {
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
+  findWorkspaceMyTasks,
   findWorkspaceOverview,
   findWorkspaceProjectTaskCounts,
   findWorkspaceRecentTaskHistory,
@@ -61,6 +62,7 @@ import {
   createWorkspaceInviteLink,
   createWorkspace,
   getWorkspaceOverview,
+  getWorkspaceMyTasks,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
   recoverPendingInvitationDeliveries,
@@ -78,6 +80,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   findInvitationByTokenHash: vi.fn(),
   findInvitationsAwaitingQueue: vi.fn(),
   findWorkspaceInviteLinkByTokenHash: vi.fn(),
+  findWorkspaceMyTasks: vi.fn(),
   findWorkspaceOverview: vi.fn(),
   findWorkspaceRecentTaskHistory: vi.fn(),
   findWorkspaceProjectTaskCounts: vi.fn(),
@@ -129,6 +132,54 @@ const persistedWorkspace = {
     },
   ],
 };
+
+describe("getWorkspaceMyTasks", () => {
+  it("returns assigned tasks with an empty due date when no due date is set", async () => {
+    vi.mocked(findWorkspaceMyTasks).mockResolvedValue({
+      tasks: [
+        {
+          id: 18,
+          title: "Document release process",
+          description: "Capture the handoff steps.",
+          status: "todo",
+          priority: "medium",
+          dueDate: null,
+          timeEstimate: null,
+          project: { id: 5, name: "Release" },
+          assignees: [
+            {
+              user: {
+                id: 7,
+                firstname: "Workspace",
+                lastname: "Owner",
+                email: "owner@example.com",
+              },
+            },
+          ],
+        },
+      ],
+      nextCursor: null,
+    } as never);
+
+    await expect(getWorkspaceMyTasks(42, 7, undefined, 20)).resolves.toEqual({
+      tasks: [
+        expect.objectContaining({
+          id: 18,
+          dueDate: "",
+          assignees: [expect.objectContaining({ id: 7 })],
+        }),
+      ],
+      nextCursor: null,
+    });
+    expect(findWorkspaceMyTasks).toHaveBeenCalledWith(
+      42,
+      7,
+      undefined,
+      20,
+      "due_asc",
+    );
+  });
+});
 
 describe("createWorkspace", () => {
   beforeEach(() => {

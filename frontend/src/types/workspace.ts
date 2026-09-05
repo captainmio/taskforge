@@ -96,8 +96,13 @@ export interface WorkspaceRecentUpdate {
 export interface WorkspaceUpcomingTask {
   id: number;
   title: string;
+  description: string;
+  status: "todo" | "in_progress" | "in_review" | "done";
+  priority: "low" | "medium" | "high";
   dueDate: string;
+  timeEstimate: string | null;
   project: { id: number; name: string };
+  assignees: Array<{ id: number; firstname: string; lastname: string; email: string }>;
 }
 
 export interface WorkspaceOverview {

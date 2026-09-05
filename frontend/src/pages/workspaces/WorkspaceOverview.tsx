@@ -455,7 +455,18 @@ const WorkspaceOverview = () => {
           />
         </SectionCard>
 
-        <SectionCard title="Upcoming Task" className="shadow-sm">
+        <SectionCard
+          title="Upcoming Task"
+          className="shadow-sm"
+          action={
+            <Link
+              to={`${basePath}/my-tasks`}
+              className="text-xs font-semibold text-green-700 hover:text-green-800"
+            >
+              View All
+            </Link>
+          }
+        >
           <ul className="-m-4 divide-y divide-amber-100">
             {upcomingTasks.length > 0 ? (
               upcomingTasks.map((task) => {

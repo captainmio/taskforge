@@ -32,8 +32,13 @@ const cachedPage = {
     {
       id: 101,
       title: "Review launch checklist",
+      description: "Confirm the final launch tasks.",
+      status: "todo" as const,
+      priority: "medium" as const,
       dueDate: "2026-09-18",
+      timeEstimate: null,
       project: { id: 25, name: "Website Redesign" },
+      assignees: [],
     },
   ],
   nextCursor: 101,
@@ -53,16 +58,16 @@ describe("workspace upcoming-tasks cache", () => {
       cachedPage,
     );
     expect(mocks.redis.get).toHaveBeenCalledWith(
-      `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:80:5`,
+      `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:80:5:due_asc`,
     );
   });
 
   it("stores the requested member's first page with its configured expiry", async () => {
-    await setCachedWorkspaceUpcomingTasks(10, 7, undefined, 5, cachedPage);
+    await setCachedWorkspaceUpcomingTasks(10, 7, undefined, 5, "due_asc", cachedPage);
 
     expect(getCacheRedisConnection).toHaveBeenCalled();
     expect(mocks.redis.set).toHaveBeenCalledWith(
-      `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:first:5`,
+      `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:first:5:due_asc`,
       JSON.stringify(cachedPage),
       "EX",
       60,
@@ -70,8 +75,8 @@ describe("workspace upcoming-tasks cache", () => {
   });
 
   it("deletes every member and pagination variant for the workspace", async () => {
-    const firstKey = `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:first:5`;
-    const nextKey = `workspace:upcoming-tasks:${CACHE_VERSION}:10:8:101:25`;
+    const firstKey = `workspace:upcoming-tasks:${CACHE_VERSION}:10:7:first:5:due_asc`;
+    const nextKey = `workspace:upcoming-tasks:${CACHE_VERSION}:10:8:101:25:priority`;
     mocks.redis.scan
       .mockResolvedValueOnce(["8", [firstKey]])
       .mockResolvedValueOnce(["0", [nextKey]]);

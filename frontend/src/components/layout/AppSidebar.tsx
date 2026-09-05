@@ -1,4 +1,11 @@
-import { FaCog, FaFolder, FaHome, FaSignOutAlt, FaUsers } from "react-icons/fa";
+import {
+  FaCog,
+  FaFolder,
+  FaHome,
+  FaSignOutAlt,
+  FaTasks,
+  FaUsers,
+} from "react-icons/fa";
 import { useNavigate } from "react-router";
 import { getInitials } from "../../utils/getInitials";
 import type { JoinedWorkspace } from "../../services/auth";
@@ -51,6 +58,7 @@ const AppSidebar = ({
 
       <nav className="mt-5 space-y-1 px-4" aria-label="Primary navigation">
         <NavItem to="." icon={<FaHome />} label="Worskpace Overview" end />
+        <NavItem to="my-tasks" icon={<FaTasks />} label="My Tasks" />
         <NavItem to="projects" icon={<FaFolder />} label="Projects" />
         <NavItem to="members" icon={<FaUsers />} label="Members" />
         <NavItem icon={<FaCog />} label="Settings" disabled />
