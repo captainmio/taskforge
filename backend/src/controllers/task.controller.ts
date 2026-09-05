@@ -11,6 +11,8 @@ import {
 } from "../errors/task.errors.js";
 import {
   createTask as createTaskService,
+  createTaskComment as createTaskCommentService,
+  getTaskComments as getTaskCommentsService,
   getTaskHistory as getTaskHistoryService,
   getProjectTasks as getProjectTasksService,
   updateTask as updateTaskService,
@@ -19,10 +21,14 @@ import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import { createSuccessResponse } from "../utils/api-response.js";
 import {
   emitTaskCreated,
+  emitTaskCommentAdded,
   emitTaskUpdated,
 } from "../realtime/task.socket.js";
 import type {
   CreateTaskBody,
+  CreateTaskCommentBody,
+  TaskCommentsParams,
+  TaskCommentsQuery,
   CreateTaskParams,
   ProjectTasksParams,
   ProjectTasksQuery,
@@ -31,6 +37,63 @@ import type {
   UpdateTaskBody,
   UpdateTaskParams,
 } from "../validations/task.validation.js";
+
+export const createTaskComment = async (
+  req: AuthenticatedRequest<CreateTaskCommentBody, TaskCommentsParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const taskId = Number(req.params.taskId);
+  const logContext = { workspaceId, projectId, taskId, actorUserId: req.user.id };
+
+  try {
+    const comment = await createTaskCommentService(
+      workspaceId, projectId, taskId, req.user.id, req.body.body,
+    );
+    req.log.info(
+      { logType: "feature", event: "task.comment_added", commentId: comment.id, ...logContext },
+      "[FEATURE] Task comment added",
+    );
+    emitTaskCommentAdded({ workspaceId, projectId, taskId });
+    return res.status(201).json(createSuccessResponse("Comment added", comment));
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError || error instanceof TaskNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+    req.log.error(
+      { logType: "feature", event: "task.comment_failed", err: error, ...logContext },
+      "[FEATURE] Unable to add task comment",
+    );
+    return res.status(500).json({ success: false, error: "Unable to add your comment" });
+  }
+};
+
+export const getTaskComments = async (
+  req: AuthenticatedRequest<unknown, TaskCommentsParams, TaskCommentsQuery>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const projectId = Number(req.params.projectId);
+  const taskId = Number(req.params.taskId);
+  try {
+    const result = await getTaskCommentsService(
+      workspaceId, projectId, taskId,
+      req.query.cursor ? Number(req.query.cursor) : undefined,
+      req.query.limit ? Number(req.query.limit) : DEFAULT_PAGE_SIZE,
+    );
+    return res.status(200).json(createSuccessResponse("Task comments retrieved", result));
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError || error instanceof TaskNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+    req.log.error(
+      { logType: "feature", event: "task.comments_failed", err: error, workspaceId, projectId, taskId, actorUserId: req.user.id },
+      "[FEATURE] Unable to retrieve task comments",
+    );
+    return res.status(500).json({ success: false, error: "Unable to load task comments" });
+  }
+};
 
 export const createTask = async (
   req: AuthenticatedRequest<CreateTaskBody, CreateTaskParams>,

@@ -14,6 +14,65 @@ export interface CreateTaskData {
   assigneeIds: number[];
 }
 
+const taskCommentSelect = {
+  id: true,
+  body: true,
+  createdAt: true,
+  author: { select: { id: true, firstname: true, lastname: true } },
+} satisfies Prisma.TaskCommentSelect;
+
+export const createTaskCommentRecord = async (
+  projectId: number,
+  taskId: number,
+  authorUserId: number,
+  body: string,
+) => prisma.$transaction(async (transaction) => {
+  const task = await transaction.task.findFirst({
+    where: { id: taskId, projectId, project: { deletedAt: null } },
+    select: { id: true },
+  });
+  if (!task) return null;
+
+  const comment = await transaction.taskComment.create({
+    data: { taskId, authorUserId, body },
+    select: taskCommentSelect,
+  });
+  // Both records commit together, so a failed history write cannot leave an
+  // untracked comment or a history event for a comment that was never saved.
+  await transaction.taskHistory.create({
+    data: {
+      taskId,
+      actorUserId: authorUserId,
+      action: "commented",
+      changes: { commentId: comment.id },
+    },
+  });
+  return comment;
+});
+
+export const findTaskCommentsByTask = async (
+  projectId: number,
+  taskId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, projectId, project: { deletedAt: null } },
+    select: { id: true },
+  });
+  if (!task) return null;
+
+  const records = await prisma.taskComment.findMany({
+    where: { taskId, ...(cursor ? { id: { lt: cursor } } : {}) },
+    orderBy: { id: "desc" },
+    take: limit + 1,
+    select: taskCommentSelect,
+  });
+  const hasMore = records.length > limit;
+  const comments = records.slice(0, limit);
+  return { comments, nextCursor: hasMore ? comments.at(-1)?.id ?? null : null };
+};
+
 export interface UpdateTaskData {
   title?: string | undefined;
   description?: string | undefined;

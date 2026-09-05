@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
   createTask,
+  createTaskComment,
+  getTaskComments,
   getTaskHistory,
   getProjectTasks,
   updateTask,
@@ -11,6 +13,8 @@ import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembe
 import { validate } from "../middlewares/validate.js";
 import {
   createTaskSchema,
+  createTaskCommentSchema,
+  taskCommentsSchema,
   projectTasksSchema,
   taskHistorySchema,
   updateTaskSchema,
@@ -48,6 +52,22 @@ router.patch(
   validate(updateTaskSchema),
   requireWorkspaceMembership,
   authenticatedHandler(updateTask),
+);
+
+router.get(
+  "/:taskId/comments",
+  requireAuth,
+  validate(taskCommentsSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(getTaskComments),
+);
+
+router.post(
+  "/:taskId/comments",
+  requireAuth,
+  validate(createTaskCommentSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(createTaskComment),
 );
 
 export default router;

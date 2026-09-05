@@ -83,6 +83,19 @@ export const taskHistorySchema = z.object({
   }),
 });
 
+export const taskCommentsSchema = taskHistorySchema;
+
+export const createTaskCommentSchema = z.object({
+  params: taskUpdateParamsSchema,
+  body: z.object({
+    body: z.string().trim().min(1, "Write a comment before posting").max(5000, "Comments cannot exceed 5,000 characters"),
+  }).strict(),
+});
+
+export type CreateTaskCommentBody = z.infer<typeof createTaskCommentSchema>["body"];
+export type TaskCommentsParams = z.infer<typeof taskCommentsSchema>["params"];
+export type TaskCommentsQuery = z.infer<typeof taskCommentsSchema>["query"];
+
 export type CreateTaskBody = z.infer<typeof createTaskSchema>["body"];
 export type CreateTaskParams = z.infer<typeof createTaskSchema>["params"];
 export type UpdateTaskBody = z.infer<typeof updateTaskSchema>["body"];

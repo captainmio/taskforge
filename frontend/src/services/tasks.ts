@@ -66,6 +66,44 @@ export interface TaskHistoryData {
   nextCursor: number | null;
 }
 
+export interface TaskComment {
+  id: number;
+  body: string;
+  createdAt: string;
+  author: { id: number; firstname: string; lastname: string };
+}
+
+export interface TaskCommentsData {
+  comments: TaskComment[];
+  nextCursor: number | null;
+}
+
+export const getTaskComments = async (
+  workspaceId: string,
+  projectId: number,
+  taskId: number,
+  cursor?: number,
+): Promise<ApiSuccessResponse<TaskCommentsData>> => {
+  const response = await apiClient.get<ApiSuccessResponse<TaskCommentsData>>(
+    `/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}/comments`,
+    { params: { limit: 25, ...(cursor ? { cursor } : {}) } },
+  );
+  return response.data;
+};
+
+export const createTaskComment = async (
+  workspaceId: string,
+  projectId: number,
+  taskId: number,
+  body: string,
+): Promise<ApiSuccessResponse<TaskComment>> => {
+  const response = await apiClient.post<ApiSuccessResponse<TaskComment>>(
+    `/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}/comments`,
+    { body },
+  );
+  return response.data;
+};
+
 export const getProjectTasks = async (
   workspaceId: string,
   projectId: number,

@@ -211,7 +211,7 @@ const WorkspaceOverview = () => {
     0,
   );
   const recentUpdates = (workspaceOverview.recentUpdates ?? []).filter(
-    (update) => hasTaskHistoryDetails(update.changes),
+    (update) => update.action === "commented" || hasTaskHistoryDetails(update.changes),
   );
   const loadHistory = async (cursor?: number) => {
     setIsLoadingHistory(true);
@@ -394,7 +394,7 @@ const WorkspaceOverview = () => {
                       <strong className="font-semibold text-gray-950">
                         {update.actor.firstname} {update.actor.lastname}
                       </strong>{" "}
-                      {update.action === "created" ? "created" : "updated"} this
+                      {update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"} this
                       task.
                     </p>
                     <TaskHistoryChangeDetails
@@ -551,14 +551,14 @@ const WorkspaceOverview = () => {
           ) : (
             <ol className="space-y-4">
               {(allUpdates ?? [])
-                .filter((update) => hasTaskHistoryDetails(update.changes))
+                .filter((update) => update.action === "commented" || hasTaskHistoryDetails(update.changes))
                 .map((update) => (
                   <li key={update.id} className="text-sm text-gray-700">
                     <p>
                       <strong className="font-semibold text-gray-950">
                         {update.actor.firstname} {update.actor.lastname}
                       </strong>{" "}
-                      {update.action === "created" ? "created" : "updated"}{" "}
+                      {update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"}{" "}
                       <strong className="font-semibold text-gray-950">
                         {update.task.title}
                       </strong>

@@ -21,6 +21,7 @@ model User {
   createdTasks         Task[]                 @relation("TaskCreator")
   taskAssignments      TaskAssignee[]
   taskHistoryEvents    TaskHistory[]          @relation("TaskHistoryActor")
+  taskComments         TaskComment[]
 }
 
 model Workspace {
@@ -81,10 +82,24 @@ model Task {
   createdBy    User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
   assignees    TaskAssignee[]
   history      TaskHistory[]
+  comments     TaskComment[]
 
   @@index([projectId])
   @@index([projectId, status, position])
   @@index([createdById])
+}
+
+model TaskComment {
+  id           Int      @id @default(autoincrement())
+  taskId       Int      @map("task_id")
+  authorUserId Int      @map("author_user_id")
+  body         String   @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([taskId, id(sort: Desc)])
+  @@index([authorUserId])
 }
 
 model TaskHistory {

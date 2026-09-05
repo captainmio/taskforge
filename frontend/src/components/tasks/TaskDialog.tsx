@@ -8,6 +8,7 @@ import TaskAssigneeMultiSelect, {
   type TaskAssignee,
 } from "./TaskAssigneeMultiSelect";
 import TaskHistory from "./TaskHistory";
+import TaskComments from "./TaskComments";
 import TimeEstimateField from "./TimeEstimateField";
 import {
   createTask,
@@ -270,113 +271,124 @@ const TaskDialog = ({
           </button>
         </header>
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <fieldset disabled={isCreating} className="space-y-4 border-0 p-6">
-            <TaskAssigneeMultiSelect
-              members={members}
-              value={assignees}
-              onChange={persistAssignees}
-              disabled={isLoadingMembers}
-            />
-            <label className="block text-xs font-semibold text-gray-700">
-              Description
-              <textarea
-                rows={6}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                onBlur={() =>
-                  void persistChanges({ description }, { description })
-                }
-                className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900"
+          <div className="min-w-0">
+            <fieldset disabled={isCreating} className="space-y-4 border-0 p-6">
+              <TaskAssigneeMultiSelect
+                members={members}
+                value={assignees}
+                onChange={persistAssignees}
+                disabled={isLoadingMembers}
               />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-xs font-semibold text-gray-700">
-                Status
-                {isStatusLocked ? (
-                  <p
-                    className={`mt-1.5 rounded-md border px-3 py-2 text-sm font-medium text-gray-800 ${statusColumn?.surfaceClassName ?? ""}`}
-                  >
-                    <span
-                      className={`mr-2 inline-block h-2 w-2 rounded-full ${statusColumn?.dotClassName ?? ""}`}
-                    />
-                    {statusColumn?.label ?? status.replace("_", " ")}
-                  </p>
-                ) : (
-                  <select
-                    value={status}
+              <label className="block text-xs font-semibold text-gray-700">
+                Description
+                <textarea
+                  rows={6}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  onBlur={() =>
+                    void persistChanges({ description }, { description })
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900"
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="text-xs font-semibold text-gray-700">
+                  Status
+                  {isStatusLocked ? (
+                    <p
+                      className={`mt-1.5 rounded-md border px-3 py-2 text-sm font-medium text-gray-800 ${statusColumn?.surfaceClassName ?? ""}`}
+                    >
+                      <span
+                        className={`mr-2 inline-block h-2 w-2 rounded-full ${statusColumn?.dotClassName ?? ""}`}
+                      />
+                      {statusColumn?.label ?? status.replace("_", " ")}
+                    </p>
+                  ) : (
+                    <select
+                      value={status}
+                      onChange={(event) => {
+                        const nextStatus = event.target.value as TaskStatus;
+                        setStatus(nextStatus);
+                        void persistChanges(
+                          { status: nextStatus },
+                          { status: nextStatus },
+                        );
+                      }}
+                      className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
+                    >
+                      <option value="todo">To Do</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="in_review">In Review</option>
+                      <option value="done" disabled={!canCompleteInReview}>
+                        Done
+                      </option>
+                    </select>
+                  )}
+                </label>
+                <label className="text-xs font-semibold text-gray-700">
+                  Priority
+                  <Select
+                    value={priority}
                     onChange={(event) => {
-                      const nextStatus = event.target.value as TaskStatus;
-                      setStatus(nextStatus);
+                      const nextPriority = event.target.value as TaskPriority;
+                      setPriority(nextPriority);
                       void persistChanges(
-                        { status: nextStatus },
-                        { status: nextStatus },
+                        { priority: nextPriority },
+                        { priority: nextPriority },
                       );
                     }}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="in_review">In Review</option>
-                    <option value="done" disabled={!canCompleteInReview}>
-                      Done
-                    </option>
-                  </select>
-                )}
-              </label>
-              <label className="text-xs font-semibold text-gray-700">
-                Priority
-                <Select
-                  value={priority}
-                  onChange={(event) => {
-                    const nextPriority = event.target.value as TaskPriority;
-                    setPriority(nextPriority);
-                    void persistChanges(
-                      { priority: nextPriority },
-                      { priority: nextPriority },
-                    );
-                  }}
-                  leadingIcon={
-                    <FaCircle
-                      className={priorityPresentation[priority].iconClassName}
-                    />
-                  }
-                  className="mt-1.5"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </Select>
-              </label>
-              <label className="text-xs font-semibold text-gray-700">
-                Due date
-                <div className="relative mt-1.5">
-                  <FaCalendarAlt className="pointer-events-none absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(event) => setDueDate(event.target.value)}
-                    onBlur={() =>
-                      void persistChanges(
-                        { dueDate: dueDate || null },
-                        { dueDate },
-                      )
+                    leadingIcon={
+                      <FaCircle
+                        className={priorityPresentation[priority].iconClassName}
+                      />
                     }
-                    className="h-10 w-full rounded-lg border border-gray-200 py-2 pl-9 pr-2 text-sm"
-                  />
-                </div>
-              </label>
-            </div>
-            <TimeEstimateField
-              value={timeEstimate}
-              onChange={setTimeEstimate}
-              onBlur={() =>
-                void persistChanges(
-                  { timeEstimate: timeEstimate || null },
-                  { timeEstimate },
-                )
+                    className="mt-1.5"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </Select>
+                </label>
+                <label className="text-xs font-semibold text-gray-700">
+                  Due date
+                  <div className="relative mt-1.5">
+                    <FaCalendarAlt className="pointer-events-none absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(event) => setDueDate(event.target.value)}
+                      onBlur={() =>
+                        void persistChanges(
+                          { dueDate: dueDate || null },
+                          { dueDate },
+                        )
+                      }
+                      className="h-10 w-full rounded-lg border border-gray-200 py-2 pl-9 pr-2 text-sm"
+                    />
+                  </div>
+                </label>
+              </div>
+              <TimeEstimateField
+                value={timeEstimate}
+                onChange={setTimeEstimate}
+                onBlur={() =>
+                  void persistChanges(
+                    { timeEstimate: timeEstimate || null },
+                    { timeEstimate },
+                  )
+                }
+              />
+            </fieldset>
+            <TaskComments
+              key={`${workspaceId}:${projectId}:${taskId ?? "new-task"}`}
+              workspaceId={workspaceId}
+              projectId={projectId}
+              taskId={taskId}
+              onActivityRefresh={() =>
+                setHistoryRefreshVersion((version) => version + 1)
               }
             />
-          </fieldset>
+          </div>
           <TaskHistory
             key={taskId ?? "new-task"}
             workspaceId={workspaceId}

@@ -11,6 +11,8 @@ import { TaskPriority, TaskStatus, WorkspaceRole } from "../generated/prisma/enu
 import { findProjectByWorkspace } from "../repositories/project.repository.js";
 import {
   createTaskRecord,
+  createTaskCommentRecord,
+  findTaskCommentsByTask,
   findTaskHistoryByTask,
   findTasksByProject,
   updateTaskRecord,
@@ -27,6 +29,40 @@ const taskStatusByInput = {
   in_review: TaskStatus.in_review,
   done: TaskStatus.done,
 } as const;
+
+export const createTaskComment = async (
+  workspaceId: number,
+  projectId: number,
+  taskId: number,
+  authorUserId: number,
+  body: string,
+) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+  const comment = await createTaskCommentRecord(projectId, taskId, authorUserId, body);
+  if (!comment) throw new TaskNotFoundError();
+  await deleteCachedWorkspaceOverview(workspaceId);
+  return { ...comment, createdAt: comment.createdAt.toISOString() };
+};
+
+export const getTaskComments = async (
+  workspaceId: number,
+  projectId: number,
+  taskId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const project = await findProjectByWorkspace(workspaceId, projectId);
+  if (!project) throw new ProjectNotFoundError();
+  const result = await findTaskCommentsByTask(projectId, taskId, cursor, limit);
+  if (!result) throw new TaskNotFoundError();
+  return {
+    comments: result.comments.map((comment) => ({
+      ...comment, createdAt: comment.createdAt.toISOString(),
+    })),
+    nextCursor: result.nextCursor,
+  };
+};
 
 const taskPriorityByInput = {
   low: TaskPriority.low,

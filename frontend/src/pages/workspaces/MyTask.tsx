@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaCalendarAlt, FaCircle } from "react-icons/fa";
 import { useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
@@ -12,6 +12,7 @@ import {
 import Button from "../../components/ui/Button";
 import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
+import { useProjectTaskRealtime } from "../../hooks/useProjectTaskRealtime";
 import { getWorkspaceMyTasks } from "../../services/workspaces";
 import type { WorkspaceUpcomingTask } from "../../types/workspace";
 import { formatTaskDueDate } from "../../utils/formatTaskDueDate";
@@ -79,6 +80,10 @@ const MyTask = () => {
     useState<WorkspaceUpcomingTask | null>(null);
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const projectIds = useMemo(
+    () => [...new Set(tasks.map((task) => task.project.id))],
+    [tasks],
+  );
 
   const loadTasks = async () => {
     const response = await getWorkspaceMyTasks(id, undefined, sort);
@@ -105,6 +110,13 @@ const MyTask = () => {
       setHasLoaded(true);
     });
   }, [id, sort]);
+
+  useProjectTaskRealtime({
+    workspaceId: id,
+    projectId: undefined,
+    projectIds,
+    onTaskUpdated: () => void loadTasks(),
+  });
 
   const loadMore = async () => {
     if (!cursor) return;
@@ -280,7 +292,6 @@ const MyTask = () => {
           onClose={() => setIsEditOpen(false)}
           onTaskCreated={() => undefined}
           onTaskUpdated={() => {
-            setIsEditOpen(false);
             void loadTasks();
           }}
         />

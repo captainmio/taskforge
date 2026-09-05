@@ -118,6 +118,12 @@ export const emitTaskUpdated = (event: TaskUpdatedEvent): void => {
   socketServer?.to(projectRoom(event.projectId)).emit("task.updated", event);
 };
 
+export const emitTaskCommentAdded = (event: TaskCreatedEvent): void => {
+  // Send only identifiers. Comment content is retrieved through REST, which
+  // checks current workspace membership even if a socket joined earlier.
+  socketServer?.to(projectRoom(event.projectId)).emit("task.comment_added", event);
+};
+
 export const closeTaskSocketServer = (): void => {
   socketServer?.close();
   socketServer = undefined;

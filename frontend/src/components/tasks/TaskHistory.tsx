@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaExchangeAlt, FaPlus } from "react-icons/fa";
+import { FaExchangeAlt, FaPlus, FaRegCommentDots } from "react-icons/fa";
 import Button from "../ui/Button";
 import Skeleton from "../ui/Skeleton";
 import { getTaskHistory, type TaskHistoryEntry } from "../../services/tasks";
@@ -143,45 +143,69 @@ const TaskHistory = ({
         </div>
       ) : (
         <>
-          {history.filter((entry) => hasTaskHistoryDetails(entry.changes)).length > 0 ? (
+          {history.filter(
+            (entry) =>
+              entry.action === "commented" ||
+              hasTaskHistoryDetails(entry.changes),
+          ).length > 0 ? (
             <ol className="mt-6 space-y-6">
-              {history.filter((entry) => hasTaskHistoryDetails(entry.changes)).map((entry) => {
-                const actorName = `${entry.actor.firstname} ${entry.actor.lastname}`;
-                const isCreated = entry.action === "created";
-                const Icon = isCreated ? FaPlus : FaExchangeAlt;
+              {history
+                .filter(
+                  (entry) =>
+                    entry.action === "commented" ||
+                    hasTaskHistoryDetails(entry.changes),
+                )
+                .map((entry) => {
+                  const actorName = `${entry.actor.firstname} ${entry.actor.lastname}`;
+                  const isCreated = entry.action === "created";
+                  const isComment = entry.action === "commented";
+                  const Icon = isComment
+                    ? FaRegCommentDots
+                    : isCreated
+                      ? FaPlus
+                      : FaExchangeAlt;
 
-                return (
-                  <li key={entry.id} className="relative flex gap-3">
-                    <span
-                      className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
-                        isCreated
-                          ? "bg-emerald-100 text-emerald-600"
-                          : "bg-blue-100 text-blue-600"
-                      }`}
-                    >
-                      <Icon className="size-3" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 text-xs leading-5 text-gray-600">
-                      <p>
-                        <strong className="font-semibold text-gray-800">
-                          {actorName}
-                        </strong>{" "}
-                        {isCreated
-                          ? "created this task."
-                          : "updated this task."}
-                      </p>
-                      <TaskHistoryChangeDetails
-                        changes={entry.changes}
-                        valueKeyPrefix={String(entry.id)}
-                        members={members}
-                      />
-                      <time className="mt-1 block text-[11px] text-gray-400">
-                        {formatDate(entry.createdAt)}
-                      </time>
-                    </div>
-                  </li>
-                );
-              })}
+                  return (
+                    <li key={entry.id} className="relative flex gap-3">
+                      <span
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+                          isComment
+                            ? "bg-gray-100 text-gray-600"
+                            : isCreated
+                              ? "bg-emerald-100 text-emerald-600"
+                              : "bg-blue-100 text-blue-600"
+                        }`}
+                      >
+                        <Icon className="size-3" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0 text-xs leading-5 text-gray-600">
+                        <p>
+                          <strong className="font-semibold text-gray-800">
+                            {actorName}
+                          </strong>{" "}
+                          {isComment
+                            ? "added a comment."
+                            : isCreated
+                              ? "created this task."
+                              : "updated this task."}
+                        </p>
+                        {!isComment ? (
+                          <TaskHistoryChangeDetails
+                            changes={entry.changes}
+                            valueKeyPrefix={String(entry.id)}
+                            members={members}
+                          />
+                        ) : null}
+                        <time
+                          dateTime={entry.createdAt}
+                          className="mt-1 block text-[11px] text-gray-400"
+                        >
+                          {formatDate(entry.createdAt)}
+                        </time>
+                      </div>
+                    </li>
+                  );
+                })}
             </ol>
           ) : (
             <p className="mt-6 text-sm text-gray-500">

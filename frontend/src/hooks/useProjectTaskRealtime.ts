@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { io } from "socket.io-client";
 import type { ProjectTask } from "../services/tasks";
 
@@ -17,8 +17,11 @@ interface TaskCreatedEvent {
 interface UseProjectTaskRealtimeOptions {
   workspaceId: string | undefined;
   projectId: number | undefined;
-  onTaskUpdated: (task: ProjectTask) => void;
-  onTaskCreated: () => void;
+  projectIds?: number[];
+  onTaskUpdated?: (task: ProjectTask) => void;
+  onTaskCreated?: () => void;
+  onTaskCommentAdded?: (taskId: number) => void;
+  onSubscribed?: () => void;
 }
 
 const socketServerOrigin = new URL(import.meta.env.VITE_API_URL).origin;
@@ -26,11 +29,35 @@ const socketServerOrigin = new URL(import.meta.env.VITE_API_URL).origin;
 export const useProjectTaskRealtime = ({
   workspaceId,
   projectId,
+  projectIds,
   onTaskUpdated,
   onTaskCreated,
+  onTaskCommentAdded,
+  onSubscribed,
 }: UseProjectTaskRealtimeOptions): void => {
   const onTaskUpdatedRef = useRef(onTaskUpdated);
   const onTaskCreatedRef = useRef(onTaskCreated);
+  const onTaskCommentAddedRef = useRef(onTaskCommentAdded);
+  const onSubscribedRef = useRef(onSubscribed);
+  const subscribedProjectIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          (projectIds ?? [projectId]).filter(
+            (candidate): candidate is number =>
+              candidate !== undefined &&
+              Number.isSafeInteger(candidate) &&
+              candidate > 0,
+          ),
+        ),
+      ],
+    [projectId, projectIds],
+  );
+
+  useEffect(() => {
+    onTaskCommentAddedRef.current = onTaskCommentAdded;
+    onSubscribedRef.current = onSubscribed;
+  }, [onTaskCommentAdded, onSubscribed]);
 
   useEffect(() => {
     onTaskUpdatedRef.current = onTaskUpdated;
@@ -45,9 +72,7 @@ export const useProjectTaskRealtime = ({
     if (
       !Number.isSafeInteger(numericWorkspaceId) ||
       numericWorkspaceId <= 0 ||
-      !Number.isSafeInteger(projectId) ||
-      !projectId ||
-      projectId <= 0
+      subscribedProjectIds.length === 0
     ) {
       return;
     }
@@ -57,34 +82,57 @@ export const useProjectTaskRealtime = ({
     const socket = io(socketServerOrigin, { withCredentials: true });
 
     socket.on("connect", () => {
-      // Connecting proves the cookie is valid. Joining this room separately
-      // lets the server check that this user may view this specific project.
-      socket.emit(
-        "project:join",
-        { workspaceId: numericWorkspaceId, projectId },
-        (result: { success: boolean }) => {
-          if (!result.success) socket.disconnect();
-        },
-      );
+      // Each room is authorized separately, even when a screen needs updates
+      // from more than one project.
+      let remainingProjectJoins = subscribedProjectIds.length;
+      let hasAuthorizedProject = false;
+      for (const subscribedProjectId of subscribedProjectIds) {
+        socket.emit(
+          "project:join",
+          { workspaceId: numericWorkspaceId, projectId: subscribedProjectId },
+          (result: { success: boolean }) => {
+            remainingProjectJoins -= 1;
+            if (!result.success) {
+              if (!hasAuthorizedProject && remainingProjectJoins === 0) {
+                socket.disconnect();
+              }
+              return;
+            }
+            hasAuthorizedProject = true;
+            // Reload after joining, including reconnections, to recover missed
+            // events and close the gap between the initial fetch and subscription.
+            onSubscribedRef.current?.();
+          },
+        );
+      }
     });
 
     socket.on("task.updated", (event: TaskUpdatedEvent) => {
       if (
         event.workspaceId === numericWorkspaceId &&
-        event.projectId === projectId
+        subscribedProjectIds.includes(event.projectId)
       ) {
-        onTaskUpdatedRef.current(event.task);
+        onTaskUpdatedRef.current?.(event.task);
       }
     });
 
     socket.on("task.created", (event: TaskCreatedEvent) => {
       if (
         event.workspaceId === numericWorkspaceId &&
-        event.projectId === projectId
+        subscribedProjectIds.includes(event.projectId)
       ) {
         // Creation events intentionally contain only an ID, so reloading the
         // normal REST list gives this board the complete new task record.
-        onTaskCreatedRef.current();
+        onTaskCreatedRef.current?.();
+      }
+    });
+
+    socket.on("task.comment_added", (event: TaskCreatedEvent) => {
+      if (
+        event.workspaceId === numericWorkspaceId &&
+        subscribedProjectIds.includes(event.projectId)
+      ) {
+        onTaskCommentAddedRef.current?.(event.taskId);
       }
     });
 
@@ -93,5 +141,5 @@ export const useProjectTaskRealtime = ({
     return () => {
       socket.disconnect();
     };
-  }, [projectId, workspaceId]);
+  }, [subscribedProjectIds, workspaceId]);
 };
