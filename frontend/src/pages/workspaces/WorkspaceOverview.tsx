@@ -6,7 +6,6 @@ import {
   FaSignOutAlt,
   FaTasks,
   FaTrashAlt,
-  FaUserPlus,
   FaUsers,
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router";
@@ -149,7 +148,6 @@ const WorkspaceOverview = () => {
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const basePath = `/workspace/${id}`;
-  const inviteMembersPath: string = `${basePath}/members/invite`;
   const projectsPath: string = `${basePath}/projects`;
 
   useEffect(() => {
@@ -237,14 +235,6 @@ const WorkspaceOverview = () => {
       <AppHeader
         title="Workspace Overview"
         description="Here’s what’s happening in your workspace."
-        primaryAction={
-          <Button
-            leadingIcon={<FaUserPlus />}
-            onClick={() => navigate(inviteMembersPath)}
-          >
-            Invite Member
-          </Button>
-        }
       />
 
       <section className="relative mt-7 overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-white via-white to-emerald-50/80 p-5 shadow-sm sm:p-6">

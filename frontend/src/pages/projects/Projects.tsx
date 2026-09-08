@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  FaArrowLeft,
   FaEdit,
   FaEllipsisV,
   FaFolder,
@@ -364,22 +363,13 @@ const Projects = () => {
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <AppHeader
         title="Projects"
-        secondaryAction={
-          <Button
-            variant="outline"
-            leadingIcon={<FaArrowLeft />}
-            onClick={() => navigate(`/workspace/${id}`)}
-          >
-            Back to Overview
-          </Button>
-        }
         primaryAction={
           canCreateProjects ? (
             <Button
               leadingIcon={<FaPlus />}
               onClick={() => navigate(`/workspace/${id}/projects/create`)}
             >
-              Create project
+              Create Project
             </Button>
           ) : undefined
         }

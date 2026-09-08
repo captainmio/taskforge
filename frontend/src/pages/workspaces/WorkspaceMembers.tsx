@@ -4,6 +4,7 @@ import {
   FaEdit,
   FaSearch,
   FaTrashAlt,
+  FaUserPlus,
   FaUsers,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router";
@@ -103,6 +104,7 @@ const WorkspaceMembers = () => {
     null,
   );
   const basePath = `/workspace/${id}`;
+  const inviteMembersPath = `${basePath}/members/invite`;
 
   useEffect(() => {
     let isActive = true;
@@ -366,14 +368,15 @@ const WorkspaceMembers = () => {
       <AppHeader
         title="Member List"
         description="Find workspace members and review their access roles."
-        secondaryAction={
-          <Button
-            variant="outline"
-            leadingIcon={<FaArrowLeft />}
-            onClick={() => navigate(basePath)}
-          >
-            Back to Overview
-          </Button>
+        primaryAction={
+          canManageMembers ? (
+            <Button
+              leadingIcon={<FaUserPlus />}
+              onClick={() => navigate(inviteMembersPath)}
+            >
+              Invite Member
+            </Button>
+          ) : undefined
         }
       />
 
