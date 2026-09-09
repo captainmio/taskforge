@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentUser } from "./auth";
+import { getCurrentUser, resendEmailVerification } from "./auth";
 
-const mocks = vi.hoisted(() => ({ get: vi.fn() }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
-vi.mock("./api", () => ({ apiClient: { get: mocks.get } }));
+vi.mock("./api", () => ({ apiClient: { get: mocks.get, post: mocks.post } }));
 
 describe("getCurrentUser", () => {
   beforeEach(() => {
@@ -39,5 +39,24 @@ describe("getCurrentUser", () => {
       ],
     });
     expect(mocks.get).toHaveBeenCalledWith("/auth/me");
+  });
+});
+
+describe("resendEmailVerification", () => {
+  it("posts the email address and returns the delivery response", async () => {
+    mocks.post.mockResolvedValue({
+      data: {
+        success: true,
+        message: "If an unverified account exists, a verification email has been sent",
+      },
+    });
+
+    await expect(resendEmailVerification("ada@example.com")).resolves.toEqual({
+      success: true,
+      message: "If an unverified account exists, a verification email has been sent",
+    });
+    expect(mocks.post).toHaveBeenCalledWith("/auth/resend-verification", {
+      email: "ada@example.com",
+    });
   });
 });

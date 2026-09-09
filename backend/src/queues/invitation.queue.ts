@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import type IORedis from "ioredis";
+import ms from "ms";
 import type { WorkspaceRole } from "../generated/prisma/enums.js";
 import {
   createQueueRedisConnection,
@@ -30,7 +31,7 @@ const getInvitationQueue = (): Queue<InvitationEmailJobData> => {
         // BullMQ retries temporary delivery failures before retaining a final
         // failure for inspection. Successful jobs do not need to remain in Redis.
         attempts: INVITATION_JOB_ATTEMPTS,
-        backoff: { type: "exponential", delay: 1_000 },
+        backoff: { type: "exponential", delay: ms("1s") },
         removeOnComplete: true,
         removeOnFail: { count: 500 },
       },

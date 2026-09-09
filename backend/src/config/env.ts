@@ -39,9 +39,41 @@ const environmentSchema = z.object({
     .min(1)
     .max(3_600)
     .default(60),
-  INVITATION_LOG_PATH: z.string().min(1).default("logs/invitations.log"),
+  SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
+  SMTP_PORT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(65_535)
+    .default(2525),
+  SMTP_USERNAME: z
+    .string()
+    .min(1, "SMTP_USERNAME is required"),
+  SMTP_PASSWORD: z
+    .string()
+    .min(1, "SMTP_PASSWORD is required"),
+  SMTP_TOKEN: z.string().min(1).optional(),
+  EMAIL_FROM_ADDRESS: z.string().min(1, "EMAIL_FROM_ADDRESS is required"),
+  BACKEND_PUBLIC_URL: z.url().default("http://localhost:3000"),
+  ACCOUNT_VERIFICATION_TOKEN_TTL_HOURS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(168)
+    .default(24),
+  ACCOUNT_VERIFICATION_RESEND_COOLDOWN_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3_600)
+    .default(60),
+  EMAIL_DELIVERY_LOG_PATH: z.string().min(1).default("logs/email-delivery.log"),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(31).default(12),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
+  JWT_EXPIRES_IN: z
+    .string()
+    .regex(/^\d+(?:s|m|h|d)$/, "JWT_EXPIRES_IN must use s, m, h, or d units")
+    .default("1d"),
 });
 
 const result = environmentSchema.safeParse(process.env);

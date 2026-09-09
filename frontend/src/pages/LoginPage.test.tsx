@@ -72,4 +72,16 @@ describe("Login page", () => {
       expect(mocks.navigate).toHaveBeenCalledWith("/workspace/42");
     });
   });
+
+  it("links account help from the login form", () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Need help with your account?" }),
+    ).toHaveAttribute("href", "/account-help");
+  });
 });

@@ -30,18 +30,7 @@ TaskForge is a full-stack workspace and project-management application. It has a
    npm install
    ```
 
-2. Create `backend/.env` from [`backend/.env.example`](backend/.env.example). Configure the values for your local services:
-
-   ```env
-   NODE_ENV="development"
-   DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=verify-full"
-   JWT_SECRET="replace-with-a-long-random-secret"
-   FRONTEND_API="http://localhost:5173"
-   REDIS_URL="redis://127.0.0.1:6379"
-   CACHE_REDIS_URL="redis://127.0.0.1:6379/1"
-   ```
-
-   `FRONTEND_API` is the frontend origin accepted by CORS and used in generated invitation links. `REDIS_URL` is used by invitation jobs; `CACHE_REDIS_URL` is used for cached workspace data. `REDIS_PORT` only controls the host port used by local Docker Compose.
+2. Create `backend/.env` from [`backend/.env.example`](backend/.env.example). Replace every placeholder with a local or deployment value. Do not copy `.env.example` values directly: the template intentionally contains no usable credentials.
 
 3. Create `frontend/.env` from [`frontend/.env.example`](frontend/.env.example):
 
@@ -69,19 +58,30 @@ The example files document every supported variable. Keep local `.env` files out
 | Variable | Purpose |
 | --- | --- |
 | `NODE_ENV` | Runtime mode. Use `development` locally and `production` when deployed. |
-| `PORT` | HTTP port for the API. Defaults to `3000` in the example. |
-| `DATABASE_URL` | PostgreSQL connection string used by Prisma. |
+| `PORT` | HTTP port for the API server. |
+| `FRONTEND_API` | Browser origin allowed by API CORS. |
+| `BACKEND_PUBLIC_URL` | Public API base URL used to create clickable email-verification links. |
+| `API_RESPONSE_DELAY_MS` | Optional artificial response delay in milliseconds; use `0` to disable it. |
+| `DATABASE_URL` | PostgreSQL connection string used by Prisma, the API, and workers. |
+| `BCRYPT_SALT_ROUNDS` | bcrypt work factor for password hashing. |
 | `JWT_SECRET` | Long, unique secret used to sign authentication tokens. |
-| `BCRYPT_SALT_ROUNDS` | bcrypt work factor for password hashing; use the example value in normal development. |
-| `FRONTEND_API` | Allowed frontend origin for CORS and the base URL for invitation links. |
+| `JWT_EXPIRES_IN` | JWT and login-cookie lifetime in `s`, `m`, `h`, or `d` units, such as `1d`. |
 | `REDIS_PORT` | Host port exposed by `backend/docker-compose.yml`; it does not configure the application connection. |
-| `REDIS_URL` | Redis connection used by the API and invitation worker queues. |
+| `REDIS_URL` | Redis connection used by BullMQ queues and workers. |
 | `CACHE_REDIS_URL` | Redis connection for cached application data; use a separate logical Redis database from `REDIS_URL`. |
 | `REDIS_CACHE_TTL_SECONDS` | Lifetime of cached data, in seconds. |
 | `LOG_LEVEL` | Minimum structured-log severity: `fatal`, `error`, `warn`, `info`, `debug`, or `trace`. |
 | `LOG_FILE_ENABLED` | Enables or disables rotated JSON log files in addition to standard output. |
 | `LOG_FILE_PATH`, `LOG_FILE_MAX_SIZE`, `LOG_FILE_RETENTION_COUNT` | Location, maximum size, and retained count for application log files. |
-| `INVITATION_LOG_PATH` | File used by the invitation worker to record delivery attempts. |
+| `SMTP_HOST` | Mailtrap Demo Inbox SMTP hostname; use `sandbox.smtp.mailtrap.io`. |
+| `SMTP_PORT` | Mailtrap Demo Inbox SMTP port; use `2525` unless your network requires another Mailtrap-supported port. |
+| `SMTP_USERNAME` | Secret SMTP username from the Mailtrap Sandbox Integration tab. |
+| `SMTP_PASSWORD` | Secret SMTP password from the Mailtrap Sandbox Integration tab. |
+| `SMTP_TOKEN` | Optional API token reserved for future Mailtrap API-based features; SMTP delivery does not use it. |
+| `EMAIL_FROM_ADDRESS` | Sender identity displayed in the Mailtrap-captured email. |
+| `EMAIL_DELIVERY_LOG_PATH` | Private JSON-lines email log shared by registration and invitation workers; it contains usable links. |
+| `ACCOUNT_VERIFICATION_TOKEN_TTL_HOURS` | Lifetime of a one-time account-verification link. |
+| `ACCOUNT_VERIFICATION_RESEND_COOLDOWN_SECONDS` | Minimum delay before an unverified account can request another verification link. |
 
 ### Frontend (`frontend/.env`)
 
@@ -150,6 +150,8 @@ Run these commands from `backend`:
 | `npm start` | Starts the compiled API. |
 | `npm run worker:invitations` | Runs the invitation worker from TypeScript for a one-off local process. |
 | `npm run worker:invitations:start` | Starts the compiled invitation worker. |
+| `npm run worker:email` | Runs the transactional-email worker from TypeScript for a one-off local process. |
+| `npm run worker:email:start` | Starts the compiled transactional-email worker. |
 
 Database integration tests need a separate test database. Copy [`backend/.env.test.example`](backend/.env.test.example) to `backend/.env.test`, set its database URL, and leave this value unchanged:
 
@@ -184,12 +186,13 @@ Never point `backend/.env.test` at a development or production database.
    npm run build
    ```
 
-4. Run the backend API and invitation worker as separate long-lived processes, such as separate terminals or process-manager services:
+4. Run the backend API, invitation worker, and transactional-email worker as separate long-lived processes, such as separate terminals or process-manager services:
 
    ```bash
    cd backend
    npm start
    npm run worker:invitations:start
+   npm run worker:email:start
    ```
 
 5. Serve `frontend/dist` from a static hosting provider or web server. Build the frontend after setting `VITE_API_URL`, because Vite includes this value in the generated files.
@@ -205,6 +208,6 @@ The backend writes structured JSON logs to standard output. File logging is also
 - `LOG_FILE_MAX_SIZE`
 - `LOG_FILE_RETENTION_COUNT`
 
-The invitation worker writes its invitation-delivery records to `INVITATION_LOG_PATH`.
+Both email workers write complete delivery records to `EMAIL_DELIVERY_LOG_PATH`. This file includes verification and invitation links, so it must be private and persistent only when manual testing requires it.
 
 For deployments without persistent local storage, set `LOG_FILE_ENABLED="false"` and use the hosting platform's log collection. If file logging is enabled, make sure the configured log directory is writable and persistent.

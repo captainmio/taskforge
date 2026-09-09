@@ -6,39 +6,49 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../src/config/env.js", () => ({
-  env: { INVITATION_LOG_PATH: mocks.logPath },
+  env: {
+    EMAIL_DELIVERY_LOG_PATH: mocks.logPath,
+    EMAIL_FROM_ADDRESS: "TaskForge <no-reply@example.com>",
+  },
 }));
 
-const { writeInvitationEmailLog } = await import(
-  "../../../src/services/invitation-log.service.js"
+const { writeEmailDeliveryLog } = await import(
+  "../../../src/services/email-log.service.js"
 );
 
-describe("writeInvitationEmailLog", () => {
+describe("writeEmailDeliveryLog", () => {
   afterEach(async () => {
     await rm(mocks.logPath, { force: true });
   });
 
-  it("writes the invitation recipient and verification link as a JSON line", async () => {
-    await writeInvitationEmailLog({
-      invitationId: 20,
-      email: "member@example.com",
-      workspaceDisplayName: "Engineering Team",
-      role: "MEMBER",
-      verificationUrl: "http://localhost:5173/invitations/accept?token=secure-token",
+  it("writes the recipient, message, and metadata as a JSON line", async () => {
+    await writeEmailDeliveryLog({
+      to: "member@example.com",
+      subject: "Invitation to join Engineering Team",
+      text: "Open the invitation link.",
+      html: "<p>Open the invitation link.</p>",
+      metadata: {
+        type: "workspace-invitation",
+        verificationUrl: "http://localhost:5173/invitations/accept?token=secure-token",
+      },
     });
 
     const entry = JSON.parse((await readFile(mocks.logPath, "utf8")).trim()) as {
       to: string;
       subject: string;
-      verificationUrl: string;
+      from: string;
+      metadata: { verificationUrl: string };
     };
 
     expect(entry).toEqual(
       expect.objectContaining({
         to: "member@example.com",
         subject: "Invitation to join Engineering Team",
-        verificationUrl:
-          "http://localhost:5173/invitations/accept?token=secure-token",
+        from: "TaskForge <no-reply@example.com>",
+        metadata: expect.objectContaining({
+          verificationUrl:
+            "http://localhost:5173/invitations/accept?token=secure-token",
+        }),
       }),
     );
   });

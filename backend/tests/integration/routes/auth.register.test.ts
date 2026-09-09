@@ -17,6 +17,10 @@ const createdUser = {
   lastname: validRegistration.lastname,
   email: validRegistration.email,
   password: "hashed-password",
+  emailVerifiedAt: null,
+  emailVerificationTokenHash: "token-hash",
+  emailVerificationExpiresAt: new Date("2026-10-01T00:00:00.000Z"),
+  emailVerificationSentAt: new Date("2026-09-01T00:00:00.000Z"),
 };
 
 describe("POST /api/auth/register", () => {

@@ -1,5 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import type IORedis from "ioredis";
+import ms from "ms";
 import {
   createWorkerRedisConnection,
   INVITATION_JOB_ATTEMPTS,
@@ -13,16 +14,28 @@ import {
   markInvitationDeliveryCompleted,
   recordInvitationDeliveryFailure,
 } from "../repositories/workspace.repository.js";
-import { writeInvitationEmailLog } from "../services/invitation-log.service.js";
+import { writeEmailDeliveryLog } from "../services/email-log.service.js";
 import { recoverPendingInvitationDeliveries } from "../services/workspace.service.js";
 
 const processInvitation = async (
   job: Job<InvitationEmailJobData>,
 ): Promise<void> => {
   try {
-    // Logging is the current stand-in for SMTP delivery. When email is added,
-    // replace this service call while keeping the queue and status flow intact.
-    await writeInvitationEmailLog(job.data);
+    // Invitations share the generic delivery log so developers can manually
+    // open the same verification URL that appears in the invitation email.
+    await writeEmailDeliveryLog({
+      to: job.data.email,
+      subject: `Invitation to join ${job.data.workspaceDisplayName}`,
+      text: `Open this link to join ${job.data.workspaceDisplayName}: ${job.data.verificationUrl}`,
+      html: `<p>Open this link to join ${job.data.workspaceDisplayName}:</p><p><a href="${job.data.verificationUrl}">${job.data.verificationUrl}</a></p>`,
+      metadata: {
+        type: "workspace-invitation",
+        invitationId: String(job.data.invitationId),
+        workspace: job.data.workspaceDisplayName,
+        role: job.data.role,
+        verificationUrl: job.data.verificationUrl,
+      },
+    });
     await markInvitationDeliveryCompleted(job.data.invitationId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown delivery error";
@@ -91,7 +104,7 @@ const recoveryTimer = setInterval(() => {
     .finally(() => {
       recoveryIsRunning = false;
     });
-}, 30_000);
+}, ms("30s"));
 // The recovery timer alone should not prevent Node.js from shutting down.
 recoveryTimer.unref();
 

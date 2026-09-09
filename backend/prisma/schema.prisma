@@ -13,6 +13,10 @@ model User {
   firstname            String                @db.VarChar(100)
   lastname             String                @db.VarChar(100)
   password             String                @db.VarChar(255)
+  emailVerifiedAt      DateTime?             @map("email_verified_at")
+  emailVerificationTokenHash String?         @unique @map("email_verification_token_hash")
+  emailVerificationExpiresAt DateTime?       @map("email_verification_expires_at")
+  emailVerificationSentAt DateTime?          @map("email_verification_sent_at")
   ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
   sentInvitations      WorkspaceInvitation[] @relation("InvitationSender")

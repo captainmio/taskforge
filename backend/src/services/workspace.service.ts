@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import ms from "ms";
 import { resolveTaskHistoryAssigneeNames } from "../repositories/task.repository.js";
 import {
   deleteCachedWorkspaceOverview,
@@ -69,7 +70,7 @@ import type {
   InviteWorkspaceMembersBody,
 } from "../validations/workspace.validation.js";
 
-const INVITATION_EXPIRY_DAYS = 7;
+const INVITATION_EXPIRY = ms("7d");
 const RECOVERY_BATCH_SIZE = 100;
 
 const normalizeWorkspaceName = (name: string): string =>
@@ -99,7 +100,7 @@ export const createWorkspace = async (
 ) => {
   const displayName = input.workspaceName.trim().replace(/\s+/g, " ");
   const expiresAt = new Date(
-    Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1_000,
+    Date.now() + INVITATION_EXPIRY,
   );
   const preparedInvitations = input.invites.map((invite) => {
     const token = createInvitationToken();
@@ -176,7 +177,7 @@ export const inviteWorkspaceMembers = async (
   input: InviteWorkspaceMembersBody,
 ) => {
   const expiresAt = new Date(
-    Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1_000,
+    Date.now() + INVITATION_EXPIRY,
   );
   const preparedInvitations = input.invitations.map((invitation) => {
     const token = createInvitationToken();
@@ -346,7 +347,7 @@ export const createWorkspaceInviteLink = async (
 
   const token = createInvitationToken();
   const expiresAt = new Date(
-    Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1_000,
+    Date.now() + INVITATION_EXPIRY,
   );
 
   const inviteLink = await upsertWorkspaceInviteLink({

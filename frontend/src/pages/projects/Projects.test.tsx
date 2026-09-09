@@ -78,13 +78,13 @@ describe("Projects page", () => {
   });
 
   it.each(["OWNER", "ADMIN"] as const)(
-    "shows Create project to a workspace %s",
+    "shows Create Project to a workspace %s",
     async (role) => {
       mocks.getProjects.mockResolvedValue(projectListFor(role));
       renderPage();
 
       const createButton = await screen.findByRole("button", {
-        name: "Create project",
+        name: "Create Project",
       });
       fireEvent.click(createButton);
 
@@ -94,11 +94,11 @@ describe("Projects page", () => {
     },
   );
 
-  it("hides Create project from a workspace member", async () => {
+  it("hides Create Project from a workspace member", async () => {
     renderPage();
 
     await screen.findByText("Website Redesign");
-    expect(screen.queryByRole("button", { name: "Create project" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Create Project" })).toBeNull();
   });
 
   it("loads project rows from the dedicated project-list API", async () => {

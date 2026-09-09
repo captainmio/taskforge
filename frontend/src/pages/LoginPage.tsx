@@ -90,10 +90,13 @@ const LoginPage = () => {
                   }}
                 />
               </div>
-              <div className="w-full flex justify-end mt-2">
-                <a href="#" className="text-content-text">
-                  Forgot password?
-                </a>
+              <div className="mt-3 flex justify-end">
+                <Link
+                  className="font-medium text-content-text underline decoration-gray-300 underline-offset-4 transition hover:text-site-green hover:decoration-site-green"
+                  to="/account-help"
+                >
+                  Need help with your account?
+                </Link>
               </div>
               <div className="mt-4 flex justify-center">
                 <SubmitButton

@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { InvalidCredentialsError } from "../../../src/errors/auth.errors.js";
+import {
+  EmailVerificationRequiredError,
+  InvalidCredentialsError,
+} from "../../../src/errors/auth.errors.js";
 import { findUserByEmail } from "../../../src/repositories/user.repository.js";
 import { loginUser } from "../../../src/services/auth.service.js";
 import { validLogin } from "../../helpers/login.fixture.js";
@@ -30,6 +33,10 @@ const storedUser = {
   lastname: "Lovelace",
   email: validLogin.email,
   password: "hashed-password",
+  emailVerifiedAt: new Date("2026-09-01T00:00:00.000Z"),
+  emailVerificationTokenHash: null,
+  emailVerificationExpiresAt: null,
+  emailVerificationSentAt: null,
 };
 
 const comparePassword = bcrypt.compare as unknown as Mock<
@@ -39,7 +46,7 @@ const signToken = jwt.sign as unknown as Mock<
   (
     payload: object,
     secret: string,
-    options: { expiresIn: number },
+    options: { expiresIn: string },
   ) => string
 >;
 
@@ -61,7 +68,7 @@ describe("loginUser", () => {
     expect(signToken).toHaveBeenCalledWith(
       { sub: storedUser.id, email: storedUser.email },
       "test-only-jwt-secret",
-      { expiresIn: 86_400 },
+      { expiresIn: "1d" },
     );
     expect(result).toEqual({
       token: "signed-token",
@@ -90,6 +97,22 @@ describe("loginUser", () => {
 
     await expect(loginUser(validLogin)).rejects.toBeInstanceOf(
       InvalidCredentialsError,
+    );
+    expect(signToken).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unverified account after verifying its password", async () => {
+    vi.mocked(findUserByEmail).mockResolvedValue({
+      ...storedUser,
+      emailVerifiedAt: null,
+    });
+
+    await expect(loginUser(validLogin)).rejects.toBeInstanceOf(
+      EmailVerificationRequiredError,
+    );
+    expect(comparePassword).toHaveBeenCalledWith(
+      validLogin.password,
+      storedUser.password,
     );
     expect(signToken).not.toHaveBeenCalled();
   });

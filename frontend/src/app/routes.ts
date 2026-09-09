@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import AppLayout from "../components/layout/AppLayout";
 import LoginPage from "../pages/LoginPage";
+import AccountHelpPage from "../pages/AccountHelpPage";
 import { Register } from "../pages/Register";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
       {
         path: "register",
         Component: Register,
+      },
+      {
+        path: "account-help",
+        Component: AccountHelpPage,
       },
     ],
   },

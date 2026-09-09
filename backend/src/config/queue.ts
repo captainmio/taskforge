@@ -4,6 +4,9 @@ import { env } from "./env.js";
 export const INVITATION_QUEUE_NAME = "workspace-invitations";
 export const INVITATION_JOB_NAME = "send-workspace-invitation";
 export const INVITATION_JOB_ATTEMPTS = 3;
+export const EMAIL_QUEUE_NAME = "transactional-emails";
+export const EMAIL_JOB_NAME = "send-transactional-email";
+export const EMAIL_JOB_ATTEMPTS = 3;
 
 export const createQueueRedisConnection = () =>
   new IORedis(env.REDIS_URL, {

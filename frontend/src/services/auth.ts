@@ -6,6 +6,11 @@ export interface RegisterResponse {
   message: string;
 }
 
+export interface ResendEmailVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -63,6 +68,17 @@ export const register = async (
   const response = await apiClient.post<RegisterResponse>(
     "/auth/register",
     payload,
+  );
+
+  return response.data;
+};
+
+export const resendEmailVerification = async (
+  email: string,
+): Promise<ResendEmailVerificationResponse> => {
+  const response = await apiClient.post<ResendEmailVerificationResponse>(
+    "/auth/resend-verification",
+    { email },
   );
 
   return response.data;
