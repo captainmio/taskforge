@@ -6,7 +6,10 @@ import { toast } from "react-toastify";
 import AppFooter from "../components/ui/AppFooter";
 import SubmitButton from "../components/ui/SubmitButton";
 import Textbox from "../components/ui/Textbox";
-import { resendEmailVerification } from "../services/auth";
+import {
+  requestPasswordReset,
+  resendEmailVerification,
+} from "../services/auth";
 
 type HelpOption = "verification" | "password";
 
@@ -31,9 +34,22 @@ const AccountHelpPage = () => {
     defaultValues: { email: "" },
   });
 
-  const submitVerification: SubmitHandler<EmailFormValues> = async ({ email }) => {
+  const submitVerification: SubmitHandler<EmailFormValues> = async ({
+    email,
+  }) => {
     try {
-      const response = await resendEmailVerification(email.trim().toLowerCase());
+      const response = await resendEmailVerification(email.trim());
+      toast.success(response.message);
+    } catch {
+      // The API client displays the specific server error as a toast.
+    }
+  };
+
+  const submitPasswordReset: SubmitHandler<EmailFormValues> = async ({
+    email,
+  }) => {
+    try {
+      const response = await requestPasswordReset(email.trim());
       toast.success(response.message);
     } catch {
       // The API client displays the specific server error as a toast.
@@ -52,7 +68,9 @@ const AccountHelpPage = () => {
             Back to login
           </Link>
 
-          <h1 className="mt-6 text-2xl font-bold text-gray-950">Account help</h1>
+          <h1 className="mt-6 text-2xl font-bold text-gray-950">
+            Account help
+          </h1>
           <p className="mt-1 text-sm leading-6 text-content-text">
             Choose the option that matches what you need. We will only ask for
             your email address.
@@ -98,7 +116,10 @@ const AccountHelpPage = () => {
               onSubmit={verificationForm.handleSubmit(submitVerification)}
             >
               <div>
-                <label htmlFor="verification-email" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="verification-email"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Email address
                 </label>
                 <Textbox
@@ -108,7 +129,9 @@ const AccountHelpPage = () => {
                   placeholder="you@example.com"
                   icon={<FaEnvelope />}
                   className="mt-1"
-                  aria-invalid={Boolean(verificationForm.formState.errors.email)}
+                  aria-invalid={Boolean(
+                    verificationForm.formState.errors.email,
+                  )}
                   aria-describedby={
                     verificationForm.formState.errors.email
                       ? "verification-email-error"
@@ -117,13 +140,18 @@ const AccountHelpPage = () => {
                   {...verificationForm.register("email", emailRules)}
                 />
                 {verificationForm.formState.errors.email ? (
-                  <p id="verification-email-error" role="alert" className="mt-1 text-sm text-red-600">
+                  <p
+                    id="verification-email-error"
+                    role="alert"
+                    className="mt-1 text-sm text-red-600"
+                  >
                     {verificationForm.formState.errors.email.message}
                   </p>
                 ) : null}
               </div>
               <p className="mt-3 text-sm leading-6 text-content-text">
-                We will send a new link if this address belongs to an unverified account.
+                We will send a new link if this address belongs to an unverified
+                account.
               </p>
               <SubmitButton
                 className="mt-6 w-full cursor-pointer rounded-lg bg-site-green p-4 text-white"
@@ -135,9 +163,16 @@ const AccountHelpPage = () => {
               </SubmitButton>
             </form>
           ) : (
-            <form className="mt-6" noValidate onSubmit={passwordForm.handleSubmit(() => undefined)}>
+            <form
+              className="mt-6"
+              noValidate
+              onSubmit={passwordForm.handleSubmit(submitPasswordReset)}
+            >
               <div>
-                <label htmlFor="password-reset-email" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password-reset-email"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Email address
                 </label>
                 <Textbox
@@ -147,18 +182,34 @@ const AccountHelpPage = () => {
                   placeholder="you@example.com"
                   icon={<FaKey />}
                   className="mt-1"
-                  disabled
+                  aria-invalid={Boolean(passwordForm.formState.errors.email)}
+                  aria-describedby={
+                    passwordForm.formState.errors.email
+                      ? "password-reset-email-error"
+                      : undefined
+                  }
                   {...passwordForm.register("email", emailRules)}
                 />
+                {passwordForm.formState.errors.email ? (
+                  <p
+                    id="password-reset-email-error"
+                    role="alert"
+                    className="mt-1 text-sm text-red-600"
+                  >
+                    {passwordForm.formState.errors.email.message}
+                  </p>
+                ) : null}
               </div>
-              <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-900">
-                Password reset is being prepared and will be available soon.
+              <p className="mt-3 text-sm leading-6 text-content-text">
+                We will send a one-time link to create a new password.
               </p>
               <SubmitButton
-                className="mt-6 w-full rounded-lg bg-site-green p-4 text-white disabled:cursor-not-allowed disabled:opacity-50"
-                disabled
+                className="mt-6 w-full cursor-pointer rounded-lg bg-site-green p-4 text-white"
+                disabled={passwordForm.formState.isSubmitting}
               >
-                Send password reset link
+                {passwordForm.formState.isSubmitting
+                  ? "Sending email..."
+                  : "Send password reset link"}
               </SubmitButton>
             </form>
           )}

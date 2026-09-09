@@ -46,6 +46,32 @@ export const markUserEmailVerified = async (userId: number) =>
     },
   });
 
+export const findUserByPasswordResetTokenHash = async (tokenHash: string) =>
+  prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+export const findPasswordResetTokenByUserId = async (userId: number) =>
+  prisma.passwordResetToken.findUnique({ where: { userId } });
+
+export const replaceUserPasswordResetToken = async (
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date,
+) =>
+  prisma.passwordResetToken.upsert({
+    where: { userId },
+    create: { userId, tokenHash, expiresAt, sentAt: new Date() },
+    update: { tokenHash, expiresAt, sentAt: new Date() },
+  });
+
+export const updateUserPassword = async (userId: number, password: string) =>
+  prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { password } }),
+    prisma.passwordResetToken.delete({ where: { userId } }),
+  ]);
+
 export const findUserWithWorkspaceMembershipsById = async (id: number) =>
   prisma.user.findUnique({
     where: { id },

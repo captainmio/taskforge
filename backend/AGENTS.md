@@ -156,6 +156,7 @@ Database
   * Part of the logic can be reused.
 * Avoid splitting logic unnecessarily when the existing implementation is already clear.
 * Prefer readable code over unnecessary abstractions.
+* Do not silently return `null` or `undefined` for expected request failures. Return or throw a typed, actionable outcome so the controller can send the correct API error response.
 
 ## Repositories
 

@@ -39,3 +39,27 @@ export class EmailVerificationError extends Error {
     this.name = "EmailVerificationError";
   }
 }
+
+export type PasswordResetFailure = "INVALID" | "EXPIRED";
+
+export class PasswordResetError extends Error {
+  constructor(public readonly reason: PasswordResetFailure) {
+    super(`Password reset failed: ${reason}`);
+    this.name = "PasswordResetError";
+  }
+}
+
+export type PasswordResetRequestFailure =
+  | "EMAIL_NOT_FOUND"
+  | "EMAIL_UNVERIFIED"
+  | "COOLDOWN";
+
+export class PasswordResetRequestError extends Error {
+  constructor(
+    public readonly reason: PasswordResetRequestFailure,
+    public readonly retryAfterSeconds?: number,
+  ) {
+    super(`Password reset request failed: ${reason}`);
+    this.name = "PasswordResetRequestError";
+  }
+}

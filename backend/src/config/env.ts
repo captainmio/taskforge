@@ -67,6 +67,18 @@ const environmentSchema = z.object({
     .min(1)
     .max(3_600)
     .default(60),
+  PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1_440)
+    .default(60),
+  PASSWORD_RESET_RESEND_COOLDOWN_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3_600)
+    .default(60),
   EMAIL_DELIVERY_LOG_PATH: z.string().min(1).default("logs/email-delivery.log"),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(31).default(12),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),

@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import AppLayout from "../components/layout/AppLayout";
 import LoginPage from "../pages/LoginPage";
 import AccountHelpPage from "../pages/AccountHelpPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import { Register } from "../pages/Register";
 import { GuestRoute, ProtectedRoute } from "../components/auth/RouteGuards";
 import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: "account-help",
         Component: AccountHelpPage,
+      },
+      {
+        path: "reset-password",
+        Component: ResetPasswordPage,
       },
     ],
   },

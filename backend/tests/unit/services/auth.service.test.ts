@@ -4,17 +4,25 @@ import {
   EmailAlreadyRegisteredError,
   EmailVerificationError,
   EmailVerificationResendError,
+  PasswordResetError,
+  PasswordResetRequestError,
 } from "../../../src/errors/auth.errors.js";
 import {
   createUser,
   findUserByEmail,
   findUserByEmailVerificationTokenHash,
+  findUserByPasswordResetTokenHash,
+  findPasswordResetTokenByUserId,
   markUserEmailVerified,
   replaceUserEmailVerificationToken,
+  replaceUserPasswordResetToken,
+  updateUserPassword,
 } from "../../../src/repositories/user.repository.js";
 import { enqueueTransactionalEmail } from "../../../src/queues/email.queue.js";
 import {
   registerUser,
+  requestPasswordReset,
+  resetPassword,
   resendEmailVerification,
   verifyUserEmail,
 } from "../../../src/services/auth.service.js";
@@ -32,9 +40,13 @@ vi.mock("../../../src/repositories/user.repository.js", () => ({
   createUser: vi.fn(),
   findUserByEmail: vi.fn(),
   findUserByEmailVerificationTokenHash: vi.fn(),
+  findUserByPasswordResetTokenHash: vi.fn(),
+  findPasswordResetTokenByUserId: vi.fn(),
   findUserWithWorkspaceMembershipsById: vi.fn(),
   markUserEmailVerified: vi.fn(),
   replaceUserEmailVerificationToken: vi.fn(),
+  replaceUserPasswordResetToken: vi.fn(),
+  updateUserPassword: vi.fn(),
 }));
 
 vi.mock("../../../src/queues/email.queue.js", () => ({
@@ -114,6 +126,105 @@ describe("registerUser", () => {
     await expect(registerUser(validRegistration)).rejects.toBe(
       unexpectedError,
     );
+  });
+});
+
+describe("password reset", () => {
+  const verifiedUser = {
+    ...createdUser,
+    emailVerifiedAt: new Date("2026-09-01T00:00:00.000Z"),
+  };
+
+  beforeEach(() => {
+    vi.mocked(findPasswordResetTokenByUserId).mockResolvedValue(null);
+    vi.mocked(replaceUserPasswordResetToken).mockResolvedValue({
+      userId: verifiedUser.id,
+      tokenHash: "reset-token-hash",
+      expiresAt: new Date("2026-10-01T00:00:00.000Z"),
+      sentAt: new Date(),
+    });
+    vi.mocked(enqueueTransactionalEmail).mockResolvedValue();
+    vi.mocked(updateUserPassword).mockResolvedValue([verifiedUser, {
+      userId: verifiedUser.id,
+      tokenHash: "reset-token-hash",
+      expiresAt: new Date(),
+      sentAt: new Date(),
+    }]);
+  });
+
+  it("rejects requests for unknown, unverified, and recently emailed accounts", async () => {
+    vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
+    await expect(requestPasswordReset("unknown@example.com")).rejects.toMatchObject({
+      reason: "EMAIL_NOT_FOUND",
+    } satisfies Partial<PasswordResetRequestError>);
+
+    vi.mocked(findUserByEmail).mockResolvedValueOnce({ ...createdUser, emailVerifiedAt: null });
+    await expect(requestPasswordReset(createdUser.email)).rejects.toMatchObject({
+      reason: "EMAIL_UNVERIFIED",
+    } satisfies Partial<PasswordResetRequestError>);
+
+    vi.mocked(findUserByEmail).mockResolvedValueOnce(verifiedUser);
+    vi.mocked(findPasswordResetTokenByUserId).mockResolvedValueOnce({
+      userId: verifiedUser.id,
+      tokenHash: "reset-token-hash",
+      expiresAt: new Date(Date.now() + 60_000),
+      sentAt: new Date(),
+    });
+    await expect(requestPasswordReset(verifiedUser.email)).rejects.toMatchObject({
+      reason: "COOLDOWN",
+      retryAfterSeconds: expect.any(Number),
+    } satisfies Partial<PasswordResetRequestError>);
+  });
+
+  it("stores a hashed token and queues a reset link for an eligible account", async () => {
+    vi.mocked(findUserByEmail).mockResolvedValue(verifiedUser);
+
+    await requestPasswordReset(verifiedUser.email);
+
+    expect(replaceUserPasswordResetToken).toHaveBeenCalledWith(
+      verifiedUser.id,
+      expect.any(String),
+      expect.any(Date),
+    );
+    expect(enqueueTransactionalEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: verifiedUser.email,
+        metadata: expect.objectContaining({
+          type: "password-reset",
+          resetUrl: expect.stringContaining("/reset-password?token="),
+        }),
+      }),
+    );
+  });
+
+  it("rejects invalid and expired tokens, then updates a valid password once", async () => {
+    vi.mocked(findUserByPasswordResetTokenHash).mockResolvedValueOnce(null);
+    await expect(resetPassword({ token: "invalid", password: "new-password" })).rejects.toMatchObject({
+      reason: "INVALID",
+    } satisfies Partial<PasswordResetError>);
+
+    vi.mocked(findUserByPasswordResetTokenHash).mockResolvedValueOnce({
+      userId: verifiedUser.id,
+      tokenHash: "reset-token-hash",
+      expiresAt: new Date(Date.now() - 1),
+      sentAt: new Date(),
+      user: verifiedUser,
+    });
+    await expect(resetPassword({ token: "expired", password: "new-password" })).rejects.toMatchObject({
+      reason: "EXPIRED",
+    } satisfies Partial<PasswordResetError>);
+
+    vi.mocked(findUserByPasswordResetTokenHash).mockResolvedValueOnce({
+      userId: verifiedUser.id,
+      tokenHash: "reset-token-hash",
+      expiresAt: new Date(Date.now() + 60_000),
+      sentAt: new Date(),
+      user: verifiedUser,
+    });
+    await resetPassword({ token: "valid", password: "new-password" });
+
+    expect(hashPassword).toHaveBeenCalledWith("new-password", 4);
+    expect(updateUserPassword).toHaveBeenCalledWith(verifiedUser.id, "hashed-password");
   });
 });
 

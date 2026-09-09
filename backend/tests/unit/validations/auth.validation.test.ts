@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   registerSchema,
+  requestPasswordResetSchema,
   resendEmailVerificationSchema,
+  resetPasswordSchema,
   verifyEmailSchema,
 } from "../../../src/validations/auth.validation.js";
 import { validRegistration } from "../../helpers/registration.fixture.js";
@@ -53,5 +55,32 @@ describe("email verification schemas", () => {
   it("requires a valid resend email and a non-empty verification token", () => {
     expect(resendEmailVerificationSchema.safeParse({ body: { email: "invalid" } }).success).toBe(false);
     expect(verifyEmailSchema.safeParse({ query: { token: "" } }).success).toBe(false);
+  });
+});
+
+describe("password reset schemas", () => {
+  it("normalizes a password reset request email", () => {
+    expect(
+      requestPasswordResetSchema.parse({
+        body: { email: " ADA@Example.COM " },
+      }).body,
+    ).toEqual({ email: "ada@example.com" });
+  });
+
+  it("requires a valid request email, token, and eight-character password", () => {
+    expect(
+      requestPasswordResetSchema.safeParse({ body: { email: "invalid" } })
+        .success,
+    ).toBe(false);
+    expect(
+      resetPasswordSchema.safeParse({
+        body: { token: "", password: "password" },
+      }).success,
+    ).toBe(false);
+    expect(
+      resetPasswordSchema.safeParse({
+        body: { token: "reset-token", password: "short" },
+      }).success,
+    ).toBe(false);
   });
 });

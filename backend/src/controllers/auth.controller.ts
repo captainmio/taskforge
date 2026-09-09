@@ -12,11 +12,15 @@ import {
     EmailVerificationResendError,
     EmailVerificationRequiredError,
     InvalidCredentialsError,
+    PasswordResetError,
+    PasswordResetRequestError,
 } from "../errors/auth.errors.js";
 import {
     getCurrentUser,
     loginUser,
     registerUser,
+    requestPasswordReset,
+    resetPassword,
     resendEmailVerification,
     verifyUserEmail,
 } from "../services/auth.service.js";
@@ -25,6 +29,8 @@ import type {
     LoginBody,
     RegisterBody,
     ResendEmailVerificationBody,
+    RequestPasswordResetBody,
+    ResetPasswordBody,
     VerifyEmailQuery,
 } from "../validations/auth.validation.js";
 
@@ -127,6 +133,76 @@ const verifyEmail = async (
     }
 };
 
+const requestPasswordResetEmail = async (
+    req: Request<Record<string, never>, unknown, RequestPasswordResetBody>,
+    res: Response,
+) => {
+    try {
+        await requestPasswordReset(req.body.email);
+
+        return res.status(202).json({
+            success: true,
+            message: "A password reset email has been sent",
+        });
+    } catch (error) {
+        if (error instanceof PasswordResetRequestError) {
+            if (error.reason === "EMAIL_NOT_FOUND") {
+                return res.status(404).json({
+                    success: false,
+                    error: "No account exists for this email address",
+                });
+            }
+
+            if (error.reason === "EMAIL_UNVERIFIED") {
+                return res.status(403).json({
+                    success: false,
+                    error: "Verify your email before resetting your password",
+                });
+            }
+
+            return res.status(429).json({
+                success: false,
+                error: "Please wait before requesting another password reset email",
+                retryAfterSeconds: error.retryAfterSeconds,
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            error: "Something went wrong on our end",
+        });
+    }
+};
+
+const resetPasswordWithToken = async (
+    req: Request<Record<string, never>, unknown, ResetPasswordBody>,
+    res: Response,
+) => {
+    try {
+        await resetPassword(req.body);
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset. You can now log in.",
+        });
+    } catch (error) {
+        if (error instanceof PasswordResetError) {
+            return res.status(error.reason === "EXPIRED" ? 410 : 400).json({
+                success: false,
+                error:
+                    error.reason === "EXPIRED"
+                        ? "Password reset link has expired"
+                        : "Password reset link is invalid",
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            error: "Something went wrong on our end",
+        });
+    }
+};
+
 const logout = (_req: Request, res: Response) => {
     res.clearCookie(JWT_COOKIE_NAME, JWT_COOKIE_OPTIONS);
 
@@ -179,4 +255,13 @@ const register = async (
     }
 };
 
-export { login, logout, me, register, resendVerificationEmail, verifyEmail };
+export {
+    login,
+    logout,
+    me,
+    register,
+    requestPasswordResetEmail,
+    resendVerificationEmail,
+    resetPasswordWithToken,
+    verifyEmail,
+};

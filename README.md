@@ -82,6 +82,8 @@ The example files document every supported variable. Keep local `.env` files out
 | `EMAIL_DELIVERY_LOG_PATH` | Private JSON-lines email log shared by registration and invitation workers; it contains usable links. |
 | `ACCOUNT_VERIFICATION_TOKEN_TTL_HOURS` | Lifetime of a one-time account-verification link. |
 | `ACCOUNT_VERIFICATION_RESEND_COOLDOWN_SECONDS` | Minimum delay before an unverified account can request another verification link. |
+| `PASSWORD_RESET_TOKEN_TTL_MINUTES` | Lifetime of a one-time password-reset link. |
+| `PASSWORD_RESET_RESEND_COOLDOWN_SECONDS` | Minimum delay before a verified account can request another password-reset link. |
 
 ### Frontend (`frontend/.env`)
 
@@ -208,6 +210,6 @@ The backend writes structured JSON logs to standard output. File logging is also
 - `LOG_FILE_MAX_SIZE`
 - `LOG_FILE_RETENTION_COUNT`
 
-Both email workers write complete delivery records to `EMAIL_DELIVERY_LOG_PATH`. This file includes verification and invitation links, so it must be private and persistent only when manual testing requires it.
+Both email workers write complete delivery records to `EMAIL_DELIVERY_LOG_PATH`. This file includes verification, password-reset, and invitation links, so it must be private and persistent only when manual testing requires it.
 
 For deployments without persistent local storage, set `LOG_FILE_ENABLED="false"` and use the hosting platform's log collection. If file logging is enabled, make sure the configured log directory is writable and persistent.

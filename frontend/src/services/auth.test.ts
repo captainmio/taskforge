@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentUser, resendEmailVerification } from "./auth";
+import {
+  getCurrentUser,
+  requestPasswordReset,
+  resendEmailVerification,
+  resetPassword,
+} from "./auth";
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
@@ -39,6 +44,33 @@ describe("getCurrentUser", () => {
       ],
     });
     expect(mocks.get).toHaveBeenCalledWith("/auth/me");
+  });
+});
+
+describe("password reset", () => {
+  it("posts reset requests and new passwords to their API endpoints", async () => {
+    mocks.post.mockResolvedValue({
+      data: { success: true, message: "Password reset email sent" },
+    });
+
+    await expect(requestPasswordReset("ada@example.com")).resolves.toEqual({
+      success: true,
+      message: "Password reset email sent",
+    });
+    await expect(resetPassword("reset-token", "new-password")).resolves.toEqual({
+      success: true,
+      message: "Password reset email sent",
+    });
+
+    expect(mocks.post).toHaveBeenNthCalledWith(
+      1,
+      "/auth/password-reset/request",
+      { email: "ada@example.com" },
+    );
+    expect(mocks.post).toHaveBeenNthCalledWith(2, "/auth/password-reset", {
+      token: "reset-token",
+      password: "new-password",
+    });
   });
 });
 

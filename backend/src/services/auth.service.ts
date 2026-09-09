@@ -13,6 +13,8 @@ import {
   EmailVerificationResendError,
   EmailVerificationRequiredError,
     InvalidCredentialsError,
+  PasswordResetError,
+  PasswordResetRequestError,
 } from "../errors/auth.errors.js";
 import { env } from "../config/env.js";
 import { enqueueTransactionalEmail } from "../queues/email.queue.js";
@@ -21,13 +23,18 @@ import {
     createUser,
     findUserByEmail,
     findUserByEmailVerificationTokenHash,
+    findUserByPasswordResetTokenHash,
+    findPasswordResetTokenByUserId,
     findUserWithWorkspaceMembershipsById,
     markUserEmailVerified,
     replaceUserEmailVerificationToken,
+    replaceUserPasswordResetToken,
+    updateUserPassword,
 } from "../repositories/user.repository.js";
 import type {
   LoginBody,
   RegisterBody,
+  ResetPasswordBody,
 } from "../validations/auth.validation.js";
 
 const hashEmailVerificationToken = (token: string): string =>
@@ -37,6 +44,12 @@ const createEmailVerificationUrl = (token: string): string => {
   const verificationUrl = new URL("/api/auth/verify-email", env.BACKEND_PUBLIC_URL);
   verificationUrl.searchParams.set("token", token);
   return verificationUrl.toString();
+};
+
+const createPasswordResetUrl = (token: string): string => {
+  const resetUrl = new URL("/reset-password", env.FRONTEND_API);
+  resetUrl.searchParams.set("token", token);
+  return resetUrl.toString();
 };
 
 const createEmailVerification = () => {
@@ -60,6 +73,31 @@ const queueEmailVerification = async (email: string, token: string): Promise<voi
     metadata: {
       type: "account-verification",
       verificationUrl,
+    },
+  });
+};
+
+const createPasswordReset = () => {
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(
+    Date.now() +
+      ms(`${env.PASSWORD_RESET_TOKEN_TTL_MINUTES}m` as StringValue),
+  );
+
+  return { token, tokenHash: hashEmailVerificationToken(token), expiresAt };
+};
+
+const queuePasswordReset = async (email: string, token: string): Promise<void> => {
+  const resetUrl = createPasswordResetUrl(token);
+
+  await enqueueTransactionalEmail({
+    to: email,
+    subject: "Reset your TaskForge password",
+    text: `Reset your TaskForge password by opening this link: ${resetUrl}`,
+    html: `<p>Reset your TaskForge password by opening this link:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+    metadata: {
+      type: "password-reset",
+      resetUrl,
     },
   });
 };
@@ -138,7 +176,7 @@ export const resendEmailVerification = async (email: string): Promise<void> => {
   if (resendAvailableAt > Date.now()) {
     throw new EmailVerificationResendError(
       "COOLDOWN",
-      Math.ceil((resendAvailableAt - Date.now()) / 1_000),
+      Math.ceil((resendAvailableAt - Date.now()) / ms("1s")),
     );
   }
 
@@ -166,6 +204,51 @@ export const verifyUserEmail = async (token: string) => {
   }
 
   return markUserEmailVerified(user.id);
+};
+
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    throw new PasswordResetRequestError("EMAIL_NOT_FOUND");
+  }
+
+  if (!user.emailVerifiedAt) {
+    throw new PasswordResetRequestError("EMAIL_UNVERIFIED");
+  }
+
+  const existingReset = await findPasswordResetTokenByUserId(user.id);
+  const resetAvailableAt = existingReset
+    ? existingReset.sentAt.getTime() +
+      ms(`${env.PASSWORD_RESET_RESEND_COOLDOWN_SECONDS}s` as StringValue)
+    : 0;
+  if (resetAvailableAt > Date.now()) {
+    throw new PasswordResetRequestError(
+      "COOLDOWN",
+      Math.ceil((resetAvailableAt - Date.now()) / ms("1s")),
+    );
+  }
+
+  const reset = createPasswordReset();
+  await replaceUserPasswordResetToken(user.id, reset.tokenHash, reset.expiresAt);
+  await queuePasswordReset(user.email, reset.token);
+};
+
+export const resetPassword = async ({ token, password }: ResetPasswordBody) => {
+  const user = await findUserByPasswordResetTokenHash(
+    hashEmailVerificationToken(token),
+  );
+
+  if (!user) {
+    throw new PasswordResetError("INVALID");
+  }
+
+  if (user.expiresAt <= new Date()) {
+    throw new PasswordResetError("EXPIRED");
+  }
+
+  const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+  return updateUserPassword(user.userId, passwordHash);
 };
 
 export const getCurrentUser = async (userId: number) => {

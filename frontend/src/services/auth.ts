@@ -11,6 +11,11 @@ export interface ResendEmailVerificationResponse {
   message: string;
 }
 
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -79,6 +84,29 @@ export const resendEmailVerification = async (
   const response = await apiClient.post<ResendEmailVerificationResponse>(
     "/auth/resend-verification",
     { email },
+  );
+
+  return response.data;
+};
+
+export const requestPasswordReset = async (
+  email: string,
+): Promise<PasswordResetResponse> => {
+  const response = await apiClient.post<PasswordResetResponse>(
+    "/auth/password-reset/request",
+    { email },
+  );
+
+  return response.data;
+};
+
+export const resetPassword = async (
+  token: string,
+  password: string,
+): Promise<PasswordResetResponse> => {
+  const response = await apiClient.post<PasswordResetResponse>(
+    "/auth/password-reset",
+    { token, password },
   );
 
   return response.data;
