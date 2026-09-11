@@ -32,6 +32,8 @@ describe("AppSidebar", () => {
       "href",
       "/workspace/42/my-tasks",
     );
+    expect(screen.queryByText("Settings")).not.toBeInTheDocument();
+    expect(screen.queryByText("Leave workspace")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
       "href",
       "/workspace/42/members",

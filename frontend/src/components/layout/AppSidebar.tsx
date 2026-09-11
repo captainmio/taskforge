@@ -1,11 +1,4 @@
-import {
-  FaCog,
-  FaFolder,
-  FaHome,
-  FaSignOutAlt,
-  FaTasks,
-  FaUsers,
-} from "react-icons/fa";
+import { FaFolder, FaHome, FaTasks, FaUsers } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import { getInitials } from "../../utils/getInitials";
 import type { JoinedWorkspace } from "../../services/auth";
@@ -61,12 +54,7 @@ const AppSidebar = ({
         <NavItem to="my-tasks" icon={<FaTasks />} label="My Tasks" />
         <NavItem to="projects" icon={<FaFolder />} label="Projects" />
         <NavItem to="members" icon={<FaUsers />} label="Members" />
-        <NavItem icon={<FaCog />} label="Settings" disabled />
       </nav>
-
-      <div className="mt-5 border-t border-gray-100 px-4 pt-4">
-        <NavItem icon={<FaSignOutAlt />} label="Leave workspace" disabled />
-      </div>
     </div>
   );
 };
