@@ -28,7 +28,7 @@ export const createTaskCommentRecord = async (
   body: string,
 ) => prisma.$transaction(async (transaction) => {
   const task = await transaction.task.findFirst({
-    where: { id: taskId, projectId, project: { deletedAt: null } },
+    where: { id: taskId, projectId },
     select: { id: true },
   });
   if (!task) return null;
@@ -57,7 +57,7 @@ export const findTaskCommentsByTask = async (
   limit: number,
 ) => {
   const task = await prisma.task.findFirst({
-    where: { id: taskId, projectId, project: { deletedAt: null } },
+    where: { id: taskId, projectId },
     select: { id: true },
   });
   if (!task) return null;

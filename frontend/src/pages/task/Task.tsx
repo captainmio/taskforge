@@ -7,6 +7,7 @@ import {
   type ReactElement,
 } from "react";
 import type { DropResult } from "@hello-pangea/dnd";
+import axios from "axios";
 import { FaFilter, FaPlus, FaSearch } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router";
@@ -278,8 +279,14 @@ const TaskPage = (): ReactElement => {
         setProjectName(project.name);
         setTaskItems(taskResponse.data.tasks.map(toBoardTask));
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!isActive) return;
+
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          navigate(`/workspace/${id}/projects`, { replace: true });
+          return;
+        }
+
         setTaskItems([]);
         setTaskLoadError(true);
       })
@@ -290,7 +297,7 @@ const TaskPage = (): ReactElement => {
     return () => {
       isActive = false;
     };
-  }, [id, projectId]);
+  }, [id, navigate, projectId]);
 
   const openNewTask = (status: TaskStatus = "todo", locked = false) => {
     setNewTaskStatus(status);

@@ -80,7 +80,7 @@ export const findProjectByWorkspace = async (
   projectId: number,
 ) =>
   prisma.project.findFirst({
-    where: { id: projectId, workspaceId, deletedAt: null },
+    where: { id: projectId, workspaceId },
     select: {
       id: true,
       name: true,
@@ -92,6 +92,15 @@ export const findProjectByWorkspace = async (
       defaultView: true,
       createdAt: true,
     },
+  });
+
+export const findProjectAccessByWorkspace = async (
+  workspaceId: number,
+  projectId: number,
+) =>
+  prisma.project.findFirst({
+    where: { id: projectId, workspaceId },
+    select: { deletedAt: true },
   });
 
 export const deleteProjectRecord = async (

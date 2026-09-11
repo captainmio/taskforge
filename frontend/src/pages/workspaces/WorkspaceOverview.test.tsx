@@ -154,7 +154,10 @@ describe("Workspace overview", () => {
     expect(
       screen.getByText("Coordinates the upcoming product launch."),
     ).toBeVisible();
-    expect(screen.getByText("PL")).toBeVisible();
+    const workspaceIcon = screen
+      .getByRole("heading", { name: "Product Launch Team" })
+      .parentElement?.previousElementSibling;
+    expect(workspaceIcon).toHaveClass("bg-orange-50");
     expect(screen.getByText(/Created on .*2026/)).toBeVisible();
     const membersStatLabel = screen
       .getAllByText("Members")

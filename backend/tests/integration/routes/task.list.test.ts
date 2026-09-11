@@ -1,9 +1,20 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { ProjectNotFoundError } from "../../../src/errors/project.errors.js";
+import { findProjectAccessByWorkspace } from "../../../src/repositories/project.repository.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import { getProjectTasks } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock(
+  "../../../src/repositories/project.repository.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/repositories/project.repository.js")
+    >()),
+    findProjectAccessByWorkspace: vi.fn(),
+  }),
+);
 
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
@@ -51,6 +62,7 @@ const result = {
 describe("GET /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValue({ deletedAt: null });
     vi.mocked(getProjectTasks).mockResolvedValue(result as never);
   });
 
@@ -97,5 +109,33 @@ describe("GET /api/workspaces/:workspaceId/projects/:projectId/tasks", () => {
       .set("Cookie", authCookie);
 
     expect(response.status).toBe(404);
+  });
+
+  it("hides a deleted project and its tasks from workspace members", async () => {
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValueOnce({
+      deletedAt: new Date("2026-09-11T00:00:00.000Z"),
+    });
+
+    const response = await request(app)
+      .get("/api/workspaces/42/projects/25/tasks")
+      .set("Cookie", authCookie);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("Project not found");
+    expect(getProjectTasks).not.toHaveBeenCalled();
+  });
+
+  it("allows the workspace owner to view tasks in a deleted project", async () => {
+    vi.mocked(findWorkspaceMembership).mockResolvedValueOnce({ role: "OWNER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValueOnce({
+      deletedAt: new Date("2026-09-11T00:00:00.000Z"),
+    });
+
+    const response = await request(app)
+      .get("/api/workspaces/42/projects/25/tasks")
+      .set("Cookie", authCookie);
+
+    expect(response.status).toBe(200);
+    expect(getProjectTasks).toHaveBeenCalledWith(42, 25, 1, 20);
   });
 });

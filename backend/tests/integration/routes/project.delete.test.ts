@@ -4,9 +4,20 @@ import {
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
 } from "../../../src/errors/project.errors.js";
+import { findProjectAccessByWorkspace } from "../../../src/repositories/project.repository.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import { deleteProject } from "../../../src/services/project.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock(
+  "../../../src/repositories/project.repository.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/repositories/project.repository.js")
+    >()),
+    findProjectAccessByWorkspace: vi.fn(),
+  }),
+);
 
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
@@ -37,6 +48,7 @@ const authCookie = `accessToken=${jwt.sign(
 describe("DELETE /api/workspaces/:workspaceId/projects/:projectId", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "OWNER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValue({ deletedAt: null });
     vi.mocked(deleteProject).mockResolvedValue({ id: 25 });
   });
 

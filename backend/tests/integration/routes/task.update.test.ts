@@ -6,6 +6,7 @@ import {
   TaskCompletionForbiddenError,
   TaskNotFoundError,
 } from "../../../src/errors/task.errors.js";
+import { findProjectAccessByWorkspace } from "../../../src/repositories/project.repository.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import { updateTask } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +15,16 @@ const realtimeMocks = vi.hoisted(() => ({
   emitTaskCreated: vi.fn(),
   emitTaskUpdated: vi.fn(),
 }));
+
+vi.mock(
+  "../../../src/repositories/project.repository.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/repositories/project.repository.js")
+    >()),
+    findProjectAccessByWorkspace: vi.fn(),
+  }),
+);
 
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
@@ -63,6 +74,7 @@ describe("PATCH /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId",
     realtimeMocks.emitTaskCreated.mockReset();
     realtimeMocks.emitTaskUpdated.mockReset();
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValue({ deletedAt: null });
     vi.mocked(updateTask).mockResolvedValue(updatedTask as never);
   });
 

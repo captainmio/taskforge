@@ -9,6 +9,7 @@ import {
 } from "../controllers/task.controller.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
+import { requireProjectAccess } from "../middlewares/requireProjectAccess.js";
 import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembership.js";
 import { validate } from "../middlewares/validate.js";
 import {
@@ -27,6 +28,7 @@ router.get(
   requireAuth,
   validate(projectTasksSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(getProjectTasks),
 );
 
@@ -35,6 +37,7 @@ router.post(
   requireAuth,
   validate(createTaskSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(createTask),
 );
 
@@ -43,6 +46,7 @@ router.get(
   requireAuth,
   validate(taskHistorySchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(getTaskHistory),
 );
 
@@ -51,6 +55,7 @@ router.patch(
   requireAuth,
   validate(updateTaskSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(updateTask),
 );
 
@@ -59,6 +64,7 @@ router.get(
   requireAuth,
   validate(taskCommentsSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(getTaskComments),
 );
 
@@ -67,6 +73,7 @@ router.post(
   requireAuth,
   validate(createTaskCommentSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(createTaskComment),
 );
 

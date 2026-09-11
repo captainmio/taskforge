@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { ProjectNotFoundError } from "../../../src/errors/project.errors.js";
+import { findProjectAccessByWorkspace } from "../../../src/repositories/project.repository.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import {
   createTaskComment,
@@ -13,6 +14,16 @@ const realtimeMocks = vi.hoisted(() => ({
   emitTaskCreated: vi.fn(),
   emitTaskUpdated: vi.fn(),
 }));
+
+vi.mock(
+  "../../../src/repositories/project.repository.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/repositories/project.repository.js")
+    >()),
+    findProjectAccessByWorkspace: vi.fn(),
+  }),
+);
 
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
@@ -53,6 +64,7 @@ describe("task comment routes", () => {
   beforeEach(() => {
     realtimeMocks.emitTaskCommentAdded.mockReset();
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValue({ deletedAt: null });
     vi.mocked(createTaskComment).mockResolvedValue(comment as never);
     vi.mocked(getTaskComments).mockResolvedValue({
       comments: [comment],

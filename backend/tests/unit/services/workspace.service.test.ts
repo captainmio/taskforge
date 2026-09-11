@@ -264,7 +264,7 @@ describe("recoverPendingInvitationDeliveries", () => {
         id: 30,
         email: "pending@example.com",
         role: "MEMBER",
-        workspace: { displayName: "Engineering Team" },
+        workspace: { displayName: "Engineering Team", icon: WorkspaceIcon.code },
       },
     ]);
     vi.mocked(findQueuedInvitationEmail).mockResolvedValue(undefined);
@@ -280,6 +280,7 @@ describe("recoverPendingInvitationDeliveries", () => {
     expect(enqueueInvitationEmails).toHaveBeenCalledWith([
       expect.objectContaining({
         invitationId: 30,
+        workspaceIcon: WorkspaceIcon.code,
         verificationUrl: expect.stringContaining("/invitations/accept?token="),
       }),
     ]);
@@ -289,7 +290,7 @@ describe("recoverPendingInvitationDeliveries", () => {
 
 describe("inviteWorkspaceMembers", () => {
   const persistedInvitations = {
-    workspace: { displayName: "Engineering Team" },
+    workspace: { displayName: "Engineering Team", icon: WorkspaceIcon.code },
     invitations: [
       {
         id: 40,
@@ -348,6 +349,7 @@ describe("inviteWorkspaceMembers", () => {
         invitationId: 40,
         email: "admin@example.com",
         workspaceDisplayName: "Engineering Team",
+        workspaceIcon: WorkspaceIcon.code,
         verificationUrl: expect.stringContaining("/invitations/accept?token="),
       }),
       expect.objectContaining({ invitationId: 41 }),

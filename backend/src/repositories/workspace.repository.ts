@@ -343,6 +343,7 @@ export const findWorkspaceOverview = async (workspaceId: number) =>
       createdAt: true,
       _count: { select: { members: true } },
       projects: {
+        where: { deletedAt: null },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         select: {
           id: true,

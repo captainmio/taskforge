@@ -259,6 +259,21 @@ describe("Task page", () => {
     expect(screen.getByRole("heading", { name: "Tasks" })).toBeVisible();
   });
 
+  it("returns to the project list when the project is unavailable", async () => {
+    mocks.getProjectById.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 404 },
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith(
+        "/workspace/workspace-42/projects",
+        { replace: true },
+      );
+    });
+  });
+
   it("refreshes the board when a real-time task update arrives", async () => {
     renderPage();
     await screen.findByRole("button", { name: /Implement login flow/ });

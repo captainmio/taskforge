@@ -1,8 +1,19 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
+import { findProjectAccessByWorkspace } from "../../../src/repositories/project.repository.js";
 import { findWorkspaceMembership } from "../../../src/repositories/workspace.repository.js";
 import { getTaskHistory } from "../../../src/services/task.service.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock(
+  "../../../src/repositories/project.repository.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/repositories/project.repository.js")
+    >()),
+    findProjectAccessByWorkspace: vi.fn(),
+  }),
+);
 
 vi.mock(
   "../../../src/repositories/workspace.repository.js",
@@ -49,6 +60,7 @@ const historyResult = {
 describe("GET /api/workspaces/:workspaceId/projects/:projectId/tasks/:taskId/history", () => {
   beforeEach(() => {
     vi.mocked(findWorkspaceMembership).mockResolvedValue({ role: "MEMBER" });
+    vi.mocked(findProjectAccessByWorkspace).mockResolvedValue({ deletedAt: null });
     vi.mocked(getTaskHistory).mockResolvedValue(historyResult as never);
   });
 

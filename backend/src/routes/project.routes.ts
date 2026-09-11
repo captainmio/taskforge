@@ -8,6 +8,7 @@ import {
 } from "../controllers/project.controller.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
+import { requireProjectAccess } from "../middlewares/requireProjectAccess.js";
 import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembership.js";
 import { validate } from "../middlewares/validate.js";
 import {
@@ -46,6 +47,7 @@ router.get(
   requireAuth,
   validate(projectDetailSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(getProjectById),
 );
 
@@ -54,6 +56,7 @@ router.delete(
   requireAuth,
   validate(deleteProjectSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(deleteProject),
 );
 
@@ -62,6 +65,7 @@ router.patch(
   requireAuth,
   validate(updateProjectSchema),
   requireWorkspaceMembership,
+  requireProjectAccess,
   authenticatedHandler(updateProject),
 );
 

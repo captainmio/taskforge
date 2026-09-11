@@ -13,6 +13,7 @@ vi.mock("../../../src/config/database.js", () => ({
 
 import {
   deleteProjectRecord,
+  findProjectAccessByWorkspace,
   findProjectByWorkspace,
   findProjectsByWorkspace,
   updateProjectRecord,
@@ -35,16 +36,27 @@ describe("project repository soft deletion", () => {
     );
   });
 
-  it("excludes soft-deleted projects from project lookups", async () => {
+  it("retrieves deleted projects so route-level authorization can evaluate them", async () => {
     prismaProject.findFirst.mockResolvedValueOnce(null);
 
     await findProjectByWorkspace(10, 25);
 
     expect(prismaProject.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 25, workspaceId: 10, deletedAt: null },
+        where: { id: 25, workspaceId: 10 },
       }),
     );
+  });
+
+  it("selects deletion state for project access checks", async () => {
+    prismaProject.findFirst.mockResolvedValueOnce({ deletedAt: null });
+
+    await findProjectAccessByWorkspace(10, 25);
+
+    expect(prismaProject.findFirst).toHaveBeenCalledWith({
+      where: { id: 25, workspaceId: 10 },
+      select: { deletedAt: true },
+    });
   });
 
   it("marks an active project as deleted instead of removing it", async () => {
