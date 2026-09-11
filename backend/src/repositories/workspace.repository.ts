@@ -759,5 +759,14 @@ export const acceptInvitationRecord = async (
       update: {},
     });
 
+    await transaction.workspaceActivity.create({
+      data: {
+        workspaceId: data.workspaceId,
+        actorUserId: data.userId,
+        action: "member_joined",
+        details: { memberId: data.userId },
+      },
+    });
+
     return true;
   });

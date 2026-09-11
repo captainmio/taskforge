@@ -1,7 +1,6 @@
 import {
   FaCalendarAlt,
   FaEdit,
-  FaHistory,
   FaFolder,
   FaSignOutAlt,
   FaTasks,
@@ -11,16 +10,13 @@ import {
 import { Link, useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
 import { projectIconOptions } from "../../components/projects/projectIconOptions";
-import TaskHistoryChangeDetails from "../../components/tasks/TaskHistoryChangeDetails";
 import ActionCard from "../../components/ui/ActionCard";
-import Button from "../../components/ui/Button";
-import Modal from "../../components/ui/Modal";
+import RecentUpdates from "../../components/workspaces/RecentUpdates";
 import ProgressBar from "../../components/ui/ProgressBar";
 import RoundedSpacedDonutChart from "../../components/ui/RoundedSpacedDonutChart";
 import SectionCard from "../../components/ui/SectionCard";
 import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
-import { formatRelativeDateTime } from "../../utils/formatRelativeDateTime";
 import { formatTaskDueDate } from "../../utils/formatTaskDueDate";
 import {
   getTaskDueDateStatus,
@@ -138,8 +134,6 @@ const WorkspaceOverview = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<WorkspaceUpcomingTask[]>(
     [],
   );
-  const [isRecentUpdatesModalOpen, setIsRecentUpdatesModalOpen] =
-    useState<boolean>(false);
   const [allUpdates, setAllUpdates] = useState<
     WorkspaceOverviewData["recentUpdates"]
   >([]);
@@ -235,10 +229,6 @@ const WorkspaceOverview = () => {
     } finally {
       setIsLoadingHistory(false);
     }
-  };
-  const openHistory = () => {
-    setIsRecentUpdatesModalOpen(true);
-    if (!allUpdates?.length) void loadHistory();
   };
 
   return (
@@ -370,49 +360,13 @@ const WorkspaceOverview = () => {
           )}
         </SectionCard>
 
-        <SectionCard
-          title="Recent Update"
-          className="border-blue-100 bg-gradient-to-br from-white to-blue-50/60 shadow-sm overflow-y-auto"
-          action={
-            <button
-              type="button"
-              onClick={openHistory}
-              className="text-xs font-semibold text-green-700 hover:text-green-800 cursor-pointer"
-            >
-              View All
-            </button>
-          }
-        >
-          {recentUpdates.length > 0 ? (
-            <ul className="-m-4 divide-y divide-blue-100">
-              {recentUpdates.map((update) => (
-                <li key={update.id} className="flex gap-3 px-4 py-3.5">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <FaHistory className="size-3.5" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-gray-700">
-                      <strong className="font-semibold text-gray-950">
-                        {update.actor.firstname} {update.actor.lastname}
-                      </strong>{" "}
-                      {update.kind === "workspace"
-                        ? "removed a member from this workspace."
-                        : update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"} {update.kind === "workspace" ? "" : "this task."}
-                    </p>
-                    {update.kind !== "workspace" ? <><TaskHistoryChangeDetails changes={update.changes} valueKeyPrefix={`overview:${update.id}`} className="text-xs leading-5 text-gray-600" /><p className="mt-0.5 truncate text-xs text-gray-500"><strong className="font-semibold text-gray-700">{update.task?.title}</strong> in {update.task?.project.name}</p></> : null}
-                  </div>
-                  <time className="shrink-0 pt-0.5 text-right text-[11px] text-gray-400">
-                    {formatRelativeDateTime(update.createdAt)}
-                  </time>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="py-8 text-center text-sm text-gray-500">
-              No recent updates.
-            </p>
-          )}
-        </SectionCard>
+        <RecentUpdates
+          updates={recentUpdates}
+          allUpdates={allUpdates ?? []}
+          historyCursor={historyCursor}
+          isLoadingHistory={isLoadingHistory}
+          onLoadHistory={(cursor) => void loadHistory(cursor)}
+        />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
@@ -524,54 +478,6 @@ const WorkspaceOverview = () => {
         </div>
       </SectionCard>
 
-      <Modal
-        isOpen={isRecentUpdatesModalOpen}
-        title="Recent Updates"
-        onClose={() => setIsRecentUpdatesModalOpen(false)}
-        footer={
-          <Button
-            variant="ghost"
-            onClick={() => setIsRecentUpdatesModalOpen(false)}
-          >
-            Close
-          </Button>
-        }
-      >
-        <div className="max-h-[60vh] min-h-40 overflow-y-auto pr-1">
-          {isLoadingHistory && !allUpdates?.length ? (
-            <p className="text-sm text-gray-500">Loading updates…</p>
-          ) : (
-            <ol className="space-y-4">
-              {(allUpdates ?? [])
-                .map((update) => (
-                  <li key={update.id} className="text-sm text-gray-700">
-                    <p>
-                      <strong className="font-semibold text-gray-950">
-                        {update.actor.firstname} {update.actor.lastname}
-                      </strong>{" "}
-                      {update.kind === "workspace" ? "removed a member from this workspace." : <>{update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"}{" "}<strong className="font-semibold text-gray-950">{update.task?.title}</strong></>}
-                    </p>
-                    {update.kind !== "workspace" ? <TaskHistoryChangeDetails changes={update.changes} valueKeyPrefix={`modal:${update.id}`} className="text-xs leading-5 text-gray-600" /> : null}
-                    <time className="mt-1 block text-[11px] text-gray-400">
-                      {formatRelativeDateTime(update.createdAt)}
-                    </time>
-                  </li>
-                ))}
-            </ol>
-          )}
-          {historyCursor ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="mt-4"
-              disabled={isLoadingHistory}
-              onClick={() => void loadHistory(historyCursor)}
-            >
-              {isLoadingHistory ? "Loading…" : "Load more"}
-            </Button>
-          ) : null}
-        </div>
-      </Modal>
     </div>
   );
 };

@@ -181,6 +181,17 @@ describe("POST /api/workspaces with PostgreSQL", () => {
     await expect(
       prisma.workspaceInvitation.findUnique({ where: { id: invitation.id } }),
     ).resolves.toMatchObject({ status: InvitationStatus.ACCEPTED });
+    await expect(
+      prisma.workspaceActivity.findFirst({
+        where: {
+          workspaceId: workspace.id,
+          actorUserId: invitedUser.id,
+          action: "member_joined",
+        },
+      }),
+    ).resolves.toMatchObject({
+      details: { memberId: invitedUser.id },
+    });
 
     const repeatedResponse = await request(app)
       .post("/api/workspaces/invitations/accept")
