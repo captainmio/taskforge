@@ -55,7 +55,7 @@ describe("DELETE /api/workspaces/:workspaceId/projects/:projectId", () => {
         message: "Project deleted",
         data: { id: 25 },
       });
-      expect(deleteProject).toHaveBeenCalledWith(42, 25, role);
+      expect(deleteProject).toHaveBeenCalledWith(42, 25, role, 7);
     },
   );
 

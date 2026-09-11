@@ -21,6 +21,11 @@ interface MemberActivityDetails {
   lastname?: string;
 }
 
+interface ProjectActivityDetails {
+  projectId?: number;
+  name?: string;
+}
+
 const sortByNewest = (updates: WorkspaceRecentUpdate[]) =>
   [...updates].sort((left, right) => {
     const byDate =
@@ -33,6 +38,13 @@ const getMemberActivityDetails = (
 ): MemberActivityDetails | null =>
   details && typeof details === "object" && !Array.isArray(details)
     ? (details as MemberActivityDetails)
+    : null;
+
+const getProjectActivityDetails = (
+  details: WorkspaceRecentUpdate["details"],
+): ProjectActivityDetails | null =>
+  details && typeof details === "object" && !Array.isArray(details)
+    ? (details as ProjectActivityDetails)
     : null;
 
 const TaskActivityMessage = ({ update, modal = false }: { update: WorkspaceRecentUpdate; modal?: boolean }) => (
@@ -63,9 +75,26 @@ const MemberRemovedActivityMessage = ({ update }: { update: WorkspaceRecentUpdat
 
 const MemberJoinedActivityMessage = () => <>joined this workspace.</>;
 
+const ProjectActivityMessage = ({ update }: { update: WorkspaceRecentUpdate }) => {
+  const project = getProjectActivityDetails(update.details);
+
+  return (
+    <>
+      {update.action === "project_created" ? "created" : "deleted"} project{" "}
+      <strong className="font-semibold text-gray-950">
+        {project?.name ?? "a project"}
+      </strong>
+      .
+    </>
+  );
+};
+
 const ActivityMessage = ({ update, modal = false }: { update: WorkspaceRecentUpdate; modal?: boolean }) => {
   if (update.kind !== "workspace") return <TaskActivityMessage update={update} modal={modal} />;
   if (update.action === "member_joined") return <MemberJoinedActivityMessage />;
+  if (update.action === "project_created" || update.action === "project_deleted") {
+    return <ProjectActivityMessage update={update} />;
+  }
   return <MemberRemovedActivityMessage update={update} />;
 };
 

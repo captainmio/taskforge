@@ -28,21 +28,34 @@ export interface UpdateProjectData {
 }
 
 export const createProjectRecord = async (data: CreateProjectData) =>
-  prisma.project.create({
-    data,
-    select: {
-      id: true,
-      workspaceId: true,
-      name: true,
-      description: true,
-      icon: true,
-      status: true,
-      startDate: true,
-      dueDate: true,
-      defaultView: true,
-      createdById: true,
-      createdAt: true,
-    },
+  prisma.$transaction(async (transaction) => {
+    const project = await transaction.project.create({
+      data,
+      select: {
+        id: true,
+        workspaceId: true,
+        name: true,
+        description: true,
+        icon: true,
+        status: true,
+        startDate: true,
+        dueDate: true,
+        defaultView: true,
+        createdById: true,
+        createdAt: true,
+      },
+    });
+
+    await transaction.workspaceActivity.create({
+      data: {
+        workspaceId: data.workspaceId,
+        actorUserId: data.createdById,
+        action: "project_created",
+        details: { projectId: project.id, name: project.name },
+      },
+    });
+
+    return project;
   });
 
 export const findProjectsByWorkspace = async (workspaceId: number) =>
@@ -84,11 +97,40 @@ export const findProjectByWorkspace = async (
 export const deleteProjectRecord = async (
   workspaceId: number,
   projectId: number,
-) =>
-  prisma.project.updateMany({
-    where: { id: projectId, workspaceId, deletedAt: null },
-    data: { deletedAt: new Date() },
+  actorUserId?: number,
+): Promise<{ count: number; projectName?: string }> => {
+  if (actorUserId === undefined) {
+    return prisma.project.updateMany({
+      where: { id: projectId, workspaceId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const project = await transaction.project.findFirst({
+      where: { id: projectId, workspaceId, deletedAt: null },
+      select: { name: true },
+    });
+    if (!project) return { count: 0 };
+
+    const deletion = await transaction.project.updateMany({
+      where: { id: projectId, workspaceId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (deletion.count === 0) return deletion;
+
+    await transaction.workspaceActivity.create({
+      data: {
+        workspaceId,
+        actorUserId,
+        action: "project_deleted",
+        details: { projectId, name: project.name },
+      },
+    });
+
+    return { ...deletion, projectName: project.name };
   });
+};
 
 export const updateProjectRecord = async (
   workspaceId: number,

@@ -105,6 +105,7 @@ export const deleteProject = async (
   workspaceId: number,
   projectId: number,
   actorRole: WorkspaceRole,
+  actorUserId?: number,
 ) => {
   if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
     throw new ProjectDeletionForbiddenError();
@@ -112,7 +113,11 @@ export const deleteProject = async (
 
   // Scope the database write to the current workspace so a valid project ID
   // cannot delete a project that belongs to a different workspace.
-  const deletion = await deleteProjectRecord(workspaceId, projectId);
+  const deletion = await (
+    actorUserId === undefined
+      ? deleteProjectRecord(workspaceId, projectId)
+      : deleteProjectRecord(workspaceId, projectId, actorUserId)
+  );
   if (deletion.count === 0) {
     throw new ProjectNotFoundError();
   }

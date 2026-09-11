@@ -35,6 +35,32 @@ describe("RecentUpdates", () => {
               email: "taylor@example.com",
             },
           },
+          {
+            id: "workspace:3",
+            kind: "workspace",
+            action: "project_created",
+            details: { projectId: 7, name: "Website Redesign" },
+            createdAt: "2026-09-03T10:00:00.000Z",
+            actor: {
+              id: 1,
+              firstname: "Alex",
+              lastname: "Ng",
+              email: "alex@example.com",
+            },
+          },
+          {
+            id: "workspace:4",
+            kind: "workspace",
+            action: "project_deleted",
+            details: { projectId: 8, name: "Legacy Migration" },
+            createdAt: "2026-09-04T10:00:00.000Z",
+            actor: {
+              id: 1,
+              firstname: "Alex",
+              lastname: "Ng",
+              email: "alex@example.com",
+            },
+          },
         ]}
         allUpdates={[]}
         historyCursor={null}
@@ -44,8 +70,10 @@ describe("RecentUpdates", () => {
     );
 
     const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Taylor Smith joined this workspace.");
-    expect(items[1]).toHaveTextContent(
+    expect(items[0]).toHaveTextContent("Alex Ng deleted project Legacy Migration.");
+    expect(items[1]).toHaveTextContent("Alex Ng created project Website Redesign.");
+    expect(items[2]).toHaveTextContent("Taylor Smith joined this workspace.");
+    expect(items[3]).toHaveTextContent(
       "Alex Ng removed Jordan Lee from this workspace.",
     );
 

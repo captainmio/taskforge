@@ -190,7 +190,12 @@ export const deleteProject = async (
   }
 
   try {
-    const project = await deleteProjectService(workspaceId, projectId, actorRole);
+    const project = await deleteProjectService(
+      workspaceId,
+      projectId,
+      actorRole,
+      req.user.id,
+    );
 
     req.log.info(
       { logType: "feature", event: "project.deleted", ...logContext },
