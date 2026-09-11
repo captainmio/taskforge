@@ -15,19 +15,44 @@ import {
   recordInvitationDeliveryFailure,
 } from "../repositories/workspace.repository.js";
 import { writeEmailDeliveryLog } from "../services/email-log.service.js";
+import { sendTransactionalEmail } from "../services/email.service.js";
+import { createTaskForgeEmail } from "../services/email-template.service.js";
 import { recoverPendingInvitationDeliveries } from "../services/workspace.service.js";
 
 const processInvitation = async (
   job: Job<InvitationEmailJobData>,
 ): Promise<void> => {
   try {
+    const content = createTaskForgeEmail({
+      title: `Join ${job.data.workspaceDisplayName}`,
+      preview: `You've been invited to join ${job.data.workspaceDisplayName} on TaskForge.`,
+      paragraphs: [
+        `You've been invited to join ${job.data.workspaceDisplayName} as a ${job.data.role.toLowerCase()}.`,
+        "Accept the invitation to collaborate with the workspace.",
+      ],
+      action: { label: "Accept invitation", url: job.data.verificationUrl },
+      footer:
+        "If you were not expecting this invitation, you can safely ignore this email.",
+    });
+
     // Invitations share the generic delivery log so developers can manually
     // open the same verification URL that appears in the invitation email.
     await writeEmailDeliveryLog({
       to: job.data.email,
       subject: `Invitation to join ${job.data.workspaceDisplayName}`,
-      text: `Open this link to join ${job.data.workspaceDisplayName}: ${job.data.verificationUrl}`,
-      html: `<p>Open this link to join ${job.data.workspaceDisplayName}:</p><p><a href="${job.data.verificationUrl}">${job.data.verificationUrl}</a></p>`,
+      ...content,
+      metadata: {
+        type: "workspace-invitation",
+        invitationId: String(job.data.invitationId),
+        workspace: job.data.workspaceDisplayName,
+        role: job.data.role,
+        verificationUrl: job.data.verificationUrl,
+      },
+    });
+    await sendTransactionalEmail({
+      to: job.data.email,
+      subject: `Invitation to join ${job.data.workspaceDisplayName}`,
+      ...content,
       metadata: {
         type: "workspace-invitation",
         invitationId: String(job.data.invitationId),
@@ -38,7 +63,8 @@ const processInvitation = async (
     });
     await markInvitationDeliveryCompleted(job.data.invitationId);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown delivery error";
+    const message =
+      error instanceof Error ? error.message : "Unknown delivery error";
     // attemptsMade excludes the current run, so add one before deciding whether
     // BullMQ has reached the configured final attempt.
     const isFinalAttempt = job.attemptsMade + 1 >= INVITATION_JOB_ATTEMPTS;

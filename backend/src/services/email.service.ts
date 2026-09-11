@@ -5,7 +5,7 @@ import type { TransactionalEmailJobData } from "../queues/email.queue.js";
 const transport = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: env.SMTP_PORT,
-  // secure: env.SMTP_PORT === 465,
+  secure: env.SMTP_PORT === 465,
   auth: {
     user: env.SMTP_USERNAME,
     pass: env.SMTP_PASSWORD,

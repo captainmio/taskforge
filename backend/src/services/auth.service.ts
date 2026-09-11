@@ -3,33 +3,34 @@ import { createHash, randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
 import ms, { type StringValue } from "ms";
 import {
-    BCRYPT_SALT_ROUNDS,
-    JWT_EXPIRES_IN,
-    JWT_SECRET,
+  BCRYPT_SALT_ROUNDS,
+  JWT_EXPIRES_IN,
+  JWT_SECRET,
 } from "../config/auth.js";
 import {
   EmailAlreadyRegisteredError,
   EmailVerificationError,
   EmailVerificationResendError,
   EmailVerificationRequiredError,
-    InvalidCredentialsError,
+  InvalidCredentialsError,
   PasswordResetError,
   PasswordResetRequestError,
 } from "../errors/auth.errors.js";
 import { env } from "../config/env.js";
 import { enqueueTransactionalEmail } from "../queues/email.queue.js";
+import { createTaskForgeEmail } from "./email-template.service.js";
 import { Prisma } from "../generated/prisma/client.js";
 import {
-    createUser,
-    findUserByEmail,
-    findUserByEmailVerificationTokenHash,
-    findUserByPasswordResetTokenHash,
-    findPasswordResetTokenByUserId,
-    findUserWithWorkspaceMembershipsById,
-    markUserEmailVerified,
-    replaceUserEmailVerificationToken,
-    replaceUserPasswordResetToken,
-    updateUserPassword,
+  createUser,
+  findUserByEmail,
+  findUserByEmailVerificationTokenHash,
+  findUserByPasswordResetTokenHash,
+  findPasswordResetTokenByUserId,
+  findUserWithWorkspaceMembershipsById,
+  markUserEmailVerified,
+  replaceUserEmailVerificationToken,
+  replaceUserPasswordResetToken,
+  updateUserPassword,
 } from "../repositories/user.repository.js";
 import type {
   LoginBody,
@@ -41,7 +42,10 @@ const hashEmailVerificationToken = (token: string): string =>
   createHash("sha256").update(token).digest("hex");
 
 const createEmailVerificationUrl = (token: string): string => {
-  const verificationUrl = new URL("/api/auth/verify-email", env.BACKEND_PUBLIC_URL);
+  const verificationUrl = new URL(
+    "/api/auth/verify-email",
+    env.BACKEND_PUBLIC_URL,
+  );
   verificationUrl.searchParams.set("token", token);
   return verificationUrl.toString();
 };
@@ -62,14 +66,25 @@ const createEmailVerification = () => {
   return { token, tokenHash: hashEmailVerificationToken(token), expiresAt };
 };
 
-const queueEmailVerification = async (email: string, token: string): Promise<void> => {
+const queueEmailVerification = async (
+  email: string,
+  token: string,
+): Promise<void> => {
   const verificationUrl = createEmailVerificationUrl(token);
+  const content = createTaskForgeEmail({
+    title: "Verify your email address",
+    preview: "Confirm your TaskForge account.",
+    paragraphs: [
+      "Thanks for joining TaskForge.",
+      "Confirm your email address to activate your account and start organizing work with your team.",
+    ],
+    action: { label: "Verify email", url: verificationUrl },
+  });
 
   await enqueueTransactionalEmail({
     to: email,
     subject: "Verify your TaskForge email address",
-    text: `Verify your TaskForge account by opening this link: ${verificationUrl}`,
-    html: `<p>Verify your TaskForge account by opening this link:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`,
+    ...content,
     metadata: {
       type: "account-verification",
       verificationUrl,
@@ -80,21 +95,31 @@ const queueEmailVerification = async (email: string, token: string): Promise<voi
 const createPasswordReset = () => {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(
-    Date.now() +
-      ms(`${env.PASSWORD_RESET_TOKEN_TTL_MINUTES}m` as StringValue),
+    Date.now() + ms(`${env.PASSWORD_RESET_TOKEN_TTL_MINUTES}m` as StringValue),
   );
 
   return { token, tokenHash: hashEmailVerificationToken(token), expiresAt };
 };
 
-const queuePasswordReset = async (email: string, token: string): Promise<void> => {
+const queuePasswordReset = async (
+  email: string,
+  token: string,
+): Promise<void> => {
   const resetUrl = createPasswordResetUrl(token);
+  const content = createTaskForgeEmail({
+    title: "Reset your password",
+    preview: "Use this secure link to reset your TaskForge password.",
+    paragraphs: [
+      "We received a request to reset your TaskForge password.",
+      "Use the button below to choose a new password. This link expires soon for your security.",
+    ],
+    action: { label: "Reset password", url: resetUrl },
+  });
 
   await enqueueTransactionalEmail({
     to: email,
     subject: "Reset your TaskForge password",
-    text: `Reset your TaskForge password by opening this link: ${resetUrl}`,
-    html: `<p>Reset your TaskForge password by opening this link:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+    ...content,
     metadata: {
       type: "password-reset",
       resetUrl,
@@ -111,11 +136,9 @@ export const loginUser = async (credentials: LoginBody) => {
 
   if (!user.emailVerifiedAt) throw new EmailVerificationRequiredError();
 
-  const token = jwt.sign(
-    { sub: user.id, email: user.email },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN },
-  );
+  const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
 
   return {
     token,
@@ -169,9 +192,7 @@ export const resendEmailVerification = async (email: string): Promise<void> => {
 
   const resendAvailableAt = user.emailVerificationSentAt
     ? user.emailVerificationSentAt.getTime() +
-      ms(
-        `${env.ACCOUNT_VERIFICATION_RESEND_COOLDOWN_SECONDS}s` as StringValue,
-      )
+      ms(`${env.ACCOUNT_VERIFICATION_RESEND_COOLDOWN_SECONDS}s` as StringValue)
     : 0;
   if (resendAvailableAt > Date.now()) {
     throw new EmailVerificationResendError(
@@ -230,7 +251,11 @@ export const requestPasswordReset = async (email: string): Promise<void> => {
   }
 
   const reset = createPasswordReset();
-  await replaceUserPasswordResetToken(user.id, reset.tokenHash, reset.expiresAt);
+  await replaceUserPasswordResetToken(
+    user.id,
+    reset.tokenHash,
+    reset.expiresAt,
+  );
   await queuePasswordReset(user.email, reset.token);
 };
 

@@ -79,10 +79,7 @@ describe("registerUser", () => {
   it("hashes the password before creating the user", async () => {
     await registerUser(validRegistration);
 
-    expect(hashPassword).toHaveBeenCalledWith(
-      validRegistration.password,
-      4,
-    );
+    expect(hashPassword).toHaveBeenCalledWith(validRegistration.password, 4);
     expect(createUser).toHaveBeenCalledWith(
       expect.objectContaining({
         ...validRegistration,
@@ -95,9 +92,13 @@ describe("registerUser", () => {
     expect(enqueueTransactionalEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: validRegistration.email,
+        html: expect.stringContaining("TaskForge"),
+        text: expect.stringContaining("Verify email:"),
         metadata: expect.objectContaining({
           type: "account-verification",
-          verificationUrl: expect.stringContaining("/api/auth/verify-email?token="),
+          verificationUrl: expect.stringContaining(
+            "/api/auth/verify-email?token=",
+          ),
         }),
       }),
     );
@@ -123,9 +124,7 @@ describe("registerUser", () => {
     const unexpectedError = new Error("Database unavailable");
     vi.mocked(createUser).mockRejectedValue(unexpectedError);
 
-    await expect(registerUser(validRegistration)).rejects.toBe(
-      unexpectedError,
-    );
+    await expect(registerUser(validRegistration)).rejects.toBe(unexpectedError);
   });
 });
 
@@ -144,24 +143,34 @@ describe("password reset", () => {
       sentAt: new Date(),
     });
     vi.mocked(enqueueTransactionalEmail).mockResolvedValue();
-    vi.mocked(updateUserPassword).mockResolvedValue([verifiedUser, {
-      userId: verifiedUser.id,
-      tokenHash: "reset-token-hash",
-      expiresAt: new Date(),
-      sentAt: new Date(),
-    }]);
+    vi.mocked(updateUserPassword).mockResolvedValue([
+      verifiedUser,
+      {
+        userId: verifiedUser.id,
+        tokenHash: "reset-token-hash",
+        expiresAt: new Date(),
+        sentAt: new Date(),
+      },
+    ]);
   });
 
   it("rejects requests for unknown, unverified, and recently emailed accounts", async () => {
     vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
-    await expect(requestPasswordReset("unknown@example.com")).rejects.toMatchObject({
+    await expect(
+      requestPasswordReset("unknown@example.com"),
+    ).rejects.toMatchObject({
       reason: "EMAIL_NOT_FOUND",
     } satisfies Partial<PasswordResetRequestError>);
 
-    vi.mocked(findUserByEmail).mockResolvedValueOnce({ ...createdUser, emailVerifiedAt: null });
-    await expect(requestPasswordReset(createdUser.email)).rejects.toMatchObject({
-      reason: "EMAIL_UNVERIFIED",
-    } satisfies Partial<PasswordResetRequestError>);
+    vi.mocked(findUserByEmail).mockResolvedValueOnce({
+      ...createdUser,
+      emailVerifiedAt: null,
+    });
+    await expect(requestPasswordReset(createdUser.email)).rejects.toMatchObject(
+      {
+        reason: "EMAIL_UNVERIFIED",
+      } satisfies Partial<PasswordResetRequestError>,
+    );
 
     vi.mocked(findUserByEmail).mockResolvedValueOnce(verifiedUser);
     vi.mocked(findPasswordResetTokenByUserId).mockResolvedValueOnce({
@@ -170,7 +179,9 @@ describe("password reset", () => {
       expiresAt: new Date(Date.now() + 60_000),
       sentAt: new Date(),
     });
-    await expect(requestPasswordReset(verifiedUser.email)).rejects.toMatchObject({
+    await expect(
+      requestPasswordReset(verifiedUser.email),
+    ).rejects.toMatchObject({
       reason: "COOLDOWN",
       retryAfterSeconds: expect.any(Number),
     } satisfies Partial<PasswordResetRequestError>);
@@ -189,6 +200,8 @@ describe("password reset", () => {
     expect(enqueueTransactionalEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: verifiedUser.email,
+        html: expect.stringContaining("TaskForge"),
+        text: expect.stringContaining("Reset password:"),
         metadata: expect.objectContaining({
           type: "password-reset",
           resetUrl: expect.stringContaining("/reset-password?token="),
@@ -199,7 +212,9 @@ describe("password reset", () => {
 
   it("rejects invalid and expired tokens, then updates a valid password once", async () => {
     vi.mocked(findUserByPasswordResetTokenHash).mockResolvedValueOnce(null);
-    await expect(resetPassword({ token: "invalid", password: "new-password" })).rejects.toMatchObject({
+    await expect(
+      resetPassword({ token: "invalid", password: "new-password" }),
+    ).rejects.toMatchObject({
       reason: "INVALID",
     } satisfies Partial<PasswordResetError>);
 
@@ -210,7 +225,9 @@ describe("password reset", () => {
       sentAt: new Date(),
       user: verifiedUser,
     });
-    await expect(resetPassword({ token: "expired", password: "new-password" })).rejects.toMatchObject({
+    await expect(
+      resetPassword({ token: "expired", password: "new-password" }),
+    ).rejects.toMatchObject({
       reason: "EXPIRED",
     } satisfies Partial<PasswordResetError>);
 
@@ -224,7 +241,10 @@ describe("password reset", () => {
     await resetPassword({ token: "valid", password: "new-password" });
 
     expect(hashPassword).toHaveBeenCalledWith("new-password", 4);
-    expect(updateUserPassword).toHaveBeenCalledWith(verifiedUser.id, "hashed-password");
+    expect(updateUserPassword).toHaveBeenCalledWith(
+      verifiedUser.id,
+      "hashed-password",
+    );
   });
 });
 
@@ -237,7 +257,9 @@ describe("email verification", () => {
 
   beforeEach(() => {
     vi.mocked(enqueueTransactionalEmail).mockResolvedValue();
-    vi.mocked(replaceUserEmailVerificationToken).mockResolvedValue(unverifiedUser);
+    vi.mocked(replaceUserEmailVerificationToken).mockResolvedValue(
+      unverifiedUser,
+    );
     vi.mocked(markUserEmailVerified).mockResolvedValue({
       ...unverifiedUser,
       emailVerifiedAt: new Date(),
@@ -247,7 +269,9 @@ describe("email verification", () => {
   it("does not reveal whether an unknown email exists", async () => {
     vi.mocked(findUserByEmail).mockResolvedValue(null);
 
-    await expect(resendEmailVerification("unknown@example.com")).resolves.toBeUndefined();
+    await expect(
+      resendEmailVerification("unknown@example.com"),
+    ).resolves.toBeUndefined();
     expect(enqueueTransactionalEmail).not.toHaveBeenCalled();
   });
 
@@ -257,7 +281,9 @@ describe("email verification", () => {
       emailVerifiedAt: new Date(),
     });
 
-    await expect(resendEmailVerification(validRegistration.email)).rejects.toMatchObject({
+    await expect(
+      resendEmailVerification(validRegistration.email),
+    ).rejects.toMatchObject({
       reason: "ALREADY_VERIFIED",
     } satisfies Partial<EmailVerificationResendError>);
   });
@@ -268,7 +294,9 @@ describe("email verification", () => {
       emailVerificationSentAt: new Date(),
     });
 
-    await expect(resendEmailVerification(validRegistration.email)).rejects.toMatchObject({
+    await expect(
+      resendEmailVerification(validRegistration.email),
+    ).rejects.toMatchObject({
       reason: "COOLDOWN",
       retryAfterSeconds: expect.any(Number),
     } satisfies Partial<EmailVerificationResendError>);
@@ -285,7 +313,11 @@ describe("email verification", () => {
       expect.any(Date),
     );
     expect(enqueueTransactionalEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: validRegistration.email }),
+      expect.objectContaining({
+        to: validRegistration.email,
+        html: expect.stringContaining("TaskForge"),
+        text: expect.stringContaining("Verify email:"),
+      }),
     );
   });
 
