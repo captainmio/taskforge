@@ -30,6 +30,7 @@ import {
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
   WorkspaceOwnerRoleUpdateError,
+  WorkspaceUpdateForbiddenError,
 } from "../errors/workspace.errors.js";
 import { Prisma } from "../generated/prisma/client.js";
 import {
@@ -63,12 +64,14 @@ import {
   replaceInvitationToken,
   removeWorkspaceMemberRecord,
   updateWorkspaceMemberRoleRecord,
+  updateWorkspaceRecord,
   upsertWorkspaceInviteLink,
   type CreateWorkspaceInvitationData,
 } from "../repositories/workspace.repository.js";
 import type {
   CreateWorkspaceBody,
   InviteWorkspaceMembersBody,
+  UpdateWorkspaceBody,
 } from "../validations/workspace.validation.js";
 
 const INVITATION_EXPIRY = ms("7d");
@@ -142,6 +145,7 @@ export const createWorkspace = async (
           invitationId: invitation.id,
           email: invitation.email,
           workspaceDisplayName: result.workspace.displayName,
+          workspaceIcon: result.workspace.icon,
           role: invitation.role,
           verificationUrl: createVerificationUrl(token),
         },
@@ -160,6 +164,38 @@ export const createWorkspace = async (
       workspace: result.workspace,
       invitationCount: result.invitations.length,
     };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new WorkspaceNameAlreadyExistsError();
+    }
+
+    throw error;
+  }
+};
+
+export const updateWorkspace = async (
+  workspaceId: number,
+  actorRole: WorkspaceRole,
+  input: UpdateWorkspaceBody,
+) => {
+  if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
+    throw new WorkspaceUpdateForbiddenError();
+  }
+
+  const displayName = input.workspaceName.trim().replace(/\s+/g, " ");
+  try {
+    const update = await updateWorkspaceRecord(workspaceId, {
+      name: normalizeWorkspaceName(displayName),
+      displayName,
+      description: input.description.trim(),
+      icon: input.icon,
+    });
+    if (update.count === 0) throw new WorkspaceMemberNotFoundError();
+    await deleteCachedWorkspaceOverview(workspaceId);
+    return { id: workspaceId, displayName, description: input.description.trim(), icon: input.icon };
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -229,6 +265,7 @@ export const inviteWorkspaceMembers = async (
           invitationId: invitation.id,
           email: invitation.email,
           workspaceDisplayName: result.workspace.displayName,
+          workspaceIcon: result.workspace.icon,
           role: invitation.role,
           verificationUrl: createVerificationUrl(token),
         },
@@ -277,6 +314,7 @@ export const recoverPendingInvitationDeliveries = async (): Promise<number> => {
       invitationId: invitation.id,
       email: invitation.email,
       workspaceDisplayName: invitation.workspace.displayName,
+      workspaceIcon: invitation.workspace.icon,
       role: invitation.role,
       verificationUrl: createVerificationUrl(token),
     });

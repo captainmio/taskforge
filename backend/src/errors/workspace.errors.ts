@@ -33,6 +33,13 @@ export class WorkspaceMemberRemovalForbiddenError extends Error {
   }
 }
 
+export class WorkspaceUpdateForbiddenError extends Error {
+  constructor() {
+    super("Only workspace owners and admins can update workspace details");
+    this.name = "WorkspaceUpdateForbiddenError";
+  }
+}
+
 export class WorkspaceMemberNotFoundError extends Error {
   constructor() {
     super("Workspace member not found");

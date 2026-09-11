@@ -19,6 +19,14 @@ import { sendTransactionalEmail } from "../services/email.service.js";
 import { createTaskForgeEmail } from "../services/email-template.service.js";
 import { recoverPendingInvitationDeliveries } from "../services/workspace.service.js";
 
+const workspaceIconMarks = {
+  code: "💻",
+  business: "💼",
+  team: "👥",
+  launch: "🚀",
+  goals: "🎯",
+} as const;
+
 const processInvitation = async (
   job: Job<InvitationEmailJobData>,
 ): Promise<void> => {
@@ -31,6 +39,10 @@ const processInvitation = async (
         "Accept the invitation to collaborate with the workspace.",
       ],
       action: { label: "Accept invitation", url: job.data.verificationUrl },
+      context: {
+        icon: workspaceIconMarks[job.data.workspaceIcon],
+        label: job.data.workspaceDisplayName,
+      },
       footer:
         "If you were not expecting this invitation, you can safely ignore this email.",
     });

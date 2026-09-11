@@ -5,6 +5,7 @@ import type {
   WorkspaceRecentUpdate,
   WorkspaceUpcomingTask,
 } from "../types/workspace";
+import type { WorkspaceIcon } from "../types/workspace";
 import type { WorkspaceMemberRole, WorkspaceRole } from "../types/roles";
 import { apiClient, type ApiSuccessResponse } from "./api";
 
@@ -34,9 +35,22 @@ export const getWorkspaceOverview = async (
   return response.data;
 };
 
+export const updateWorkspace = async (
+  workspaceId: string,
+  data: { workspaceName: string; description: string; icon: WorkspaceIcon },
+) => {
+  const response = await apiClient.patch<ApiSuccessResponse<{
+    id: number;
+    displayName: string;
+    description: string;
+    icon: WorkspaceIcon;
+  }>>(`/workspaces/${workspaceId}`, data);
+  return response.data;
+};
+
 export const getWorkspaceHistory = async (
   workspaceId: string,
-  cursor?: string,
+  cursor?: number,
 ) => {
   const response = await apiClient.get<
     ApiSuccessResponse<{

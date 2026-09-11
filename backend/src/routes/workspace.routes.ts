@@ -4,6 +4,7 @@ import {
   acceptWorkspaceInvitation,
   createWorkspaceInviteLink,
   createWorkspace,
+  updateWorkspace,
   getWorkspaceMyTasks,
   getWorkspaceOverview,
   getWorkspaceUpcomingTasks,
@@ -30,6 +31,7 @@ import {
   workspaceMembersSchema,
   removeWorkspaceMemberSchema,
   updateWorkspaceMemberRoleSchema,
+  updateWorkspaceSchema,
 } from "../validations/workspace.validation.js";
 
 const router = Router();
@@ -39,6 +41,13 @@ router.post(
   requireAuth,
   validate(createWorkspaceSchema),
   authenticatedHandler(createWorkspace),
+);
+router.patch(
+  "/:workspaceId",
+  requireAuth,
+  validate(updateWorkspaceSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(updateWorkspace),
 );
 router.get(
   "/:workspaceId/overview",

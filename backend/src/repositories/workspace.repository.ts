@@ -92,6 +92,15 @@ export const createWorkspaceRecord = async (data: CreateWorkspaceData) =>
     return { workspace, invitations };
   });
 
+export const updateWorkspaceRecord = async (
+  workspaceId: number,
+  data: { name: string; displayName: string; description: string; icon: WorkspaceIcon },
+) =>
+  prisma.workspace.updateMany({
+    where: { id: workspaceId },
+    data,
+  });
+
 export const createWorkspaceInvitationsRecord = async (
   data: CreateWorkspaceInvitationsData,
 ) =>
@@ -121,7 +130,7 @@ export const createWorkspaceInvitationsRecord = async (
 
     const workspace = await transaction.workspace.findUniqueOrThrow({
       where: { id: data.workspaceId },
-      select: { displayName: true },
+      select: { displayName: true, icon: true },
     });
 
     // An accepted invitation can outlive its membership when a member is
@@ -217,7 +226,7 @@ export const findInvitationsAwaitingQueue = async (limit: number) =>
       id: true,
       email: true,
       role: true,
-      workspace: { select: { displayName: true } },
+      workspace: { select: { displayName: true, icon: true } },
     },
   });
 

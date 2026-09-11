@@ -3,12 +3,18 @@ interface TaskForgeEmailAction {
   url: string;
 }
 
+interface TaskForgeEmailContext {
+  label: string;
+  icon: string;
+}
+
 interface TaskForgeEmailTemplateOptions {
   title: string;
   preview: string;
   paragraphs: string[];
   action: TaskForgeEmailAction;
   footer?: string;
+  context?: TaskForgeEmailContext;
 }
 
 const escapeHtml = (value: string): string =>
@@ -27,6 +33,7 @@ export const createTaskForgeEmail = ({
   paragraphs,
   action,
   footer = "If you did not request this, you can safely ignore this email.",
+  context,
 }: TaskForgeEmailTemplateOptions): { html: string; text: string } => {
   const safeTitle = escapeHtml(title);
   const safePreview = escapeHtml(preview);
@@ -39,9 +46,17 @@ export const createTaskForgeEmail = ({
   const safeActionLabel = escapeHtml(action.label);
   const safeActionUrl = escapeAttribute(action.url);
   const safeFooter = escapeHtml(footer);
+  const safeContext = context
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;">
+        <tr>
+          <td style="width:36px;height:36px;border-radius:10px;background:#ecfdf3;color:#14834a;font-size:19px;line-height:36px;text-align:center;">${escapeHtml(context.icon)}</td>
+          <td style="padding-left:10px;color:#374151;font-size:14px;font-weight:700;">${escapeHtml(context.label)}</td>
+        </tr>
+      </table>`
+    : "";
 
   return {
-    text: `${title}\n\n${paragraphs.join("\n\n")}\n\n${action.label}: ${action.url}\n\n${footer}`,
+    text: `${title}${context ? `\n\n${context.icon} ${context.label}` : ""}\n\n${paragraphs.join("\n\n")}\n\n${action.label}: ${action.url}\n\n${footer}`,
     html: `<!doctype html>
 <html lang="en">
   <head>
@@ -68,6 +83,7 @@ export const createTaskForgeEmail = ({
             <tr>
               <td style="padding:12px 32px 32px;">
                 <h1 style="margin:0 0 16px;color:#13231a;font-size:26px;line-height:34px;letter-spacing:-0.5px;">${safeTitle}</h1>
+                ${safeContext}
                 ${safeParagraphs}
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
                   <tr>

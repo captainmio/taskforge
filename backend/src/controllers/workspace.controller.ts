@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from "../config/pagination.js";
 import {
+  WorkspaceUpdateForbiddenError,
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceInviteLinkGenerationForbiddenError,
@@ -27,6 +28,7 @@ import {
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
   removeWorkspaceMember as removeWorkspaceMemberService,
   updateWorkspaceMemberRole as updateWorkspaceMemberRoleService,
+  updateWorkspace as updateWorkspaceService,
 } from "../services/workspace.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
 import type {
@@ -42,6 +44,8 @@ import type {
   WorkspaceMembersQuery,
   RemoveWorkspaceMemberParams,
   UpdateWorkspaceMemberRoleBody,
+  UpdateWorkspaceBody,
+  UpdateWorkspaceParams,
   UpdateWorkspaceMemberRoleParams,
 } from "../validations/workspace.validation.js";
 import { createSuccessResponse } from "../utils/api-response.js";
@@ -82,6 +86,28 @@ export const createWorkspace = async (
       success: false,
       error: "Something went wrong on our end",
     });
+  }
+};
+
+export const updateWorkspace = async (
+  req: AuthenticatedRequest<UpdateWorkspaceBody, UpdateWorkspaceParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const actorRole = req.workspaceMembership?.role;
+  if (!actorRole) return res.status(403).json({ success: false, error: "You do not have access to this workspace" });
+  try {
+    const workspace = await updateWorkspaceService(workspaceId, actorRole, req.body);
+    return res.json(createSuccessResponse("Workspace updated", workspace));
+  } catch (error) {
+    if (error instanceof WorkspaceUpdateForbiddenError) return res.status(403).json({ success: false, error: error.message });
+    if (error instanceof WorkspaceNameAlreadyExistsError) {
+      return res.status(409).json({
+        success: false,
+        error: "Workspace name already exists",
+      });
+    }
+    throw error;
   }
 };
 

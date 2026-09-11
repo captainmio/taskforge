@@ -10,9 +10,9 @@ import { formatRelativeDateTime } from "../../utils/formatRelativeDateTime";
 interface RecentUpdatesProps {
   updates: WorkspaceRecentUpdate[];
   allUpdates: WorkspaceRecentUpdate[];
-  historyCursor: string | null;
+  historyCursor: number | null;
   isLoadingHistory: boolean;
-  onLoadHistory: (cursor?: string) => void;
+  onLoadHistory: (cursor?: number) => void;
 }
 
 interface MemberActivityDetails {

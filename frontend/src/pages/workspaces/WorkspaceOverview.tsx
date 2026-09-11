@@ -11,7 +11,9 @@ import { Link, useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
 import { projectIconOptions } from "../../components/projects/projectIconOptions";
 import ActionCard from "../../components/ui/ActionCard";
+import EditWorkspaceModal from "../../components/workspaces/EditWorkspaceModal";
 import RecentUpdates from "../../components/workspaces/RecentUpdates";
+import { getWorkspaceIconOption } from "../../components/workspaces/workspaceIconOptions";
 import ProgressBar from "../../components/ui/ProgressBar";
 import RoundedSpacedDonutChart from "../../components/ui/RoundedSpacedDonutChart";
 import SectionCard from "../../components/ui/SectionCard";
@@ -29,6 +31,7 @@ import {
   getWorkspaceOverview,
   getWorkspaceUpcomingTasks,
 } from "../../services/workspaces";
+import { useAuthenticatedSession } from "../../hooks/useAuthenticatedSession";
 import type {
   WorkspaceOverview as WorkspaceOverviewData,
   WorkspaceUpcomingTask,
@@ -126,6 +129,7 @@ const WorkspaceOverviewSkeleton = () => (
 const WorkspaceOverview = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const { workspaces = [] } = useAuthenticatedSession();
   const [authorizedWorkspaceId, setAuthorizedWorkspaceId] = useState<
     string | null
   >(null);
@@ -140,8 +144,9 @@ const WorkspaceOverview = () => {
   const [recentActivityUpdates, setRecentActivityUpdates] = useState<
     WorkspaceOverviewData["recentUpdates"] | null
   >(null);
-  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const basePath = `/workspace/${id}`;
   const projectsPath: string = `${basePath}/projects`;
 
@@ -216,7 +221,10 @@ const WorkspaceOverview = () => {
   );
   const recentUpdates =
     recentActivityUpdates ?? workspaceOverview.recentUpdates ?? [];
-  const loadHistory = async (cursor?: string) => {
+  const selectedWorkspaceIcon = getWorkspaceIconOption(workspaceOverview.icon);
+  const role = workspaces.find((workspace) => workspace.id === Number(id))?.role;
+  const canEdit = role === "OWNER" || role === "ADMIN";
+  const loadHistory = async (cursor?: number) => {
     setIsLoadingHistory(true);
     try {
       const response = await getWorkspaceHistory(id, cursor);
@@ -245,8 +253,10 @@ const WorkspaceOverview = () => {
         />
         <div className="grid gap-6 xl:grid-cols-[minmax(15rem,0.6fr)_minmax(0,1.4fr)] xl:items-center">
           <div className="flex items-start gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-site-green text-lg font-bold text-white shadow-sm">
-              {getInitials(workspaceOverview.displayName)}
+            <span
+              className={`flex size-14 shrink-0 items-center justify-center rounded-xl text-xl shadow-sm ${selectedWorkspaceIcon?.className ?? "bg-gradient-to-br from-emerald-400 to-site-green text-white"}`}
+            >
+              {selectedWorkspaceIcon?.icon ?? getInitials(workspaceOverview.displayName)}
             </span>
             <div className="min-w-0">
               <h2 className="truncate text-xl font-bold text-gray-950">
@@ -458,11 +468,7 @@ const WorkspaceOverview = () => {
           Manage your workspace settings and preferences.
         </p>
         <div className="grid gap-3 lg:grid-cols-3">
-          <ActionCard
-            icon={<FaEdit />}
-            title="Edit Workspace"
-            description="Update name and description"
-          />
+          {canEdit ? <ActionCard icon={<FaEdit />} title="Edit Workspace" description="Update name and description" className="cursor-pointer" onClick={() => setIsEditOpen(true)} /> : null}
           <ActionCard
             icon={<FaSignOutAlt />}
             title="Leave Workspace"
@@ -477,6 +483,16 @@ const WorkspaceOverview = () => {
           />
         </div>
       </SectionCard>
+      <EditWorkspaceModal
+        isOpen={isEditOpen}
+        workspace={workspaceOverview}
+        onClose={() => setIsEditOpen(false)}
+        onSaved={(updatedWorkspace) =>
+          setWorkspaceOverview((current) =>
+            current ? { ...current, ...updatedWorkspace } : current,
+          )
+        }
+      />
 
     </div>
   );

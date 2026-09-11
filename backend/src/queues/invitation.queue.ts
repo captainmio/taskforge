@@ -1,7 +1,10 @@
 import { Queue } from "bullmq";
 import type IORedis from "ioredis";
 import ms from "ms";
-import type { WorkspaceRole } from "../generated/prisma/enums.js";
+import type {
+  WorkspaceIcon,
+  WorkspaceRole,
+} from "../generated/prisma/enums.js";
 import {
   createQueueRedisConnection,
   INVITATION_JOB_ATTEMPTS,
@@ -13,6 +16,7 @@ export interface InvitationEmailJobData {
   invitationId: number;
   email: string;
   workspaceDisplayName: string;
+  workspaceIcon: WorkspaceIcon;
   role: WorkspaceRole;
   verificationUrl: string;
 }

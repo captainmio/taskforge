@@ -53,6 +53,25 @@ export const createWorkspaceSchema = z.object({
   }),
 });
 
+export const updateWorkspaceSchema = z.object({
+  params: z.object({
+    workspaceId: z
+      .string()
+      .regex(/^[1-9]\d*$/, "Workspace ID must be a positive integer")
+      .refine(
+        (workspaceId) => Number.isSafeInteger(Number(workspaceId)),
+        "Workspace ID is too large",
+      ),
+  }),
+  body: z
+    .object({
+      workspaceName: z.string().trim().min(1).max(100),
+      description: z.string().trim().max(500),
+      icon: workspaceIconSchema,
+    })
+    .strict(),
+});
+
 export const acceptWorkspaceInvitationSchema = z.object({
   body: z.object({
     token: z.string().trim().min(1, "Invitation token is required").max(512),
@@ -176,6 +195,8 @@ export const updateWorkspaceMemberRoleSchema = z.object({
 });
 
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceSchema>["body"];
+export type UpdateWorkspaceBody = z.infer<typeof updateWorkspaceSchema>["body"];
+export type UpdateWorkspaceParams = z.infer<typeof updateWorkspaceSchema>["params"];
 export type AcceptWorkspaceInvitationBody = z.infer<
   typeof acceptWorkspaceInvitationSchema
 >["body"];
