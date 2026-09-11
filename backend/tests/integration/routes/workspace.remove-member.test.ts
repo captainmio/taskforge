@@ -131,7 +131,7 @@ describe("DELETE /api/workspaces/:workspaceId/members/:memberId", () => {
         message: "Workspace member removed",
         data: { memberId: 8 },
       });
-      expect(removeWorkspaceMember).toHaveBeenCalledWith(42, 8, role);
+      expect(removeWorkspaceMember).toHaveBeenCalledWith(42, 8, role, 7);
       expect(logMocks.info).toHaveBeenCalledWith(
         {
           logType: "feature",

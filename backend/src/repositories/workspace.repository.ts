@@ -409,6 +409,30 @@ export const findWorkspaceTaskHistory = async (
   return { history, nextCursor: hasMore ? (history.at(-1)?.id ?? null) : null };
 };
 
+export const findWorkspaceActivityHistory = async (
+  workspaceId: number,
+  cursor: number | undefined,
+  limit: number,
+) => {
+  const records = await prisma.workspaceActivity.findMany({
+    where: { workspaceId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor } } : {}),
+    skip: cursor ? 1 : 0,
+    take: limit + 1,
+    select: {
+      id: true,
+      action: true,
+      details: true,
+      createdAt: true,
+      actor: { select: { id: true, firstname: true, lastname: true, email: true } },
+    },
+  });
+  const hasMore = records.length > limit;
+  const history = hasMore ? records.slice(0, limit) : records;
+  return { history, nextCursor: hasMore ? (history.at(-1)?.id ?? null) : null };
+};
+
 export const findWorkspaceUpcomingTasks = async (
   workspaceId: number,
   userId: number,
@@ -535,6 +559,7 @@ export const findWorkspaceMembersPage = async (
 export const removeWorkspaceMemberRecord = async (
   workspaceId: number,
   memberUserId: number,
+  actorUserId: number,
 ) =>
   prisma.$transaction(async (transaction) => {
     const membership = await transaction.workspaceMember.findUnique({
@@ -544,13 +569,34 @@ export const removeWorkspaceMemberRecord = async (
           userId: memberUserId,
         },
       },
-      select: { role: true },
+      select: { role: true, user: { select: { firstname: true, lastname: true } } },
     });
 
     if (!membership) return { status: "NOT_FOUND" as const };
     if (membership.role === WorkspaceRole.OWNER) {
       return { status: "OWNER_PROTECTED" as const };
     }
+
+    // Assignment rows must disappear in the same commit as the membership.
+    // Otherwise a removed user could remain assigned to workspace tasks.
+    await transaction.taskAssignee.deleteMany({
+      where: {
+        userId: memberUserId,
+        task: { project: { workspaceId } },
+      },
+    });
+    await transaction.workspaceActivity.create({
+      data: {
+        workspaceId,
+        actorUserId,
+        action: "member_removed",
+        details: {
+          memberId: memberUserId,
+          firstname: membership.user.firstname,
+          lastname: membership.user.lastname,
+        },
+      },
+    });
 
     // Keep the OWNER condition in the delete itself, even though the role was
     // checked above. This prevents a future concurrent role update from

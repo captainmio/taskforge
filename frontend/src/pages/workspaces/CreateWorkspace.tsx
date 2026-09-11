@@ -126,7 +126,7 @@ const CreateWorkspace = () => {
             {currentStep === 1 ? (
               <WorkspaceDetailsStep
                 onContinue={continueToNextStep}
-                onCancel={() => navigate("/dashboard")}
+                onCancel={() => navigate("/")}
               />
             ) : currentStep === 2 ? (
               <InviteMembersStep
@@ -144,7 +144,7 @@ const CreateWorkspace = () => {
               />
             ) : (
               <WorkspaceDoneStep
-                onGoToWorkspace={() => navigate("/dashboard")}
+                onGoToWorkspace={() => navigate("/")}
               />
             )}
           </div>

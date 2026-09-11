@@ -11,9 +11,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router";
 import AppHeader from "../../components/layout/AppHeader";
 import { projectIconOptions } from "../../components/projects/projectIconOptions";
-import TaskHistoryChangeDetails, {
-  hasTaskHistoryDetails,
-} from "../../components/tasks/TaskHistoryChangeDetails";
+import TaskHistoryChangeDetails from "../../components/tasks/TaskHistoryChangeDetails";
 import ActionCard from "../../components/ui/ActionCard";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
@@ -145,7 +143,10 @@ const WorkspaceOverview = () => {
   const [allUpdates, setAllUpdates] = useState<
     WorkspaceOverviewData["recentUpdates"]
   >([]);
-  const [historyCursor, setHistoryCursor] = useState<number | null>(null);
+  const [recentActivityUpdates, setRecentActivityUpdates] = useState<
+    WorkspaceOverviewData["recentUpdates"] | null
+  >(null);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const basePath = `/workspace/${id}`;
   const projectsPath: string = `${basePath}/projects`;
@@ -170,6 +171,17 @@ const WorkspaceOverview = () => {
         }
 
         setWorkspaceOverview(response.data);
+
+        try {
+          const historyResponse = await getWorkspaceHistory(id);
+          if (isActive) {
+            setRecentActivityUpdates(historyResponse.data.history.slice(0, 3));
+            setAllUpdates(historyResponse.data.history);
+            setHistoryCursor(historyResponse.data.nextCursor);
+          }
+        } catch {
+          if (isActive) setRecentActivityUpdates(null);
+        }
 
         try {
           const upcomingTasksResponse = await getWorkspaceUpcomingTasks(id);
@@ -208,10 +220,9 @@ const WorkspaceOverview = () => {
     (total, project) => total + project.taskCount,
     0,
   );
-  const recentUpdates = (workspaceOverview.recentUpdates ?? []).filter(
-    (update) => update.action === "commented" || hasTaskHistoryDetails(update.changes),
-  );
-  const loadHistory = async (cursor?: number) => {
+  const recentUpdates =
+    recentActivityUpdates ?? workspaceOverview.recentUpdates ?? [];
+  const loadHistory = async (cursor?: string) => {
     setIsLoadingHistory(true);
     try {
       const response = await getWorkspaceHistory(id, cursor);
@@ -384,20 +395,11 @@ const WorkspaceOverview = () => {
                       <strong className="font-semibold text-gray-950">
                         {update.actor.firstname} {update.actor.lastname}
                       </strong>{" "}
-                      {update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"} this
-                      task.
+                      {update.kind === "workspace"
+                        ? "removed a member from this workspace."
+                        : update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"} {update.kind === "workspace" ? "" : "this task."}
                     </p>
-                    <TaskHistoryChangeDetails
-                      changes={update.changes}
-                      valueKeyPrefix={`overview:${update.id}`}
-                      className="text-xs leading-5 text-gray-600"
-                    />
-                    <p className="mt-0.5 truncate text-xs text-gray-500">
-                      <strong className="font-semibold text-gray-700">
-                        {update.task.title}
-                      </strong>{" "}
-                      in {update.task.project.name}
-                    </p>
+                    {update.kind !== "workspace" ? <><TaskHistoryChangeDetails changes={update.changes} valueKeyPrefix={`overview:${update.id}`} className="text-xs leading-5 text-gray-600" /><p className="mt-0.5 truncate text-xs text-gray-500"><strong className="font-semibold text-gray-700">{update.task?.title}</strong> in {update.task?.project.name}</p></> : null}
                   </div>
                   <time className="shrink-0 pt-0.5 text-right text-[11px] text-gray-400">
                     {formatRelativeDateTime(update.createdAt)}
@@ -541,23 +543,15 @@ const WorkspaceOverview = () => {
           ) : (
             <ol className="space-y-4">
               {(allUpdates ?? [])
-                .filter((update) => update.action === "commented" || hasTaskHistoryDetails(update.changes))
                 .map((update) => (
                   <li key={update.id} className="text-sm text-gray-700">
                     <p>
                       <strong className="font-semibold text-gray-950">
                         {update.actor.firstname} {update.actor.lastname}
                       </strong>{" "}
-                      {update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"}{" "}
-                      <strong className="font-semibold text-gray-950">
-                        {update.task.title}
-                      </strong>
+                      {update.kind === "workspace" ? "removed a member from this workspace." : <>{update.action === "commented" ? "added a comment to" : update.action === "created" ? "created" : "updated"}{" "}<strong className="font-semibold text-gray-950">{update.task?.title}</strong></>}
                     </p>
-                    <TaskHistoryChangeDetails
-                      changes={update.changes}
-                      valueKeyPrefix={`modal:${update.id}`}
-                      className="text-xs leading-5 text-gray-600"
-                    />
+                    {update.kind !== "workspace" ? <TaskHistoryChangeDetails changes={update.changes} valueKeyPrefix={`modal:${update.id}`} className="text-xs leading-5 text-gray-600" /> : null}
                     <time className="mt-1 block text-[11px] text-gray-400">
                       {formatRelativeDateTime(update.createdAt)}
                     </time>

@@ -36,7 +36,7 @@ export const getWorkspaceOverview = async (
 
 export const getWorkspaceHistory = async (
   workspaceId: string,
-  cursor?: number,
+  cursor?: string,
 ) => {
   const response = await apiClient.get<
     ApiSuccessResponse<{

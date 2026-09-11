@@ -85,12 +85,14 @@ export interface WorkspaceTaskSummary {
 }
 
 export interface WorkspaceRecentUpdate {
-  id: number;
+  id: number | string;
+  kind?: "task" | "workspace";
   action: string;
-  changes: unknown;
+  changes?: unknown;
+  details?: unknown;
   createdAt: string;
   actor: { id: number; firstname: string; lastname: string; email: string };
-  task: { id: number; title: string; project: { id: number; name: string } };
+  task?: { id: number; title: string; project: { id: number; name: string } };
 }
 
 export interface WorkspaceUpcomingTask {

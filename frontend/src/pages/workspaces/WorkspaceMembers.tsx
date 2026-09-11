@@ -568,7 +568,8 @@ const WorkspaceMembers = () => {
           from this workspace?
         </p>
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-          They will lose access to workspace projects and tasks.
+          They will lose access to this workspace and be unassigned from every
+          task in it.
         </p>
       </Modal>
     </div>

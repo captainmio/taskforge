@@ -56,6 +56,7 @@ import {
   findWorkspaceMyTasks,
   findWorkspaceUpcomingTasks,
   findWorkspaceTaskHistory,
+  findWorkspaceActivityHistory,
   findWorkspaceMembersPage,
   markInvitationExpired,
   markInvitationsQueued,
@@ -474,14 +475,23 @@ export const getWorkspaceTaskHistory = async (
   cursor: number | undefined,
   limit: number,
 ) => {
-  const result = await findWorkspaceTaskHistory(workspaceId, cursor, limit);
-  const history = await resolveTaskHistoryAssigneeNames(result.history);
+  const [result, activities] = await Promise.all([
+    findWorkspaceTaskHistory(workspaceId, cursor, limit),
+    findWorkspaceActivityHistory(workspaceId, cursor, limit),
+  ]);
+  const taskHistory = await resolveTaskHistoryAssigneeNames(result.history);
+  const history = [
+    ...taskHistory.map((entry) => ({ kind: "task" as const, ...entry })),
+    ...activities.history.map((entry) => ({ kind: "workspace" as const, ...entry })),
+  ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime()).slice(0, limit);
   return {
-    history: history.map(({ createdAt, ...entry }) => ({
+    history: history.map(({ createdAt, id, kind, ...entry }) => ({
       ...entry,
+      id: `${kind}:${id}`,
+      kind,
       createdAt: createdAt.toISOString(),
     })),
-    nextCursor: result.nextCursor,
+    nextCursor: null,
   };
 };
 
@@ -587,12 +597,13 @@ export const removeWorkspaceMember = async (
   workspaceId: number,
   memberUserId: number,
   actorRole: WorkspaceRole,
+  actorUserId = memberUserId,
 ) => {
   if (actorRole !== WorkspaceRole.OWNER && actorRole !== WorkspaceRole.ADMIN) {
     throw new WorkspaceMemberRemovalForbiddenError();
   }
 
-  const removal = await removeWorkspaceMemberRecord(workspaceId, memberUserId);
+  const removal = await removeWorkspaceMemberRecord(workspaceId, memberUserId, actorUserId);
 
   if (removal.status === "NOT_FOUND") {
     throw new WorkspaceMemberNotFoundError();

@@ -46,10 +46,6 @@ export const router = createBrowserRouter([
     Component: ProtectedRoute,
     children: [
       {
-        path: "/dashboard",
-        Component: AppLayout,
-      },
-      {
         path: "/workspace/:id",
         Component: AppLayout,
         children: [

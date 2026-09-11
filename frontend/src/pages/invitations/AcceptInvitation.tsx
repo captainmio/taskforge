@@ -24,6 +24,9 @@ const AcceptInvitation = () => {
   const [pageState, setPageState] = useState<InvitationPageState>("ready");
   const [acceptedWorkspaceName, setAcceptedWorkspaceName] =
     useState<string>("");
+  const [acceptedWorkspaceId, setAcceptedWorkspaceId] = useState<number | null>(
+    null,
+  );
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const invitationSearchParams = new URLSearchParams({ token });
@@ -42,6 +45,7 @@ const AcceptInvitation = () => {
         ? await acceptWorkspaceInviteLink(token)
         : await acceptWorkspaceInvitation(token);
       setAcceptedWorkspaceName(response.workspace.displayName);
+      setAcceptedWorkspaceId(response.workspace.id);
       setPageState("accepted");
     } catch (error: unknown) {
       if (axios.isAxiosError<InvitationErrorResponse>(error)) {
@@ -74,10 +78,14 @@ const AcceptInvitation = () => {
               description={`You have joined ${acceptedWorkspaceName} and can now continue to your dashboard.`}
             />
             <Link
-              to="/dashboard"
+              to={
+                acceptedWorkspaceId === null
+                  ? "/"
+                  : `/workspace/${acceptedWorkspaceId}`
+              }
               className="mt-8 block rounded-lg bg-site-green p-4 text-center font-semibold text-white"
             >
-              Go to dashboard
+              Go to workspace
             </Link>
           </section>
         </main>

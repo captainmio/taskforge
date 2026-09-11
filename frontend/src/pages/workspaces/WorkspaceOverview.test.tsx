@@ -205,7 +205,7 @@ describe("Workspace overview", () => {
               },
             },
           ],
-          nextCursor: 18,
+          nextCursor: "activity-cursor-18",
         },
       })
       .mockResolvedValueOnce({
@@ -245,25 +245,26 @@ describe("Workspace overview", () => {
     expect(
       await screen.findByRole("dialog", { name: "Recent Updates" }),
     ).toBeVisible();
-    expect(mocks.getWorkspaceHistory).toHaveBeenCalledWith("42", undefined);
-    expect(await screen.findByText("Published")).toBeVisible();
+    expect(mocks.getWorkspaceHistory).toHaveBeenCalledWith("42");
+    expect(await screen.findAllByText("Published")).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Load more" }));
 
     expect(await screen.findAllByText("Initial task")).toHaveLength(2);
-    expect(mocks.getWorkspaceHistory).toHaveBeenLastCalledWith("42", 18);
+    expect(mocks.getWorkspaceHistory).toHaveBeenLastCalledWith(
+      "42",
+      "activity-cursor-18",
+    );
   });
 
-  it("renders valid overview updates and ignores empty history records", async () => {
+  it("shows an empty state when the activity history is empty", async () => {
     render(
       <MemoryRouter>
         <WorkspaceOverview />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Status:")).toBeVisible();
-    expect(screen.getByText("Ship workspace history")).toBeVisible();
-    expect(screen.queryByText("Ignore empty update")).not.toBeInTheDocument();
+    expect(await screen.findByText("No recent updates.")).toBeVisible();
   });
 
   it("loads and renders the current user's upcoming tasks", async () => {

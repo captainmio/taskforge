@@ -10,6 +10,7 @@ import { deleteCachedWorkspaceOverview } from "../../../src/cache/workspace-over
 import { JWT_SECRET } from "../../../src/config/auth.js";
 import { prisma } from "../../../src/config/database.js";
 import {
+  ProjectIcon,
   WorkspaceIcon,
   WorkspaceRole,
 } from "../../../src/generated/prisma/enums.js";
@@ -194,6 +195,24 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
       { sub: member.id, email: member.email },
       JWT_SECRET,
     )}`;
+    const project = await prisma.project.create({
+      data: {
+        workspaceId: workspace.id,
+        createdById: admin.id,
+        name: "Member transition",
+        description: "Verifies assignment cleanup.",
+        icon: ProjectIcon.code,
+      },
+    });
+    const task = await prisma.task.create({
+      data: {
+        projectId: project.id,
+        createdById: admin.id,
+        title: "Transfer ownership",
+        position: 0,
+        assignees: { create: { userId: member.id } },
+      },
+    });
 
     const removalResponse = await request(app)
       .delete(`/api/workspaces/${workspace.id}/members/${member.id}`)
@@ -211,6 +230,26 @@ describe("GET /api/workspaces/:workspaceId/members with PostgreSQL", () => {
         },
       }),
     ).resolves.toBeNull();
+    await expect(
+      prisma.taskAssignee.findUnique({
+        where: { taskId_userId: { taskId: task.id, userId: member.id } },
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      prisma.workspaceActivity.findFirst({
+        where: {
+          workspaceId: workspace.id,
+          actorUserId: admin.id,
+          action: "member_removed",
+        },
+      }),
+    ).resolves.toMatchObject({
+      details: {
+        memberId: member.id,
+        firstname: member.firstname,
+        lastname: member.lastname,
+      },
+    });
     expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(workspace.id);
     expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(workspace.id);
 

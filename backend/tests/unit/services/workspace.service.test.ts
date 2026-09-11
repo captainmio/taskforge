@@ -796,11 +796,11 @@ describe("removeWorkspaceMember", () => {
   it.each([WorkspaceRole.OWNER, WorkspaceRole.ADMIN])(
     "allows a workspace %s to remove a non-owner member and clears both caches",
     async (actorRole) => {
-      await expect(removeWorkspaceMember(10, 8, actorRole)).resolves.toEqual({
+      await expect(removeWorkspaceMember(10, 8, actorRole, 7)).resolves.toEqual({
         memberId: 8,
         previousRole: WorkspaceRole.MEMBER,
       });
-      expect(removeWorkspaceMemberRecord).toHaveBeenCalledWith(10, 8);
+      expect(removeWorkspaceMemberRecord).toHaveBeenCalledWith(10, 8, 7);
       expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
       expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
     },

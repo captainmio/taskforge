@@ -137,11 +137,11 @@ describe("Create workspace page", () => {
     ).toBeVisible();
   });
 
-  it("cancels workspace creation by returning to the dashboard", () => {
+  it("cancels workspace creation by returning to the home page", () => {
     renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(mocks.navigate).toHaveBeenCalledWith("/dashboard");
+    expect(mocks.navigate).toHaveBeenCalledWith("/");
   });
 });

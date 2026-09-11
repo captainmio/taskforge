@@ -104,20 +104,19 @@ Copy [`backend/.env.test.example`](backend/.env.test.example) and configure an i
    docker compose up -d redis
    ```
 
-2. Start the API and invitation worker:
+2. Start the API and all backend workers from the repository root:
 
    ```bash
-   cd backend
-   npm run dev
+   npm run backend
    ```
 
-   To run them separately, use `npm run dev:api` and `npm run dev:worker`.
+   This runs the API plus the invitation and transactional-email workers. To
+   run only the workers, use `npm --prefix backend run dev:workers`.
 
-3. Start the frontend in another terminal:
+3. Start the frontend in another terminal from the repository root:
 
    ```bash
-   cd frontend
-   npm run dev
+   npm run frontend
    ```
 
 The frontend is available at `http://localhost:5173` and the API at `http://localhost:3000/api` by default.
@@ -150,10 +149,8 @@ Run these commands from `backend`:
 | `npm run test:all` | Runs both fast and database integration tests. |
 | `npm run build` | Compiles the API and worker into `dist`. |
 | `npm start` | Starts the compiled API. |
-| `npm run worker:invitations` | Runs the invitation worker from TypeScript for a one-off local process. |
-| `npm run worker:invitations:start` | Starts the compiled invitation worker. |
-| `npm run worker:email` | Runs the transactional-email worker from TypeScript for a one-off local process. |
-| `npm run worker:email:start` | Starts the compiled transactional-email worker. |
+| `npm run dev:workers` | Starts every development worker in one process group. |
+| `npm run start:workers` | Starts every compiled worker in one process group. |
 
 Database integration tests need a separate test database. Copy [`backend/.env.test.example`](backend/.env.test.example) to `backend/.env.test`, set its database URL, and leave this value unchanged:
 
@@ -188,13 +185,12 @@ Never point `backend/.env.test` at a development or production database.
    npm run build
    ```
 
-4. Run the backend API, invitation worker, and transactional-email worker as separate long-lived processes, such as separate terminals or process-manager services:
+4. Run the backend API and all compiled workers as long-lived processes, such as separate terminals or process-manager services:
 
    ```bash
    cd backend
    npm start
-   npm run worker:invitations:start
-   npm run worker:email:start
+   npm run start:workers
    ```
 
 5. Serve `frontend/dist` from a static hosting provider or web server. Build the frontend after setting `VITE_API_URL`, because Vite includes this value in the generated files.

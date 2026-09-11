@@ -503,6 +503,7 @@ export const removeWorkspaceMember = async (
       workspaceId,
       memberUserId,
       actorRole,
+      req.user.id,
     );
 
     // Log only stable database identifiers and the previous role. Email and

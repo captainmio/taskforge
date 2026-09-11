@@ -348,6 +348,9 @@ describe("Workspace members page", () => {
     const removeDialog = screen.getByRole("dialog", {
       name: "Remove workspace member",
     });
+    expect(removeDialog).toHaveTextContent(
+      "be unassigned from every task in it",
+    );
 
     fireEvent.click(
       within(removeDialog).getByRole("button", { name: "Remove Member" }),

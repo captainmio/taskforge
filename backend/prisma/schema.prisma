@@ -27,6 +27,7 @@ model User {
   taskAssignments      TaskAssignee[]
   taskHistoryEvents    TaskHistory[]          @relation("TaskHistoryActor")
   taskComments         TaskComment[]
+  workspaceActivityEvents WorkspaceActivity[] @relation("WorkspaceActivityActor")
 }
 
 model PasswordResetToken {
@@ -53,6 +54,7 @@ model Workspace {
   invitations WorkspaceInvitation[]
   inviteLink  WorkspaceInviteLink?
   projects    Project[]
+  activities  WorkspaceActivity[]
 
   @@index([ownerId])
 }
@@ -129,6 +131,21 @@ model TaskHistory {
 
   @@index([taskId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([actorUserId])
+}
+
+model WorkspaceActivity {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @map("workspace_id")
+  actorUserId Int       @map("actor_user_id")
+  action      String    @db.VarChar(50)
+  details     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor       User      @relation("WorkspaceActivityActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([actorUserId])
+  @@map("workspace_activities")
 }
 
 model TaskAssignee {
