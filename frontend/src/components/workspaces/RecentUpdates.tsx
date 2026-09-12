@@ -75,6 +75,8 @@ const MemberRemovedActivityMessage = ({ update }: { update: WorkspaceRecentUpdat
 
 const MemberJoinedActivityMessage = () => <>joined this workspace.</>;
 
+const MemberLeftActivityMessage = () => <>left this workspace.</>;
+
 const ProjectActivityMessage = ({ update }: { update: WorkspaceRecentUpdate }) => {
   const project = getProjectActivityDetails(update.details);
 
@@ -92,6 +94,7 @@ const ProjectActivityMessage = ({ update }: { update: WorkspaceRecentUpdate }) =
 const ActivityMessage = ({ update, modal = false }: { update: WorkspaceRecentUpdate; modal?: boolean }) => {
   if (update.kind !== "workspace") return <TaskActivityMessage update={update} modal={modal} />;
   if (update.action === "member_joined") return <MemberJoinedActivityMessage />;
+  if (update.action === "member_left") return <MemberLeftActivityMessage />;
   if (update.action === "project_created" || update.action === "project_deleted") {
     return <ProjectActivityMessage update={update} />;
   }

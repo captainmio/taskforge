@@ -2,9 +2,7 @@ import {
   FaCalendarAlt,
   FaEdit,
   FaFolder,
-  FaSignOutAlt,
   FaTasks,
-  FaTrashAlt,
   FaUsers,
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router";
@@ -12,6 +10,8 @@ import AppHeader from "../../components/layout/AppHeader";
 import { projectIconOptions } from "../../components/projects/projectIconOptions";
 import ActionCard from "../../components/ui/ActionCard";
 import EditWorkspaceModal from "../../components/workspaces/EditWorkspaceModal";
+import LeaveWorkspaceAction from "../../components/workspaces/LeaveWorkspaceAction";
+import DeleteWorkspaceAction from "../../components/workspaces/DeleteWorkspaceAction";
 import RecentUpdates from "../../components/workspaces/RecentUpdates";
 import { getWorkspaceIconOption } from "../../components/workspaces/workspaceIconOptions";
 import ProgressBar from "../../components/ui/ProgressBar";
@@ -469,17 +469,11 @@ const WorkspaceOverview = () => {
         </p>
         <div className="grid gap-3 lg:grid-cols-3">
           {canEdit ? <ActionCard icon={<FaEdit />} title="Edit Workspace" description="Update name and description" className="cursor-pointer" onClick={() => setIsEditOpen(true)} /> : null}
-          <ActionCard
-            icon={<FaSignOutAlt />}
-            title="Leave Workspace"
-            description="Leave this workspace"
-            iconContainerClassName="bg-orange-50 text-orange-500"
-          />
-          <ActionCard
-            icon={<FaTrashAlt />}
-            title="Delete Workspace"
-            description="Permanently delete workspace"
-            iconContainerClassName="bg-red-50 text-red-500"
+          <LeaveWorkspaceAction workspaceId={id} role={role} />
+          <DeleteWorkspaceAction
+            workspaceId={id}
+            workspaceName={workspaceOverview.displayName}
+            role={role}
           />
         </div>
       </SectionCard>
@@ -493,7 +487,6 @@ const WorkspaceOverview = () => {
           )
         }
       />
-
     </div>
   );
 };

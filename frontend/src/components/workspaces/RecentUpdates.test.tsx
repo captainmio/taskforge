@@ -3,6 +3,35 @@ import { describe, expect, it, vi } from "vitest";
 import RecentUpdates from "./RecentUpdates";
 
 describe("RecentUpdates", () => {
+  it("renders a member leaving the workspace", () => {
+    render(
+      <RecentUpdates
+        updates={[
+          {
+            id: "workspace:5",
+            kind: "workspace",
+            action: "member_left",
+            createdAt: "2026-09-05T10:00:00.000Z",
+            actor: {
+              id: 3,
+              firstname: "Taylor",
+              lastname: "Smith",
+              email: "taylor@example.com",
+            },
+          },
+        ]}
+        allUpdates={[]}
+        historyCursor={null}
+        isLoadingHistory={false}
+        onLoadHistory={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("listitem")).toHaveTextContent(
+      "Taylor Smith left this workspace.",
+    );
+  });
+
   it("renders member joins and removals newest first", () => {
     const onLoadHistory = vi.fn();
 

@@ -2,6 +2,8 @@ import type { Response } from "express";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from "../config/pagination.js";
 import {
   WorkspaceUpdateForbiddenError,
+  WorkspaceDeletionConfirmationError,
+  WorkspaceDeletionForbiddenError,
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
   WorkspaceInviteLinkGenerationForbiddenError,
@@ -13,6 +15,7 @@ import {
   type InvitationAcceptanceFailure,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerLeaveError,
   WorkspaceOwnerRoleUpdateError,
 } from "../errors/workspace.errors.js";
 import {
@@ -20,12 +23,14 @@ import {
   acceptWorkspaceInvitation as acceptWorkspaceInvitationService,
   createWorkspaceInviteLink as createWorkspaceInviteLinkService,
   createWorkspace as createWorkspaceService,
+  deleteWorkspace as deleteWorkspaceService,
   getWorkspaceMyTasks as getWorkspaceMyTasksService,
   getWorkspaceOverview as getWorkspaceOverviewService,
   getWorkspaceUpcomingTasks as getWorkspaceUpcomingTasksService,
   getWorkspaceTaskHistory as getWorkspaceTaskHistoryService,
   getWorkspaceMembers as getWorkspaceMembersService,
   inviteWorkspaceMembers as inviteWorkspaceMembersService,
+  leaveWorkspace as leaveWorkspaceService,
   removeWorkspaceMember as removeWorkspaceMemberService,
   updateWorkspaceMemberRole as updateWorkspaceMemberRoleService,
   updateWorkspace as updateWorkspaceService,
@@ -35,6 +40,7 @@ import type {
   AcceptWorkspaceInviteLinkBody,
   AcceptWorkspaceInvitationBody,
   CreateWorkspaceBody,
+  DeleteWorkspaceBody,
   InviteWorkspaceMembersBody,
   WorkspaceParams,
   WorkspaceOverviewParams,
@@ -108,6 +114,57 @@ export const updateWorkspace = async (
       });
     }
     throw error;
+  }
+};
+
+export const deleteWorkspace = async (
+  req: AuthenticatedRequest<DeleteWorkspaceBody, WorkspaceParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const role = req.workspaceMembership?.role;
+  const logContext = { workspaceId, actorUserId: req.user.id };
+
+  if (!role) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    await deleteWorkspaceService(
+      workspaceId,
+      req.user.id,
+      role,
+      req.body.confirmationName,
+    );
+    // This application log survives the cascading workspace deletion and is
+    // therefore the durable security audit record for this action.
+    req.log.info(
+      { logType: "security", event: "workspace.deleted", ...logContext },
+      "[SECURITY] Workspace permanently deleted",
+    );
+    return res.status(200).json(createSuccessResponse("Workspace deleted", {}));
+  } catch (error) {
+    if (
+      error instanceof WorkspaceDeletionForbiddenError ||
+      error instanceof WorkspaceDeletionConfirmationError
+    ) {
+      return res.status(error instanceof WorkspaceDeletionForbiddenError ? 403 : 400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    req.log.error(
+      { logType: "security", event: "workspace.deletion_failed", err: error, ...logContext },
+      "[SECURITY] Unable to delete workspace",
+    );
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong on our end",
+    });
   }
 };
 
@@ -592,6 +649,52 @@ export const removeWorkspaceMember = async (
       success: false,
       error: "Something went wrong on our end",
     });
+  }
+};
+
+export const leaveWorkspace = async (
+  req: AuthenticatedRequest<unknown, WorkspaceParams>,
+  res: Response,
+) => {
+  const workspaceId = Number(req.params.workspaceId);
+  const role = req.workspaceMembership?.role;
+  const logContext = { workspaceId, actorUserId: req.user.id };
+
+  if (!role) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const result = await leaveWorkspaceService(workspaceId, req.user.id, role);
+    req.log.info(
+      {
+        logType: "feature",
+        event: "workspace.member_left",
+        previousRole: result.previousRole,
+        ...logContext,
+      },
+      "[FEATURE] Workspace member left",
+    );
+    return res.status(200).json(createSuccessResponse("Left workspace", {}));
+  } catch (error) {
+    if (
+      error instanceof WorkspaceMemberNotFoundError ||
+      error instanceof WorkspaceOwnerLeaveError
+    ) {
+      return res.status(error instanceof WorkspaceMemberNotFoundError ? 404 : 409).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    req.log.error(
+      { logType: "feature", event: "workspace.member_leave_failed", err: error, ...logContext },
+      "[FEATURE] Unable to leave workspace",
+    );
+    return res.status(500).json({ success: false, error: "Something went wrong on our end" });
   }
 };
 

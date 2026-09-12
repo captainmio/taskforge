@@ -101,6 +101,25 @@ export const updateWorkspaceRecord = async (
     data,
   });
 
+export const deleteWorkspaceRecord = async (
+  workspaceId: number,
+  ownerUserId: number,
+  confirmationName: string,
+) =>
+  prisma.$transaction(async (transaction) => {
+    // Cascading relations remove projects, tasks, memberships, invitations,
+    // activity, task history, comments, and task assignments atomically.
+    const deletion = await transaction.workspace.deleteMany({
+      where: {
+        id: workspaceId,
+        ownerId: ownerUserId,
+        displayName: confirmationName,
+      },
+    });
+
+    return deletion.count;
+  });
+
 export const createWorkspaceInvitationsRecord = async (
   data: CreateWorkspaceInvitationsData,
 ) =>
@@ -570,6 +589,7 @@ export const removeWorkspaceMemberRecord = async (
   workspaceId: number,
   memberUserId: number,
   actorUserId: number,
+  activityAction: "member_removed" | "member_left" = "member_removed",
 ) =>
   prisma.$transaction(async (transaction) => {
     const membership = await transaction.workspaceMember.findUnique({
@@ -599,7 +619,7 @@ export const removeWorkspaceMemberRecord = async (
       data: {
         workspaceId,
         actorUserId,
-        action: "member_removed",
+        action: activityAction,
         details: {
           memberId: memberUserId,
           firstname: membership.user.firstname,

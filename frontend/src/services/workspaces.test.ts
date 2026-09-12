@@ -3,18 +3,24 @@ import {
   getWorkspaceOverview,
   getWorkspaceMyTasks,
   getWorkspaceUpcomingTasks,
+  deleteWorkspace,
+  leaveWorkspace,
   updateWorkspaceMemberRole,
 } from "./workspaces";
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
   patch: vi.fn(),
+  post: vi.fn(),
+  delete: vi.fn(),
 }));
 
 vi.mock("./api", () => ({
   apiClient: {
     get: mocks.get,
     patch: mocks.patch,
+    post: mocks.post,
+    delete: mocks.delete,
   },
 }));
 
@@ -130,6 +136,36 @@ describe("updateWorkspaceMemberRole", () => {
     });
     expect(mocks.patch).toHaveBeenCalledWith("/workspaces/42/members/8", {
       role: "ADMIN",
+    });
+  });
+});
+
+describe("leaveWorkspace", () => {
+  it("posts to the authenticated user's leave endpoint", async () => {
+    const apiResponse = {
+      success: true as const,
+      message: "Left workspace",
+      data: {},
+    };
+    mocks.post.mockResolvedValue({ data: apiResponse });
+
+    await expect(leaveWorkspace("42")).resolves.toEqual(apiResponse);
+    expect(mocks.post).toHaveBeenCalledWith("/workspaces/42/leave");
+  });
+});
+
+describe("deleteWorkspace", () => {
+  it("deletes the workspace with its exact-name confirmation", async () => {
+    const apiResponse = {
+      success: true as const,
+      message: "Workspace deleted",
+      data: {},
+    };
+    mocks.delete.mockResolvedValue({ data: apiResponse });
+
+    await expect(deleteWorkspace("42", "Engineering Team")).resolves.toEqual(apiResponse);
+    expect(mocks.delete).toHaveBeenCalledWith("/workspaces/42", {
+      data: { confirmationName: "Engineering Team" },
     });
   });
 });

@@ -20,8 +20,14 @@ import {
   WorkspaceMemberSelfRoleUpdateError,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerLeaveError,
+  WorkspaceDeletionConfirmationError,
+  WorkspaceDeletionForbiddenError,
   WorkspaceOwnerRoleUpdateError,
 } from "../../../src/errors/workspace.errors.js";
+import {
+  deleteCachedWorkspaceUpcomingTasks,
+} from "../../../src/cache/workspace-upcoming-tasks.cache.js";
 import {
   deleteCachedWorkspaceOverview,
   getCachedWorkspaceOverview,
@@ -41,6 +47,7 @@ import {
   acceptWorkspaceInviteLinkRecord,
   createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
+  deleteWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
@@ -65,6 +72,8 @@ import {
   getWorkspaceMyTasks,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
+  leaveWorkspace,
+  deleteWorkspace,
   recoverPendingInvitationDeliveries,
   removeWorkspaceMember,
   updateWorkspaceMemberRole,
@@ -77,6 +86,7 @@ vi.mock("../../../src/repositories/workspace.repository.js", () => ({
   acceptWorkspaceInviteLinkRecord: vi.fn(),
   createWorkspaceInvitationsRecord: vi.fn(),
   createWorkspaceRecord: vi.fn(),
+  deleteWorkspaceRecord: vi.fn(),
   findInvitationByTokenHash: vi.fn(),
   findInvitationsAwaitingQueue: vi.fn(),
   findWorkspaceInviteLinkByTokenHash: vi.fn(),
@@ -103,6 +113,12 @@ vi.mock("../../../src/cache/workspace-overview.cache.js", () => ({
   deleteCachedWorkspaceOverview: vi.fn(),
   getCachedWorkspaceOverview: vi.fn(),
   setCachedWorkspaceOverview: vi.fn(),
+}));
+
+vi.mock("../../../src/cache/workspace-upcoming-tasks.cache.js", () => ({
+  deleteCachedWorkspaceUpcomingTasks: vi.fn(),
+  getCachedWorkspaceUpcomingTasks: vi.fn(),
+  setCachedWorkspaceUpcomingTasks: vi.fn(),
 }));
 
 vi.mock("../../../src/queues/invitation.queue.js", () => ({
@@ -839,6 +855,86 @@ describe("removeWorkspaceMember", () => {
     ).rejects.toBeInstanceOf(WorkspaceOwnerRemovalError);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
     expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+});
+
+describe("leaveWorkspace", () => {
+  beforeEach(() => {
+    vi.mocked(removeWorkspaceMemberRecord).mockResolvedValue({
+      status: "REMOVED",
+      previousRole: WorkspaceRole.MEMBER,
+    });
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+  });
+
+  it.each([WorkspaceRole.ADMIN, WorkspaceRole.MEMBER])(
+    "lets a %s leave, records the leave activity, and clears workspace caches",
+    async (role) => {
+      await expect(leaveWorkspace(10, 7, role)).resolves.toEqual({
+        previousRole: WorkspaceRole.MEMBER,
+      });
+      expect(removeWorkspaceMemberRecord).toHaveBeenCalledWith(
+        10,
+        7,
+        7,
+        "member_left",
+      );
+      expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+      expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
+    },
+  );
+
+  it("rejects an owner without changing membership or caches", async () => {
+    await expect(leaveWorkspace(10, 7, WorkspaceRole.OWNER)).rejects.toBeInstanceOf(
+      WorkspaceOwnerLeaveError,
+    );
+    expect(removeWorkspaceMemberRecord).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteWorkspace", () => {
+  beforeEach(() => {
+    vi.mocked(deleteWorkspaceRecord).mockResolvedValue(1);
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceMemberLists).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceUpcomingTasks).mockResolvedValue(undefined);
+  });
+
+  it("hard-deletes an owner-confirmed workspace and clears every workspace cache", async () => {
+    await expect(
+      deleteWorkspace(10, 7, WorkspaceRole.OWNER, "Engineering Team"),
+    ).resolves.toBeUndefined();
+    expect(deleteWorkspaceRecord).toHaveBeenCalledWith(10, 7, "Engineering Team");
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceMemberLists).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(10);
+  });
+
+  it.each([WorkspaceRole.ADMIN, WorkspaceRole.MEMBER])(
+    "rejects a %s before deleting data or clearing caches",
+    async (role) => {
+      await expect(
+        deleteWorkspace(10, 7, role, "Engineering Team"),
+      ).rejects.toBeInstanceOf(WorkspaceDeletionForbiddenError);
+      expect(deleteWorkspaceRecord).not.toHaveBeenCalled();
+      expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+      expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+      expect(deleteCachedWorkspaceUpcomingTasks).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects an incorrect confirmation name without clearing caches", async () => {
+    vi.mocked(deleteWorkspaceRecord).mockResolvedValue(0);
+
+    await expect(
+      deleteWorkspace(10, 7, WorkspaceRole.OWNER, "Wrong name"),
+    ).rejects.toBeInstanceOf(WorkspaceDeletionConfirmationError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceMemberLists).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceUpcomingTasks).not.toHaveBeenCalled();
   });
 });
 

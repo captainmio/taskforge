@@ -141,6 +141,26 @@ export const removeWorkspaceMember = async (
   return response.data;
 };
 
+export const leaveWorkspace = async (
+  workspaceId: string,
+): Promise<ApiSuccessResponse<Record<string, never>>> => {
+  const response = await apiClient.post<ApiSuccessResponse<Record<string, never>>>(
+    `/workspaces/${workspaceId}/leave`,
+  );
+  return response.data;
+};
+
+export const deleteWorkspace = async (
+  workspaceId: string,
+  confirmationName: string,
+): Promise<ApiSuccessResponse<Record<string, never>>> => {
+  const response = await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+    `/workspaces/${workspaceId}`,
+    { data: { confirmationName } },
+  );
+  return response.data;
+};
+
 export const updateWorkspaceMemberRole = async (
   workspaceId: string,
   memberId: number,

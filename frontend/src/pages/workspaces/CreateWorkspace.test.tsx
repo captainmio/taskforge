@@ -137,11 +137,9 @@ describe("Create workspace page", () => {
     ).toBeVisible();
   });
 
-  it("cancels workspace creation by returning to the home page", () => {
+  it("does not show a Cancel button during the first step", () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-
-    expect(mocks.navigate).toHaveBeenCalledWith("/");
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   });
 });

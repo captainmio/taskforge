@@ -8,6 +8,7 @@ import {
   type WorkspaceOverviewData,
 } from "../cache/workspace-overview.cache.js";
 import {
+  deleteCachedWorkspaceUpcomingTasks,
   getCachedWorkspaceUpcomingTasks,
   setCachedWorkspaceUpcomingTasks,
 } from "../cache/workspace-upcoming-tasks.cache.js";
@@ -21,6 +22,8 @@ import { env } from "../config/env.js";
 import {
   InvitationAcceptanceError,
   WorkspaceInvitationAlreadyExistsError,
+  WorkspaceDeletionConfirmationError,
+  WorkspaceDeletionForbiddenError,
   WorkspaceInviteLinkGenerationForbiddenError,
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
@@ -29,6 +32,7 @@ import {
   WorkspaceMemberSelfRoleUpdateError,
   WorkspaceNameAlreadyExistsError,
   WorkspaceOwnerRemovalError,
+  WorkspaceOwnerLeaveError,
   WorkspaceOwnerRoleUpdateError,
   WorkspaceUpdateForbiddenError,
 } from "../errors/workspace.errors.js";
@@ -48,6 +52,7 @@ import {
   acceptWorkspaceInviteLinkRecord,
   createWorkspaceInvitationsRecord,
   createWorkspaceRecord,
+  deleteWorkspaceRecord,
   findInvitationByTokenHash,
   findInvitationsAwaitingQueue,
   findWorkspaceInviteLinkByTokenHash,
@@ -664,6 +669,65 @@ export const removeWorkspaceMember = async (
     memberId: memberUserId,
     previousRole: removal.previousRole,
   };
+};
+
+export const leaveWorkspace = async (
+  workspaceId: number,
+  userId: number,
+  role: WorkspaceRole,
+) => {
+  if (role === WorkspaceRole.OWNER) {
+    throw new WorkspaceOwnerLeaveError();
+  }
+
+  const removal = await removeWorkspaceMemberRecord(
+    workspaceId,
+    userId,
+    userId,
+    "member_left",
+  );
+
+  if (removal.status === "NOT_FOUND") {
+    throw new WorkspaceMemberNotFoundError();
+  }
+
+  if (removal.status === "OWNER_PROTECTED") {
+    throw new WorkspaceOwnerLeaveError();
+  }
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceMemberLists(workspaceId),
+  ]);
+
+  return { previousRole: removal.previousRole };
+};
+
+export const deleteWorkspace = async (
+  workspaceId: number,
+  ownerUserId: number,
+  role: WorkspaceRole,
+  confirmationName: string,
+) => {
+  if (role !== WorkspaceRole.OWNER) {
+    throw new WorkspaceDeletionForbiddenError();
+  }
+
+  const deletedCount = await deleteWorkspaceRecord(
+    workspaceId,
+    ownerUserId,
+    confirmationName,
+  );
+
+  if (deletedCount === 0) {
+    throw new WorkspaceDeletionConfirmationError();
+  }
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceMemberLists(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
+  ]);
 };
 
 export const updateWorkspaceMemberRole = async (

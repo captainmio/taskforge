@@ -54,6 +54,27 @@ export class WorkspaceOwnerRemovalError extends Error {
   }
 }
 
+export class WorkspaceOwnerLeaveError extends Error {
+  constructor() {
+    super("The workspace owner cannot leave the workspace");
+    this.name = "WorkspaceOwnerLeaveError";
+  }
+}
+
+export class WorkspaceDeletionForbiddenError extends Error {
+  constructor() {
+    super("Only the workspace owner can delete this workspace");
+    this.name = "WorkspaceDeletionForbiddenError";
+  }
+}
+
+export class WorkspaceDeletionConfirmationError extends Error {
+  constructor() {
+    super("Workspace name does not match");
+    this.name = "WorkspaceDeletionConfirmationError";
+  }
+}
+
 export class WorkspaceMemberRoleUpdateForbiddenError extends Error {
   constructor() {
     super("Only workspace owners and admins can update member roles");

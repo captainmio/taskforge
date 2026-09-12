@@ -9,13 +9,9 @@ import { workspaceIconOptions } from "./workspaceIconOptions";
 
 interface WorkspaceDetailsStepProps {
   onContinue: () => void;
-  onCancel: () => void;
 }
 
-const WorkspaceDetailsStep = ({
-  onContinue,
-  onCancel,
-}: WorkspaceDetailsStepProps) => {
+const WorkspaceDetailsStep = ({ onContinue }: WorkspaceDetailsStepProps) => {
   const {
     register,
     control,
@@ -152,14 +148,6 @@ const WorkspaceDetailsStep = ({
         </fieldset>
 
         <StepNavigation isFirstStep isLastStep={false} submitNext />
-
-        <button
-          type="button"
-          onClick={onCancel}
-          className="mx-auto block cursor-pointer text-sm text-gray-500 underline underline-offset-4 hover:text-gray-700"
-        >
-          Cancel
-        </button>
       </form>
     </>
   );

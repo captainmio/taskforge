@@ -189,6 +189,15 @@ export const removeWorkspaceMemberSchema = z.object({
   params: workspaceMemberParamsSchema,
 });
 
+export const leaveWorkspaceSchema = z.object({
+  params: workspaceParamsSchema,
+});
+
+export const deleteWorkspaceSchema = z.object({
+  params: workspaceParamsSchema,
+  body: z.object({ confirmationName: z.string().min(1).max(100) }).strict(),
+});
+
 export const updateWorkspaceMemberRoleSchema = z.object({
   params: workspaceMemberParamsSchema,
   body: z.object({ role: workspaceRoleSchema }).strict(),
@@ -223,6 +232,7 @@ export type WorkspaceMembersQuery = z.infer<
 export type RemoveWorkspaceMemberParams = z.infer<
   typeof removeWorkspaceMemberSchema
 >["params"];
+export type DeleteWorkspaceBody = z.infer<typeof deleteWorkspaceSchema>["body"];
 export type UpdateWorkspaceMemberRoleParams = z.infer<
   typeof updateWorkspaceMemberRoleSchema
 >["params"];

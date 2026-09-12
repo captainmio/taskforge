@@ -4,6 +4,7 @@ import {
   acceptWorkspaceInvitation,
   createWorkspaceInviteLink,
   createWorkspace,
+  deleteWorkspace,
   updateWorkspace,
   getWorkspaceMyTasks,
   getWorkspaceOverview,
@@ -11,6 +12,7 @@ import {
   getWorkspaceTaskHistory,
   getWorkspaceMembers,
   inviteWorkspaceMembers,
+  leaveWorkspace,
   removeWorkspaceMember,
   updateWorkspaceMemberRole,
 } from "../controllers/workspace.controller.js";
@@ -23,6 +25,7 @@ import {
   acceptWorkspaceInvitationSchema,
   createWorkspaceInviteLinkSchema,
   createWorkspaceSchema,
+  deleteWorkspaceSchema,
   inviteWorkspaceMembersSchema,
   workspaceOverviewSchema,
   workspaceUpcomingTasksSchema,
@@ -30,6 +33,7 @@ import {
   workspaceMyTasksSchema,
   workspaceMembersSchema,
   removeWorkspaceMemberSchema,
+  leaveWorkspaceSchema,
   updateWorkspaceMemberRoleSchema,
   updateWorkspaceSchema,
 } from "../validations/workspace.validation.js";
@@ -48,6 +52,13 @@ router.patch(
   validate(updateWorkspaceSchema),
   requireWorkspaceMembership,
   authenticatedHandler(updateWorkspace),
+);
+router.delete(
+  "/:workspaceId",
+  requireAuth,
+  validate(deleteWorkspaceSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(deleteWorkspace),
 );
 router.get(
   "/:workspaceId/overview",
@@ -83,6 +94,13 @@ router.get(
   validate(workspaceMembersSchema),
   requireWorkspaceMembership,
   authenticatedHandler(getWorkspaceMembers),
+);
+router.post(
+  "/:workspaceId/leave",
+  requireAuth,
+  validate(leaveWorkspaceSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(leaveWorkspace),
 );
 router.delete(
   "/:workspaceId/members/:memberId",
