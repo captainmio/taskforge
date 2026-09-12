@@ -103,4 +103,22 @@ describe("TaskDialog", () => {
     await waitFor(() => expect(mocks.updateTask).toHaveBeenCalled());
     await waitFor(() => expect(mocks.getTaskHistory).toHaveBeenCalledTimes(2));
   });
+
+  it("makes an archived project's task details read-only", async () => {
+    render(
+      <TaskDialog
+        task={task}
+        initialStatus="todo"
+        workspaceId="42"
+        projectId={25}
+        onClose={vi.fn()}
+        onTaskCreated={vi.fn()}
+        onTaskUpdated={vi.fn()}
+        readOnly
+      />,
+    );
+
+    expect(screen.getByRole("textbox", { name: "Task title" })).toBeDisabled();
+    expect(screen.getByLabelText("Description")).toBeDisabled();
+  });
 });

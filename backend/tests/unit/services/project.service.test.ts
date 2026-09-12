@@ -10,6 +10,7 @@ import {
   ProjectCreationForbiddenError,
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
+  ProjectRestoreForbiddenError,
   ProjectUpdateForbiddenError,
 } from "../../../src/errors/project.errors.js";
 import {
@@ -19,20 +20,26 @@ import {
 import {
   createProjectRecord,
   deleteProjectRecord,
+  findArchivedProjectsByWorkspace,
   findProjectsByWorkspace,
+  restoreProjectRecord,
   updateProjectRecord,
 } from "../../../src/repositories/project.repository.js";
 import {
   createProject,
   deleteProject,
+  getArchivedProjects,
   getProjects,
+  restoreProject,
   updateProject,
 } from "../../../src/services/project.service.js";
 
 vi.mock("../../../src/repositories/project.repository.js", () => ({
   createProjectRecord: vi.fn(),
   deleteProjectRecord: vi.fn(),
+  findArchivedProjectsByWorkspace: vi.fn(),
   findProjectsByWorkspace: vi.fn(),
+  restoreProjectRecord: vi.fn(),
   updateProjectRecord: vi.fn(),
 }));
 
@@ -195,6 +202,70 @@ describe("deleteProject", () => {
     await expect(deleteProject(10, 25, WorkspaceRole.OWNER))
       .rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedProjectList).not.toHaveBeenCalled();
+  });
+});
+
+describe("archived projects", () => {
+  beforeEach(() => {
+    vi.mocked(deleteCachedWorkspaceOverview).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedWorkspaceUpcomingTasks).mockResolvedValue(undefined);
+    vi.mocked(deleteCachedProjectList).mockResolvedValue(undefined);
+  });
+
+  it("returns archived projects with API-safe dates", async () => {
+    vi.mocked(findArchivedProjectsByWorkspace).mockResolvedValueOnce([
+      {
+        id: 25,
+        name: "Website Redesign",
+        description: "Refresh the marketing site.",
+        icon: "desktop",
+        status: ProjectStatus.planning,
+        startDate: null,
+        dueDate: new Date("2026-10-01T00:00:00.000Z"),
+        defaultView: "board",
+        createdAt: new Date("2026-08-22T00:00:00.000Z"),
+      },
+    ] as never);
+
+    await expect(getArchivedProjects(10)).resolves.toEqual([
+      expect.objectContaining({
+        id: 25,
+        startDate: null,
+        dueDate: "2026-10-01T00:00:00.000Z",
+        createdAt: "2026-08-22T00:00:00.000Z",
+      }),
+    ]);
+    expect(findArchivedProjectsByWorkspace).toHaveBeenCalledWith(10);
+  });
+
+  it("allows only the owner to restore an archived project and clears caches", async () => {
+    vi.mocked(restoreProjectRecord).mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      restoreProject(10, 25, WorkspaceRole.OWNER, 7),
+    ).resolves.toEqual({ id: 25 });
+    expect(restoreProjectRecord).toHaveBeenCalledWith(10, 25, 7);
+    expect(deleteCachedWorkspaceOverview).toHaveBeenCalledWith(10);
+    expect(deleteCachedWorkspaceUpcomingTasks).toHaveBeenCalledWith(10);
+    expect(deleteCachedProjectList).toHaveBeenCalledWith(10);
+  });
+
+  it("rejects non-owners without restoring the project", async () => {
+    await expect(
+      restoreProject(10, 25, WorkspaceRole.ADMIN, 7),
+    ).rejects.toBeInstanceOf(ProjectRestoreForbiddenError);
+    expect(restoreProjectRecord).not.toHaveBeenCalled();
+  });
+
+  it("does not clear caches when the archived project no longer exists", async () => {
+    vi.mocked(restoreProjectRecord).mockResolvedValueOnce({ count: 0 });
+
+    await expect(
+      restoreProject(10, 25, WorkspaceRole.OWNER, 7),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(deleteCachedWorkspaceOverview).not.toHaveBeenCalled();
+    expect(deleteCachedWorkspaceUpcomingTasks).not.toHaveBeenCalled();
     expect(deleteCachedProjectList).not.toHaveBeenCalled();
   });
 });

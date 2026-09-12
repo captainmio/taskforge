@@ -25,3 +25,10 @@ export class ProjectNotFoundError extends Error {
     this.name = "ProjectNotFoundError";
   }
 }
+
+export class ProjectRestoreForbiddenError extends Error {
+  constructor() {
+    super("Only the workspace owner can restore projects");
+    this.name = "ProjectRestoreForbiddenError";
+  }
+}

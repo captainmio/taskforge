@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 
 interface NavItemProps {
   to?: string;
@@ -7,6 +7,7 @@ interface NavItemProps {
   label: string;
   end?: boolean;
   disabled?: boolean;
+  inactiveWhenPathIncludes?: string;
 }
 
 const itemContent = (icon: ReactNode, label: string) => (
@@ -27,7 +28,9 @@ const NavItem = ({
   label,
   end = false,
   disabled = false,
+  inactiveWhenPathIncludes,
 }: NavItemProps) => {
+  const { pathname } = useLocation();
   if (disabled || !to) {
     return (
       <span
@@ -46,7 +49,7 @@ const NavItem = ({
       end={end}
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition-colors ${
-          isActive
+          isActive && !pathname.includes(inactiveWhenPathIncludes ?? "\0")
             ? "border-site-green bg-green-50 text-green-700"
             : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         }`

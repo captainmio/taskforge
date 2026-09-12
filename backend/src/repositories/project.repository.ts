@@ -72,7 +72,55 @@ export const findProjectsByWorkspace = async (workspaceId: number) =>
       dueDate: true,
       defaultView: true,
       createdAt: true,
+      deletedAt: true,
     },
+  });
+
+export const findArchivedProjectsByWorkspace = async (workspaceId: number) =>
+  prisma.project.findMany({
+    where: { workspaceId, deletedAt: { not: null } },
+    orderBy: [{ deletedAt: "desc" }, { id: "desc" }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      icon: true,
+      status: true,
+      startDate: true,
+      dueDate: true,
+      defaultView: true,
+      createdAt: true,
+    },
+  });
+
+export const restoreProjectRecord = async (
+  workspaceId: number,
+  projectId: number,
+  actorUserId: number,
+) =>
+  prisma.$transaction(async (transaction) => {
+    const project = await transaction.project.findFirst({
+      where: { id: projectId, workspaceId, deletedAt: { not: null } },
+      select: { name: true },
+    });
+    if (!project) return { count: 0 };
+
+    const restoration = await transaction.project.updateMany({
+      where: { id: projectId, workspaceId, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    if (restoration.count === 0) return restoration;
+
+    await transaction.workspaceActivity.create({
+      data: {
+        workspaceId,
+        actorUserId,
+        action: "project_restored",
+        details: { projectId, name: project.name },
+      },
+    });
+
+    return restoration;
   });
 
 export const findProjectByWorkspace = async (
@@ -91,6 +139,7 @@ export const findProjectByWorkspace = async (
       dueDate: true,
       defaultView: true,
       createdAt: true,
+      deletedAt: true,
     },
   });
 

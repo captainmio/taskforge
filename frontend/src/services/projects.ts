@@ -66,6 +66,16 @@ export const getProjects = async (
   return response.data;
 };
 
+export const getArchivedProjects = async (workspaceId: string) => {
+  const response = await apiClient.get<ApiSuccessResponse<ProjectListData>>(`/workspaces/${workspaceId}/projects/archived`);
+  return response.data;
+};
+
+export const restoreProject = async (workspaceId: string, projectId: number) => {
+  const response = await apiClient.patch<ApiSuccessResponse<UpdatedProject>>(`/workspaces/${workspaceId}/projects/${projectId}/restore`);
+  return response.data;
+};
+
 export const getProjectById = async (
   workspaceId: string,
   projectId: number,

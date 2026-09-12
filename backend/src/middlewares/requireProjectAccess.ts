@@ -20,7 +20,12 @@ export const requireProjectAccess: RequestHandler = async (
     Number(req.params.projectId),
   );
 
-  if (!project || (project.deletedAt && membership.role !== WorkspaceRole.OWNER)) {
+  if (
+    !project ||
+    (project.deletedAt &&
+      membership.role !== WorkspaceRole.OWNER &&
+      membership.role !== WorkspaceRole.ADMIN)
+  ) {
     return res.status(404).json({ success: false, error: "Project not found" });
   }
 

@@ -82,7 +82,12 @@ const ProjectActivityMessage = ({ update }: { update: WorkspaceRecentUpdate }) =
 
   return (
     <>
-      {update.action === "project_created" ? "created" : "deleted"} project{" "}
+      {update.action === "project_created"
+        ? "created"
+        : update.action === "project_restored"
+          ? "restored"
+          : "deleted"}{" "}
+      project{" "}
       <strong className="font-semibold text-gray-950">
         {project?.name ?? "a project"}
       </strong>
@@ -95,7 +100,11 @@ const ActivityMessage = ({ update, modal = false }: { update: WorkspaceRecentUpd
   if (update.kind !== "workspace") return <TaskActivityMessage update={update} modal={modal} />;
   if (update.action === "member_joined") return <MemberJoinedActivityMessage />;
   if (update.action === "member_left") return <MemberLeftActivityMessage />;
-  if (update.action === "project_created" || update.action === "project_deleted") {
+  if (
+    update.action === "project_created" ||
+    update.action === "project_deleted" ||
+    update.action === "project_restored"
+  ) {
     return <ProjectActivityMessage update={update} />;
   }
   return <MemberRemovedActivityMessage update={update} />;

@@ -17,6 +17,7 @@ interface TaskCommentsProps {
   projectId: number;
   taskId: number | null;
   onActivityRefresh: () => void;
+  readOnly?: boolean;
 }
 
 interface CommentFormValues {
@@ -38,6 +39,7 @@ const TaskComments = ({
   projectId,
   taskId,
   onActivityRefresh,
+  readOnly = false,
 }: TaskCommentsProps) => {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
@@ -240,7 +242,7 @@ const TaskComments = ({
         </p>
       ) : (
         <>
-          <form
+          {!readOnly ? <form
             onSubmit={(event) => void handleSubmit(submitComment)(event)}
             className="mt-5"
           >
@@ -296,7 +298,7 @@ const TaskComments = ({
             <p role="status" className="sr-only">
               {announcement}
             </p>
-          </form>
+          </form> : null}
 
           {loadError ? (
             <p role="alert" className="mt-5 text-sm text-red-600">

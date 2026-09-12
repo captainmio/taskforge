@@ -9,6 +9,7 @@ import CreateWorkspace from "../pages/workspaces/CreateWorkspace";
 import CreateProject from "../pages/projects/CreateProject";
 import EditProject from "../pages/projects/EditProject";
 import Projects from "../pages/projects/Projects";
+import ArchivedProjects from "../pages/projects/ArchivedProjects";
 import AcceptInvitation from "../pages/invitations/AcceptInvitation";
 import InviteMembers from "../pages/workspaces/InviteMembers";
 import WorkspaceOverview from "../pages/workspaces/WorkspaceOverview";
@@ -67,12 +68,20 @@ export const router = createBrowserRouter([
             Component: Projects,
           },
           {
+            path: "projects/archived",
+            Component: ArchivedProjects,
+          },
+          {
             path: "projects/create",
             Component: CreateProject,
           },
           {
             path: "projects/:projectId/edit",
             Component: EditProject,
+          },
+          {
+            path: "projects/archived/:projectId/tasks",
+            Component: TaskPage,
           },
           {
             path: "projects/:projectId/tasks",

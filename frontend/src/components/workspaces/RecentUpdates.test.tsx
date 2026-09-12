@@ -32,6 +32,36 @@ describe("RecentUpdates", () => {
     );
   });
 
+  it("renders a restored project activity", () => {
+    render(
+      <RecentUpdates
+        updates={[
+          {
+            id: "workspace:6",
+            kind: "workspace",
+            action: "project_restored",
+            details: { projectId: 7, name: "Website Redesign" },
+            createdAt: "2026-09-06T10:00:00.000Z",
+            actor: {
+              id: 1,
+              firstname: "Alex",
+              lastname: "Ng",
+              email: "alex@example.com",
+            },
+          },
+        ]}
+        allUpdates={[]}
+        historyCursor={null}
+        isLoadingHistory={false}
+        onLoadHistory={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("listitem")).toHaveTextContent(
+      "Alex Ng restored project Website Redesign.",
+    );
+  });
+
   it("renders member joins and removals newest first", () => {
     const onLoadHistory = vi.fn();
 

@@ -40,4 +40,21 @@ describe("NavItem", () => {
       screen.getByText("Members").closest("[aria-disabled='true']"),
     ).toBeInTheDocument();
   });
+
+  it("does not mark Projects active while browsing archived projects", () => {
+    render(
+      <MemoryRouter initialEntries={["/workspace/7/projects/archived"]}>
+        <NavItem
+          to="/workspace/7/projects"
+          icon={<span>Icon</span>}
+          label="Projects"
+          inactiveWhenPathIncludes="/projects/archived"
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /Projects/ })).not.toHaveClass(
+      "bg-green-50",
+    );
+  });
 });

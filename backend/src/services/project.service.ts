@@ -11,6 +11,7 @@ import {
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
   ProjectUpdateForbiddenError,
+  ProjectRestoreForbiddenError,
 } from "../errors/project.errors.js";
 import {
   ProjectStatus,
@@ -21,6 +22,8 @@ import {
   deleteProjectRecord,
   findProjectByWorkspace,
   findProjectsByWorkspace,
+  findArchivedProjectsByWorkspace,
+  restoreProjectRecord,
   updateProjectRecord,
 } from "../repositories/project.repository.js";
 import type {
@@ -87,6 +90,41 @@ export const getProjects = async (
 
   await setCachedProjectList(workspaceId, result);
   return result;
+};
+
+export const getArchivedProjects = async (workspaceId: number) => {
+  const projects = await findArchivedProjectsByWorkspace(workspaceId);
+  return projects.map((project) => ({
+    ...project,
+    startDate: project.startDate?.toISOString() ?? null,
+    dueDate: project.dueDate?.toISOString() ?? null,
+    createdAt: project.createdAt.toISOString(),
+  }));
+};
+
+export const restoreProject = async (
+  workspaceId: number,
+  projectId: number,
+  role: WorkspaceRole,
+  actorUserId: number,
+) => {
+  if (role !== WorkspaceRole.OWNER) {
+    throw new ProjectRestoreForbiddenError();
+  }
+
+  const restored = await restoreProjectRecord(
+    workspaceId,
+    projectId,
+    actorUserId,
+  );
+  if (restored.count === 0) throw new ProjectNotFoundError();
+
+  await Promise.all([
+    deleteCachedWorkspaceOverview(workspaceId),
+    deleteCachedWorkspaceUpcomingTasks(workspaceId),
+    deleteCachedProjectList(workspaceId),
+  ]);
+  return { id: projectId };
 };
 
 export const getProjectById = async (workspaceId: number, projectId: number) => {

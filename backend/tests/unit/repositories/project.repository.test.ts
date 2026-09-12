@@ -7,21 +7,36 @@ const prismaProject = vi.hoisted(() => ({
   updateMany: vi.fn(),
 }));
 
+const prismaWorkspaceActivity = vi.hoisted(() => ({ create: vi.fn() }));
+const prismaTransaction = vi.hoisted(() => vi.fn());
+
 vi.mock("../../../src/config/database.js", () => ({
-  prisma: { project: prismaProject },
+  prisma: {
+    project: prismaProject,
+    workspaceActivity: prismaWorkspaceActivity,
+    $transaction: prismaTransaction,
+  },
 }));
 
 import {
   deleteProjectRecord,
   findProjectAccessByWorkspace,
+  findArchivedProjectsByWorkspace,
   findProjectByWorkspace,
   findProjectsByWorkspace,
+  restoreProjectRecord,
   updateProjectRecord,
 } from "../../../src/repositories/project.repository.js";
 
 describe("project repository soft deletion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaTransaction.mockImplementation((callback) =>
+      callback({
+        project: prismaProject,
+        workspaceActivity: prismaWorkspaceActivity,
+      }),
+    );
   });
 
   it("excludes soft-deleted projects from workspace lists", async () => {
@@ -32,6 +47,18 @@ describe("project repository soft deletion", () => {
     expect(prismaProject.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { workspaceId: 10, deletedAt: null },
+      }),
+    );
+  });
+
+  it("returns only soft-deleted projects for the archive", async () => {
+    prismaProject.findMany.mockResolvedValueOnce([]);
+
+    await findArchivedProjectsByWorkspace(10);
+
+    expect(prismaProject.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { workspaceId: 10, deletedAt: { not: null } },
       }),
     );
   });
@@ -87,6 +114,26 @@ describe("project repository soft deletion", () => {
     expect(prismaProject.updateMany).toHaveBeenCalledWith({
       where: { id: 25, workspaceId: 10, deletedAt: null },
       data,
+    });
+  });
+
+  it("restores an archived project and records the activity in one transaction", async () => {
+    prismaProject.findFirst.mockResolvedValueOnce({ name: "Website Redesign" });
+    prismaProject.updateMany.mockResolvedValueOnce({ count: 1 });
+    prismaWorkspaceActivity.create.mockResolvedValueOnce({});
+
+    await expect(restoreProjectRecord(10, 25, 7)).resolves.toEqual({ count: 1 });
+    expect(prismaProject.updateMany).toHaveBeenCalledWith({
+      where: { id: 25, workspaceId: 10, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    expect(prismaWorkspaceActivity.create).toHaveBeenCalledWith({
+      data: {
+        workspaceId: 10,
+        actorUserId: 7,
+        action: "project_restored",
+        details: { projectId: 25, name: "Website Redesign" },
+      },
     });
   });
 });

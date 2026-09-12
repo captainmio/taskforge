@@ -69,4 +69,47 @@ describe("AppSidebar", () => {
 
     expect(screen.getByText("/workspace/84")).toBeVisible();
   });
+
+  it("shows Archived Projects only to workspace owners and admins", () => {
+    const { rerender } = render(
+      <MemoryRouter initialEntries={["/workspace/42"]}>
+        <Routes>
+          <Route
+            path="/workspace/:id"
+            element={
+              <AppSidebar
+                workspaceName="Engineering"
+                workspaces={[{ id: 42, name: "Engineering", role: "OWNER" }]}
+                currentWorkspaceId={42}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Archived Projects" })).toHaveAttribute(
+      "href",
+      "/workspace/42/projects/archived",
+    );
+
+    rerender(
+      <MemoryRouter initialEntries={["/workspace/42"]}>
+        <Routes>
+          <Route
+            path="/workspace/:id"
+            element={
+              <AppSidebar
+                workspaceName="Engineering"
+                workspaces={[{ id: 42, name: "Engineering", role: "MEMBER" }]}
+                currentWorkspaceId={42}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: "Archived Projects" })).toBeNull();
+  });
 });

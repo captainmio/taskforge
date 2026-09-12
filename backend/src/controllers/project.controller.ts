@@ -4,12 +4,15 @@ import {
   ProjectDeletionForbiddenError,
   ProjectNotFoundError,
   ProjectUpdateForbiddenError,
+  ProjectRestoreForbiddenError,
 } from "../errors/project.errors.js";
 import {
   createProject as createProjectService,
   deleteProject as deleteProjectService,
   getProjectById as getProjectByIdService,
   getProjects as getProjectsService,
+  getArchivedProjects as getArchivedProjectsService,
+  restoreProject as restoreProjectService,
   updateProject as updateProjectService,
 } from "../services/project.service.js";
 import type { AuthenticatedRequest } from "../types/authenticated-request.js";
@@ -126,6 +129,63 @@ export const getProjects = async (
       success: false,
       error: "Something went wrong on our end",
     });
+  }
+};
+
+export const getArchivedProjects = async (
+  req: AuthenticatedRequest<unknown, ProjectListParams>,
+  res: Response,
+) => {
+  const role = req.workspaceMembership?.role;
+  if (role !== "OWNER" && role !== "ADMIN") {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to archived projects",
+    });
+  }
+
+  const projects = await getArchivedProjectsService(
+    Number(req.params.workspaceId),
+  );
+  return res.status(200).json(
+    createSuccessResponse("Archived projects retrieved", {
+      projects,
+      currentUserRole: role,
+    }),
+  );
+};
+
+export const restoreProject = async (
+  req: AuthenticatedRequest<unknown, DeleteProjectParams>,
+  res: Response,
+) => {
+  const role = req.workspaceMembership?.role;
+  if (!role) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have access to this workspace",
+    });
+  }
+
+  try {
+    const project = await restoreProjectService(
+      Number(req.params.workspaceId),
+      Number(req.params.projectId),
+      role,
+      req.user.id,
+    );
+    return res.status(200).json(createSuccessResponse("Project restored", project));
+  } catch (error) {
+    if (
+      error instanceof ProjectRestoreForbiddenError ||
+      error instanceof ProjectNotFoundError
+    ) {
+      return res
+        .status(error instanceof ProjectRestoreForbiddenError ? 403 : 404)
+        .json({ success: false, error: error.message });
+    }
+
+    throw error;
   }
 };
 

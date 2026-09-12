@@ -110,4 +110,20 @@ describe("TaskComments", () => {
 
     expect(await screen.findByText(refreshedComment.body)).toBeVisible();
   });
+
+  it("hides the comment composer in read-only mode", async () => {
+    render(
+      <TaskComments
+        workspaceId="42"
+        projectId={25}
+        taskId={101}
+        onActivityRefresh={vi.fn()}
+        readOnly
+      />,
+    );
+
+    await screen.findByText(existingComment.body);
+    expect(screen.queryByLabelText("Add a comment")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Post comment" })).toBeNull();
+  });
 });

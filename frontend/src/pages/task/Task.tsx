@@ -159,6 +159,7 @@ const TaskPage = (): ReactElement => {
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>("todo");
   const [isColumnStatusLocked, setIsColumnStatusLocked] = useState(false);
   const [projectName, setProjectName] = useState<string>("Tasks");
+  const [isArchived, setIsArchived] = useState(false);
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const currentWorkspace = workspaces?.find(
     (workspace) => String(workspace.id) === id,
@@ -277,6 +278,7 @@ const TaskPage = (): ReactElement => {
 
         const { project } = projectResponse.data;
         setProjectName(project.name);
+        setIsArchived(Boolean(project.deletedAt));
         setTaskItems(taskResponse.data.tasks.map(toBoardTask));
       })
       .catch((error: unknown) => {
@@ -305,6 +307,7 @@ const TaskPage = (): ReactElement => {
     setSelectedTask(null);
   };
   const handleDragEnd = ({ source, destination, draggableId }: DropResult) => {
+    if (isArchived) return;
     // Dropping outside a column does not change the task's position or status.
     if (!destination) return;
 
@@ -444,13 +447,13 @@ const TaskPage = (): ReactElement => {
             >
               Filter{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </Button>
-            <Button
+            {!isArchived ? <Button
               leadingIcon={<FaPlus />}
               onClick={() => openNewTask()}
               className="flex-1 whitespace-nowrap sm:flex-none"
             >
               New Task
-            </Button>
+            </Button> : null}
             {isFilterOpen ? (
               <div
                 id="task-filter-menu"
@@ -591,8 +594,8 @@ const TaskPage = (): ReactElement => {
           <TaskBoard
             tasks={tasks}
             onTaskClick={(task) => setSelectedTask(task)}
-            onAddTask={(status) => openNewTask(status, true)}
-            canAddTask={(status) => status !== "done" || canCompleteInReview}
+            onAddTask={(status) => !isArchived && openNewTask(status, true)}
+            canAddTask={(status) => !isArchived && (status !== "done" || canCompleteInReview)}
             onDragEnd={handleDragEnd}
           />
         ) : (
@@ -611,6 +614,7 @@ const TaskPage = (): ReactElement => {
           workspaceId={id ?? ""}
           projectId={Number(projectId)}
           canCompleteInReview={canCompleteInReview}
+          readOnly={isArchived}
           onClose={() => setSelectedTask(undefined)}
           onTaskCreated={(task) =>
             setTaskItems((currentTasks) => [task, ...currentTasks])

@@ -4,11 +4,14 @@ import {
   deleteProject,
   getProjectById,
   getProjects,
+  getArchivedProjects,
+  restoreProject,
   updateProject,
 } from "../controllers/project.controller.js";
 import { authenticatedHandler } from "../middlewares/authenticatedHandler.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { requireProjectAccess } from "../middlewares/requireProjectAccess.js";
+import { requireActiveProject } from "../middlewares/requireActiveProject.js";
 import { requireWorkspaceMembership } from "../middlewares/requireWorkspaceMembership.js";
 import { validate } from "../middlewares/validate.js";
 import {
@@ -41,6 +44,13 @@ router.post(
   requireWorkspaceMembership,
   authenticatedHandler(createProject),
 );
+router.get(
+  "/archived",
+  requireAuth,
+  validate(projectListSchema),
+  requireWorkspaceMembership,
+  authenticatedHandler(getArchivedProjects),
+);
 
 router.get(
   "/:projectId",
@@ -57,6 +67,7 @@ router.delete(
   validate(deleteProjectSchema),
   requireWorkspaceMembership,
   requireProjectAccess,
+  requireActiveProject,
   authenticatedHandler(deleteProject),
 );
 
@@ -66,7 +77,16 @@ router.patch(
   validate(updateProjectSchema),
   requireWorkspaceMembership,
   requireProjectAccess,
+  requireActiveProject,
   authenticatedHandler(updateProject),
+);
+router.patch(
+  "/:projectId/restore",
+  requireAuth,
+  validate(deleteProjectSchema),
+  requireWorkspaceMembership,
+  requireProjectAccess,
+  authenticatedHandler(restoreProject),
 );
 
 export default router;

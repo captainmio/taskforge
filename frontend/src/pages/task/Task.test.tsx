@@ -227,6 +227,27 @@ describe("Task page", () => {
     expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
   });
 
+  it("keeps archived project tasks viewable but read-only", async () => {
+    mocks.getProjectById.mockResolvedValueOnce({
+      success: true,
+      data: {
+        project: {
+          name: "Website Redesign",
+          deletedAt: "2026-09-10T00:00:00.000Z",
+        },
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: /Implement login flow/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "New Task" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Implement login flow/ }));
+    expect(screen.getByRole("textbox", { name: "Task title" })).toBeDisabled();
+  });
+
   it("shows filtered tasks in List view and opens a selected row", async () => {
     renderPage();
     await screen.findByRole("button", { name: /Implement login flow/ });

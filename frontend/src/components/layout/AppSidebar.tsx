@@ -1,4 +1,4 @@
-import { FaFolder, FaHome, FaTasks, FaUsers } from "react-icons/fa";
+import { FaArchive, FaFolder, FaHome, FaTasks, FaUsers } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import { getInitials } from "../../utils/getInitials";
 import type { JoinedWorkspace } from "../../services/auth";
@@ -19,6 +19,7 @@ const AppSidebar = ({
   onWorkspaceChange,
 }: AppSidebarProps) => {
   const navigate = useNavigate();
+  const role = workspaces.find((workspace) => workspace.id === currentWorkspaceId)?.role;
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-white via-white to-emerald-50/70">
@@ -52,7 +53,8 @@ const AppSidebar = ({
       <nav className="mt-5 space-y-1 px-4" aria-label="Primary navigation">
         <NavItem to="." icon={<FaHome />} label="Worskpace Overview" end />
         <NavItem to="my-tasks" icon={<FaTasks />} label="My Tasks" />
-        <NavItem to="projects" icon={<FaFolder />} label="Projects" />
+        <NavItem to="projects" icon={<FaFolder />} label="Projects" inactiveWhenPathIncludes="/projects/archived" />
+        {role === "OWNER" || role === "ADMIN" ? <NavItem to="projects/archived" icon={<FaArchive />} label="Archived Projects" /> : null}
         <NavItem to="members" icon={<FaUsers />} label="Members" />
       </nav>
     </div>

@@ -32,6 +32,7 @@ interface TaskDialogProps {
   projectId: number;
   canCompleteInReview?: boolean;
   isStatusLocked?: boolean;
+  readOnly?: boolean;
   onClose: () => void;
   onTaskCreated: (task: Task) => void;
   onTaskUpdated: (taskId: number, updates: Partial<Task>) => void;
@@ -44,6 +45,7 @@ const TaskDialog = ({
   projectId,
   canCompleteInReview = false,
   isStatusLocked = false,
+  readOnly = false,
   onClose,
   onTaskCreated,
   onTaskUpdated,
@@ -256,7 +258,7 @@ const TaskDialog = ({
                 }
                 aria-label="Task title"
                 placeholder="Untitled task"
-                disabled={isCreating}
+                disabled={isCreating || readOnly}
                 className="w-full cursor-text border-0 bg-transparent p-0 text-xl font-bold text-gray-950 outline-none placeholder:text-gray-400"
               />
             </div>
@@ -272,7 +274,7 @@ const TaskDialog = ({
         </header>
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0">
-            <fieldset disabled={isCreating} className="space-y-4 border-0 p-6">
+            <fieldset disabled={isCreating || readOnly} className="space-y-4 border-0 p-6">
               <TaskAssigneeMultiSelect
                 members={members}
                 value={assignees}
@@ -384,6 +386,7 @@ const TaskDialog = ({
               workspaceId={workspaceId}
               projectId={projectId}
               taskId={taskId}
+              readOnly={readOnly}
               onActivityRefresh={() =>
                 setHistoryRefreshVersion((version) => version + 1)
               }
